@@ -56,7 +56,9 @@ The measured routing/dispatch span was approximately 10 ms. That interval includ
 instrumentation and any scheduling inside dispatch: it is **not a measurement of
 pure route lookup**. Actor startup and ownership transfer each had medians below
 0.2 ms, while actor handling measured roughly 3 ms. Intervals can overlap and must
-not be summed. Follow-up profiling is needed to attribute the dispatch interval.
+not be summed. [Follow-up profiling](http-dispatch-investigation.md) identified
+repeated structural AST hashing in suspension analysis and verified a narrow
+identity-deduplication fix; the table above records the original, pre-fix builds.
 
 Provenance:
 - Runtime: [`c82416067`](https://github.com/ores-truffle-oreslang/oreslang-source.java/commit/c82416067)
