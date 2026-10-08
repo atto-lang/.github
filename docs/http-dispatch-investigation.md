@@ -109,8 +109,16 @@ baseline/fixed order, and correlate request IDs with completed server spans.
 
 ## Delivery and validation
 
-The fix is commit `39f07082b` in [draft runtime PR #442](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/442),
-stacked on native/telemetry runtime PR #440. It passed all 1,238 runtime tests,
-55 Spin HTTP assertions, and 31 REST demo integration/generator checks. The
-current demo/compiler pin and previously packaged native binaries still reference
-the pre-fix runtime; this document does not imply that the fix is merged or deployed.
+The fix originated in commit `39f07082b` in [runtime PR #442](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/442).
+It is now merged into runtime `main` through the #440/#439 dependency stack.
+[Demo PR #4](https://github.com/ores-truffle-oreslang/oreslang-demo-restful-server/pull/4)
+puts the logging/native integration on demo `main` and pins the merged runtime
+`3f709fbf`, including this fix. Standard main-branch setup now uses that pin;
+a local SOURCE_REF override is no longer required for the dispatch fix.
+
+The performance-fix tree passed 1,238 runtime tests, 55 Spin HTTP assertions,
+and 31 REST demo checks. Subsequent runtime changes have their own validation;
+the measurements in this document remain measurements of the stated revisions.
+Previously generated native archives are not updated by a Git merge: rebuild
+them from the desired clean compiler/application pins before claiming this fix
+is present in a native deployment.

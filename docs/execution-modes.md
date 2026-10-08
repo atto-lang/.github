@@ -69,7 +69,7 @@ Provenance:
 ## Running and building
 
 See the [REST demo](https://github.com/ores-truffle-oreslang/oreslang-demo-restful-server)
-and its [native distribution PR](https://github.com/ores-truffle-oreslang/oreslang-demo-restful-server/pull/2).
+and its [merged main-branch integration](https://github.com/ores-truffle-oreslang/oreslang-demo-restful-server/pull/4).
 After installing the pinned compiler/dependencies, `scripts/run-server.sh` launches
 the JVM version. With the matching GraalVM build toolchain, use
 `scripts/build-native.sh aot` or `scripts/build-native.sh hybrid`.
