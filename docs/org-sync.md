@@ -1,21 +1,21 @@
 # Safe organization Git sync
 
-Run `scripts/sync-gh-org.sh` from the parent of your repositories; it is maintained in `ores-truffle-oreslang/.github`.
+From the parent of your repositories, run `.github/scripts/sync-gh-org.sh` after pulling the `ores-truffle-oreslang/.github` repository.
 
 ```bash
 # Nothing changes locally or remotely, including log creation.
-./scripts/sync-gh-org.sh ores-truffle-oreslang --dry-run
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --dry-run
 
 # Commit pending nonignored code, back up local and remote refs, sync one repo.
-./scripts/sync-gh-org.sh ores-truffle-oreslang --repo oreslang-source.java \
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --repo oreslang-source.java \
   --checkpoint --backup-remote --verify --report
 
 # Full organization only after reviewing the plan.
-./scripts/sync-gh-org.sh ores-truffle-oreslang --all \
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --all \
   --checkpoint --backup-remote --verify --report
 
 # Pass a different parent directory explicitly:
-./scripts/sync-gh-org.sh ores-truffle-oreslang --root ~/src/ores-truffle-oreslang --dry-run
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --root ~/src/ores-truffle-oreslang --dry-run
 ```
 
 ## Preservation rules
