@@ -15,7 +15,7 @@ Usage: sync-gh-org.sh ORG [--root DIRECTORY] [--repo NAME | --all]
   --all            Include all accessible, non-archived org repositories.
   --root DIRECTORY Parent of the org clones (default: current directory).
   --checkpoint     Commit all pending tracked/untracked nonignored changes.
-  --backup-remote  Preserve remote branch/tag refs under timestamped sync refs.
+  --backup-remote  Preserve remote branch refs that may change, not merged/untouched refs.
   --verify         Compare remote refs with intended pushed refs by SHA.
   --report         Write Markdown and tab-separated reports in .org-sync/reports/.
   --strict         Fail closed (default); retained for CLI compatibility.
@@ -85,6 +85,28 @@ remote_sha() {
   awk -F '\t' -v k="$2" '$2 == k {print $1; exit}' "$1"
 }
 fetch_remote_listing() { git -C "$1" ls-remote origin 'refs/heads/*' 'refs/tags/*'; }
+# Compare only mutable source refs, never safety refs intentionally created.
+ordinary_remote_listing() {
+  fetch_remote_listing "$1" | awk -F '\t' '$2 !~ /^refs\/heads\/sync\// && $2 !~ /^refs\/tags\/sync-(local|remote)\//'
+}
+# A branch tip already reachable from freshly fetched origin/main needs no
+# duplicate backup. This deliberately uses ancestry, not PR merge status:
+# squash/rebase merges cannot be proved redundant by ancestry alone.
+contained_in_main() {
+  git -C "$1" show-ref --verify -q refs/remotes/origin/main &&
+    git -C "$1" merge-base --is-ancestor "$2" refs/remotes/origin/main
+}
+# An ordinary remote ref is at risk only if this run may update its target.
+# No code path force-pushes, deletes refs, or overwrites existing tags.
+remote_branch_needs_backup() {
+  local repo=$1 remote_branch=$2 remote_tip=$3 local_tip
+  git -C "$repo" show-ref --verify -q "refs/heads/$remote_branch" || return 1
+  local_tip=$(git -C "$repo" rev-parse "refs/heads/$remote_branch") || return 1
+  [[ "$local_tip" != "$remote_tip" ]] || return 1
+  # Local tip behind remote will only fast-forward locally; push is unchanged.
+  git -C "$repo" merge-base --is-ancestor "$local_tip" "$remote_tip" && return 1
+  return 0
+}
 verify_expected() {
   local name=$1 repo=$2 label=$3 expected_file=$4 live=$5 sha ref got failed=0
   if ! fetch_remote_listing "$repo" > "$live"; then
@@ -241,7 +263,7 @@ checkpoint_worktrees() {
 }
 # Save commit-bearing refs and stashes in reproducible immutable safety refs.
 create_local_backups() {
-  local name=$1 dir=$2 sha branch i=0 dest
+  local name=$1 dir=$2 sha branch i=0 dest skipped_merged=0 skipped_remote=0 skipped_tags=0
   while IFS= read -r sha; do
     [[ -n "$sha" ]] || continue
     dest="sync/stash/$sha"
@@ -252,16 +274,33 @@ create_local_backups() {
   done < <(git -C "$dir" stash list --format='%H')
   while IFS=$'\t' read -r branch sha; do
     [[ -n "$sha" && "$branch" != sync/* ]] || continue
+    if contained_in_main "$dir" "$sha"; then
+      skipped_merged=$((skipped_merged + 1))
+      continue
+    fi
+    # A commit already published as the tip of an identical remote branch
+    # needs no additional remote checkpoint, even if not merged into main.
+    if git -C "$dir" show-ref --verify -q "refs/remotes/origin/$branch" &&
+       [[ "$sha" == "$(git -C "$dir" rev-parse "refs/remotes/origin/$branch")" ]]; then
+      skipped_remote=$((skipped_remote + 1))
+      continue
+    fi
     i=$((i+1)); dest="sync/local/$RUN/b$i"
     git -C "$dir" branch "$dest" "$sha" || { problem "$name" "cannot snapshot $branch"; return 1; }
     record "$name" 'CHECKPOINT' "$branch => $dest ($sha)"
     expected "$sha" "refs/heads/$dest"
   done < <(git -C "$dir" for-each-ref --format='%(refname:short)%09%(objectname)' refs/heads)
+  record "$name" 'SKIPPED' "local branch checkpoints: merged-into-main=$skipped_merged already-on-origin=$skipped_remote"
   # Back up every local tag, including annotated and orphaned tag objects,
   # before attempting any push of a potentially colliding tag name.
   i=0
   while IFS=$'\t' read -r branch sha; do
     [[ -n "$branch" && "$branch" != sync-local/* && "$branch" != sync-remote/* ]] || continue
+    if git -C "$dir" show-ref --verify -q "refs/org-sync/import/$RUN/$branch" &&
+       [[ "$sha" == "$(git -C "$dir" rev-parse "refs/org-sync/import/$RUN/$branch")" ]]; then
+      skipped_tags=$((skipped_tags+1))
+      continue
+    fi
     i=$((i+1)); dest="refs/tags/sync-local/$RUN/t$i"
     if ! git -C "$dir" update-ref "$dest" "$sha"; then
       problem "$name" "cannot back up local tag $branch"; return 1
@@ -271,17 +310,24 @@ create_local_backups() {
     fi
     expected "$sha" "$dest"
   done < <(git -C "$dir" for-each-ref --format='%(refname:strip=2)%09%(objectname)' refs/tags)
-  # All sync/* branches are uploaded as well (including detached worktree refs).
-  if ! git -C "$dir" push origin 'refs/heads/sync/*:refs/heads/sync/*' >> "$LOG" 2>&1; then
-    problem "$name" 'local safety-ref push rejected (aborting integration)'; return 1
-  fi
-  # Ensure the entire push actually arrived before fetch/merge.
+  # Upload only new safety refs for THIS run, plus stable stash backups.
+  # Re-pushing every historical sync/* branch multiplies network work.
+  local push_specs=() ref
   local testfile="$RUNDIR/$RUN-$name-local-check.tsv" live="$RUNDIR/$RUN-$name-local-live.tsv"
   : > "$testfile"
-  while IFS=$'\t' read -r branch sha; do
-    [[ "$branch" == sync/* ]] || continue
-    printf '%s\trefs/heads/%s\n' "$sha" "$branch" >> "$testfile"
-  done < <(git -C "$dir" for-each-ref --format='%(refname:short)%09%(objectname)' refs/heads)
+  while IFS=$'\t' read -r ref sha; do
+    [[ -n "$ref" ]] || continue
+    push_specs+=("$ref:$ref")
+    printf '%s\t%s\n' "$sha" "$ref" >> "$testfile"
+  done < <(git -C "$dir" for-each-ref --format='%(refname)%09%(objectname)' \
+    "refs/heads/sync/local/$RUN" "refs/heads/sync/detached/$RUN" refs/heads/sync/stash)
+  if (( ${#push_specs[@]} )); then
+    if ! git -C "$dir" push origin "${push_specs[@]}" >> "$LOG" 2>&1; then
+      problem "$name" 'local safety-ref push rejected (aborting integration)'; return 1
+    fi
+  fi
+  record "$name" 'SKIPPED' "unchanged remote tags=$skipped_tags; historical sync/* refs not re-pushed"
+  # Ensure the selected safety refs actually arrived before fetch/merge.
   while IFS=$'\t' read -r ref sha; do
     [[ "$ref" == refs/tags/sync-local/"$RUN"/* ]] || continue
     printf '%s\t%s\n' "$sha" "$ref" >> "$testfile"
@@ -302,19 +348,35 @@ fetch_safely() {
   }
 }
 backup_remote_refs() {
-  local name=$1 dir=$2 before=$3 sha ref i=0 dest actual
+  local name=$1 dir=$2 before=$3 sha ref i=0 dest branch
+  local skipped_merged=0 skipped_untouched=0 skipped_tags=0
   local after="$RUNDIR/$RUN-$name-prebackup-live.tsv" expected_file="$RUNDIR/$RUN-$name-remote-check.tsv" live="$RUNDIR/$RUN-$name-remote-live.tsv"
   : > "$expected_file"
-  fetch_remote_listing "$dir" > "$after" || { problem "$name" 'remote disappeared during backup'; return 1; }
+  ordinary_remote_listing "$dir" > "$after" || { problem "$name" 'remote disappeared during backup'; return 1; }
   # Stop if remote changed while being snapshotted (including tag changes).
   if ! cmp -s "$before" "$after"; then problem "$name" 'remote refs changed during backup; rerun'; return 1; fi
   while IFS=$'\t' read -r sha ref; do
     [[ "$ref" != *'^{}' ]] || continue
-    # Avoid recursively re-backing up previous sync-created refs.
     case "$ref" in
       refs/heads/sync/*|refs/tags/sync-remote/*|refs/tags/sync-local/*) continue ;;
-      refs/heads/*) dest="refs/heads/sync/remote/$RUN/r$((i+1))" ;;
-      refs/tags/*) dest="refs/tags/sync-remote/$RUN/r$((i+1))" ;;
+      refs/heads/*)
+        branch=${ref#refs/heads/}
+        if contained_in_main "$dir" "$sha"; then
+          skipped_merged=$((skipped_merged + 1))
+          continue
+        fi
+        if ! remote_branch_needs_backup "$dir" "$branch" "$sha"; then
+          skipped_untouched=$((skipped_untouched + 1))
+          continue
+        fi
+        dest="refs/heads/sync/remote/$RUN/r$((i+1))"
+        ;;
+      refs/tags/*)
+        # Tags are only created if absent, never changed/deleted. An existing
+        # remote tag cannot be endangered by our non-force-pushing sync.
+        skipped_tags=$((skipped_tags + 1))
+        continue
+        ;;
       *) continue ;;
     esac
     i=$((i+1))
@@ -327,8 +389,10 @@ backup_remote_refs() {
     printf '%s\t%s\n' "$sha" "$dest" >> "$expected_file"
     record "$name" 'BACKED_UP' "$ref => $dest ($sha)"
   done < "$before"
+  record "$name" 'SKIPPED' "remote backups: merged-into-main=$skipped_merged untouched=$skipped_untouched tags-not-modified=$skipped_tags selected=$i"
   verify_expected "$name" "$dir" remote-backups "$expected_file" "$live"
 }
+
 # Integrate safely in any worktree. No -X ours/theirs; conflict stays intact.
 integrate_one() {
   local name=$1 wt=$2 branch=$3 remote_branch=$4 target="refs/remotes/origin/$remote_branch"
@@ -390,6 +454,19 @@ publish_all() {
   while IFS=$'\t' read -r branch sha; do
     [[ -n "$sha" ]] || continue
     ref="refs/heads/$branch"
+    # Safety refs have already been pushed and verified at the safety gate.
+    [[ "$branch" != sync/* ]] || continue
+    # A local branch that has been fully incorporated into main, and has no
+    # remote peer, does not warrant creating a new stale remote branch.
+    if ! git -C "$dir" show-ref --verify -q "refs/remotes/origin/$branch" &&
+       contained_in_main "$dir" "$sha"; then
+      record "$name" 'SKIPPED' "not publishing merged-only local branch: $branch"
+      continue
+    fi
+    if git -C "$dir" show-ref --verify -q "refs/remotes/origin/$branch" &&
+       [[ "$sha" == "$(git -C "$dir" rev-parse "refs/remotes/origin/$branch")" ]]; then
+      continue
+    fi
     if git -C "$dir" push origin "$ref:$ref" >> "$LOG" 2>&1; then
       printf '%s\t%s\n' "$sha" "$ref" >> "$local_expected"
     else
@@ -425,10 +502,12 @@ sync_one() {
   [[ -d "$dir" ]] || { problem "$name" "missing path $dir"; return; }
   # Never let unverified local backup failures proceed to integration.
   checkpoint_worktrees "$name" "$dir" || return
-  create_local_backups "$name" "$dir" || return
+  # Fetch updates only tracking/private refs, never worktree contents.
+  # The local branch checkpoint decision must use a FRESH origin/main.
   before="$RUNDIR/$RUN-$name-before.tsv"
-  if ! fetch_remote_listing "$dir" > "$before"; then problem "$name" 'ls-remote failed'; return; fi
+  if ! ordinary_remote_listing "$dir" > "$before"; then problem "$name" 'ls-remote failed'; return; fi
   fetch_safely "$name" "$dir" || return
+  create_local_backups "$name" "$dir" || return
   if (( BACKUP_REMOTE )); then backup_remote_refs "$name" "$dir" "$before" || return; fi
   integrate_all_branches "$name" "$dir"
   publish_all "$name" "$dir" || status_ok=0
