@@ -1,0 +1,77 @@
+import os,subprocess,pathlib,tempfile,shutil
+SCRIPT = os.environ.get('SYNC_SCRIPT', str(pathlib.Path(__file__).resolve().parents[1] / 'scripts' / 'sync-gh-org.sh'))
+B=pathlib.Path(tempfile.mkdtemp(prefix='sync-gh-org-test-'))
+remote=B/'remote'; remote.mkdir(); root=B/'local'; root.mkdir(); home=B/'home'; home.mkdir(); bin=B/'bin'; bin.mkdir()
+def run(*args,cwd=None,env=None,check=True):
+ p=subprocess.run(args,cwd=cwd,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+ if check and p.returncode: raise RuntimeError('failed '+str(args)+'\n'+p.stdout)
+ return p
+for name in ['repo1','repo2']:
+ run('git','init','-q','--bare',str(remote/(name+'.git')))
+ r=B/('seed-'+name);run('git','clone','-q',str(remote/(name+'.git')),str(r))
+ run('git','-C',str(r),'config','user.name','Tester');run('git','-C',str(r),'config','user.email','test@example.com')
+ (r/'hello.txt').write_text('base\n');run('git','-C',str(r),'add','-A');run('git','-C',str(r),'commit','-qm','base')
+ run('git','-C',str(r),'branch','-M','main');run('git','-C',str(r),'push','-q','-u','origin','main')
+ run('git','--git-dir',str(remote/(name+'.git')),'symbolic-ref','HEAD','refs/heads/main')
+ run('git','-C',str(r),'tag','v1');run('git','-C',str(r),'push','-q','origin','v1')
+# rewrite URLs via separate HOME global config
+run('git','config','--file',str(home/'.gitconfig'),'url.file://'+str(remote)+'/.insteadOf','https://github.com/testorg/')
+mock='''#!/usr/bin/env bash
+case "$1" in
+ api) printf 'repo1\\nrepo2\\n';;
+ repo)
+   if [[ "$2" == view ]]; then
+     name=${3#testorg/}; test -e "$MOCK_REMOTE/$name.git" && printf '%s\\n' "$name"
+   elif [[ "$2" == clone ]]; then
+     git clone -q "https://github.com/$3.git" "$4"
+   else exit 3; fi ;;
+ *) exit 3;;
+esac
+'''
+(bin/'gh').write_text(mock);(bin/'gh').chmod(0o755)
+env=dict(os.environ,HOME=str(home),PATH=str(bin)+':'+os.environ['PATH'],MOCK_REMOTE=str(remote),GIT_CONFIG_NOSYSTEM='1')
+run('git','clone','-q','https://github.com/testorg/repo1.git',str(root/'repo1'),env=env)
+r=root/'repo1';run('git','-C',str(r),'config','user.name','Tester');run('git','-C',str(r),'config','user.email','test@example.com')
+# stash original modified code
+(r/'hello.txt').write_text('stashed\n');run('git','-C',str(r),'stash','push','-qm','original stash');stash=run('git','-C',str(r),'rev-parse','refs/stash').stdout.strip()
+# leave dirty files
+(r/'new.txt').write_text('valuable untracked\n')
+# branch not checked out, committed ahead
+run('git','-C',str(r),'branch','topic')
+# detached worktree
+wt=B/'extra-wt';run('git','-C',str(r),'worktree','add','--detach',str(wt),'HEAD');(wt/'detached.txt').write_text('valuable detached\n')
+# remote edit ahead different file from local dirty
+seed=B/'seed-repo1';(seed/'remote.txt').write_text('remote advance\n');run('git','-C',str(seed),'add','-A');run('git','-C',str(seed),'commit','-qm','remote advance');run('git','-C',str(seed),'push','-q','origin','main')
+# dry run must not create .org-sync, commits, or repo2 clone
+before=run('git','-C',str(r),'rev-parse','HEAD').stdout.strip()
+p=run('bash',SCRIPT,'testorg','--root',str(root),'--dry-run',env=env)
+assert 'would clone' in p.stdout and 'dirty=yes' in p.stdout
+assert not (root/'.org-sync').exists() and not (root/'repo2').exists()
+assert run('git','-C',str(r),'rev-parse','HEAD').stdout.strip()==before
+print('DRY_RUN_OK')
+# mutating run
+p=run('bash',SCRIPT,'testorg','--root',str(root),'--all','--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+print('SYNC_EXIT',p.returncode);print(p.stdout[-5500:]);assert p.returncode==0
+assert (root/'repo2'/'hello.txt').exists()
+assert (r/'new.txt').exists()
+assert (wt/'detached.txt').exists()
+assert run('git','-C',str(r),'rev-parse','refs/stash').stdout.strip()==stash
+assert (r/'remote.txt').exists()
+refs=run('git','--git-dir',str(remote/'repo1.git'),'for-each-ref','--format=%(refname)','refs/heads/sync','refs/tags/sync-remote').stdout
+assert 'refs/heads/sync/local/' in refs and 'refs/heads/sync/stash/' in refs and 'refs/heads/sync/detached/' in refs and 'refs/heads/sync/remote/' in refs and 'refs/tags/sync-remote/' in refs,refs
+print('MUTATION_OK','reports',len(list((root/'.org-sync'/'reports').glob('*.md'))))
+# conflicting merge: push remote newer commit for same file and local change
+p2root=B/'clash';p2root.mkdir()
+run('git','clone','-q','https://github.com/testorg/repo1.git',str(p2root/'repo1'),env=env)
+clash=p2root/'repo1';run('git','-C',str(clash),'config','user.name','Tester');run('git','-C',str(clash),'config','user.email','test@example.com')
+(clash/'hello.txt').write_text('local conflict\n')
+# another clone remote
+conf=B/'conflict-seed';run('git','clone','-q','https://github.com/testorg/repo1.git',str(conf),env=env)
+run('git','-C',str(conf),'config','user.name','Tester');run('git','-C',str(conf),'config','user.email','test@example.com');(conf/'hello.txt').write_text('remote conflict\n')
+run('git','-C',str(conf),'add','-A');run('git','-C',str(conf),'commit','-qm','remote conflict');run('git','-C',str(conf),'push','-q','origin','main',env=env)
+p=run('bash',SCRIPT,'testorg','--root',str(p2root),'--repo','repo1','--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+assert p.returncode!=0,p.stdout
+assert 'merge conflict' in p.stdout.lower(),p.stdout
+assert run('git','-C',str(clash),'ls-files','-u').stdout.strip()
+assert 'local conflict' in (clash/'hello.txt').read_text() and 'remote conflict' in (clash/'hello.txt').read_text()
+print('CONFLICT_PRESERVED_OK')
