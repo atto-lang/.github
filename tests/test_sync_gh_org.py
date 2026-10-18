@@ -75,3 +75,23 @@ assert 'merge conflict' in p.stdout.lower(),p.stdout
 assert run('git','-C',str(clash),'ls-files','-u').stdout.strip()
 assert 'local conflict' in (clash/'hello.txt').read_text() and 'remote conflict' in (clash/'hello.txt').read_text()
 print('CONFLICT_PRESERVED_OK')
+
+# Fail-closed safety gate: reject push of sync backup refs.
+# Branch integration must not happen when the safety backup did not land.
+gate_root=B/'backup-gate';gate_root.mkdir()
+run('git','clone','-q','https://github.com/testorg/repo2.git',str(gate_root/'repo2'),env=env)
+gated=gate_root/'repo2'
+run('git','-C',str(gated),'config','user.name','Tester')
+run('git','-C',str(gated),'config','user.email','test@example.com')
+(gated/'gated-local.txt').write_text('must be preserved locally\n')
+# Server-side pre-receive hook blocks only sync backup refs, not other pushes.
+hook=remote/'repo2.git'/'hooks'/'pre-receive'
+hook.write_text('#!/bin/sh\nwhile read old new ref; do\n case "$ref" in refs/heads/sync/*) exit 1;; esac\ndone\nexit 0\n')
+hook.chmod(0o755)
+previous=run('git','--git-dir',str(remote/'repo2.git'),'rev-parse','main').stdout.strip()
+p=run('bash',SCRIPT,'testorg','--root',str(gate_root),'--repo','repo2','--checkpoint','--backup-remote','--verify',env=env,check=False)
+assert p.returncode != 0 and 'local safety-ref push rejected' in p.stdout, p.stdout
+assert run('git','--git-dir',str(remote/'repo2.git'),'rev-parse','main').stdout.strip()==previous
+assert (gated/'gated-local.txt').exists()
+assert run('git','-C',str(gated),'log','-1','--pretty=%s').stdout.strip().startswith('sync: checkpoint')
+print('FAILED_BACKUP_BLOCKS_INTEGRATION_OK')
