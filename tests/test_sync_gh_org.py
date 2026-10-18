@@ -107,6 +107,68 @@ assert 'refs/heads/sync/remote/' in feature_refs,feature_refs
 assert 'SKIPPED: remote backups:' in p.stdout
 print('SELECTIVE_REMOTE_BACKUP_OK')
 
+# Unrelated remote branch appears AFTER the initial listing, while this run
+# publishes its local safety refs. This must NOT abort repository-wide sync.
+churn_root=B/'unrelated-churn'; churn_root.mkdir()
+run('git','clone','-q','https://github.com/testorg/repo1.git',str(churn_root/'repo1'),env=env)
+churn=churn_root/'repo1'
+run('git','-C',str(churn),'config','user.name','Tester')
+run('git','-C',str(churn),'config','user.email','test@example.com')
+(churn/'churn-local.txt').write_text('local valuable file\n')
+remote1=remote/'repo1.git'
+remote_main=run('git','--git-dir',str(remote1),'rev-parse','refs/heads/main').stdout.strip()
+churn_hook=remote1/'hooks'/'post-receive'
+churn_hook.write_text('#!/bin/sh\nwhile read old new ref; do\n'
+                      ' case "$ref" in\n'
+                      ' refs/heads/sync/local/*) git update-ref refs/heads/unrelated-churn '
+                      + remote_main + ';;\n esac\ndone\n')
+churn_hook.chmod(0o755)
+p=run('bash',SCRIPT,'testorg','--root',str(churn_root),'--repo','repo1',
+      '--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+assert p.returncode == 0, p.stdout
+assert 'CHURN: remote refs changed' in p.stdout, p.stdout
+assert 'COMPLETE:' in p.stdout
+assert run('git','--git-dir',str(remote1),'rev-parse','refs/heads/unrelated-churn').stdout.strip()==remote_main
+print('UNRELATED_REF_CHURN_OK')
+churn_hook.unlink()
+
+# A TARGET branch advances during local safety-backup publication.
+# The new tip was not present when the local worktree fetched the branch.
+# The synchronizer must refresh the target before its remote backup.
+future_source=B/'race-future-seed'
+run('git','clone','-q','https://github.com/testorg/repo2.git',str(future_source),env=env)
+run('git','-C',str(future_source),'config','user.name','Tester')
+run('git','-C',str(future_source),'config','user.email','test@example.com')
+run('git','-C',str(future_source),'switch','-qc','future-feature','origin/unmerged-feature')
+(future_source/'future.txt').write_text('concurrent feature update\n')
+run('git','-C',str(future_source),'add','-A')
+run('git','-C',str(future_source),'commit','-qm','future branch version')
+future_sha=run('git','-C',str(future_source),'rev-parse','HEAD').stdout.strip()
+run('git','-C',str(future_source),'push','-q','origin','HEAD:refs/heads/race-staging',env=env)
+race_root=B/'target-churn';race_root.mkdir()
+run('git','clone','-q','https://github.com/testorg/repo2.git',str(race_root/'repo2'),env=env)
+race=race_root/'repo2'
+run('git','-C',str(race),'config','user.name','Tester')
+run('git','-C',str(race),'config','user.email','test@example.com')
+run('git','-C',str(race),'switch','-qc','unmerged-feature','origin/unmerged-feature')
+(race/'race-local.txt').write_text('local feature update\n')
+run('git','-C',str(race),'add','-A')
+run('git','-C',str(race),'commit','-qm','local feature version')
+remote2=remote/'repo2.git'; race_hook=remote2/'hooks'/'post-receive'
+race_hook.write_text('#!/bin/sh\nwhile read old new ref; do\n'
+                     ' case "$ref" in\n'
+                     ' refs/heads/sync/local/*) git update-ref refs/heads/unmerged-feature '
+                     +future_sha+';;\n esac\ndone\n')
+race_hook.chmod(0o755)
+p=run('bash',SCRIPT,'testorg','--root',str(race_root),'--repo','repo2',
+      '--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+assert p.returncode == 0, p.stdout
+assert 'CHURN: remote refs changed' in p.stdout, p.stdout
+assert 'refs/heads/unmerged-feature' in p.stdout and 'BACKED_UP:' in p.stdout, p.stdout
+race_hook.unlink()
+assert run('git','-C',str(race),'merge-base','--is-ancestor',future_sha,'unmerged-feature',check=False).returncode==0
+print('TARGET_REF_CHURN_REFRESH_OK')
+
 # Fail-closed safety gate: reject push of sync backup refs.
 # Branch integration must not happen when the safety backup did not land.
 gate_root=B/'backup-gate';gate_root.mkdir()
