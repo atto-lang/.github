@@ -1,0 +1,48 @@
+# Checkout-identity preflight only; NOT compiler execution, proof or attestation.
+name: Reusable Oreslang exact-checkout preflight
+on:
+  workflow_call:
+    inputs:
+      expected_commit:
+        required: true
+        type: string
+      expected_tree:
+        required: true
+        type: string
+    outputs:
+      checked_commit:
+        description: Checked-out commit (identity only)
+        value: ${{ jobs.identity.outputs.commit }}
+      checked_tree:
+        description: Checked-out Git tree (identity only)
+        value: ${{ jobs.identity.outputs.tree }}
+permissions:
+  contents: read
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.check.outputs.commit }}
+      tree: ${{ steps.check.outputs.tree }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify exact checked-out commit and Git tree
+        id: check
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          EXPECTED_TREE: ${{ inputs.expected_tree }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || exit 2
+          [[ "$EXPECTED_TREE" =~ ^[0-9a-f]{40}$ ]] || exit 2
+          commit="$(git rev-parse --verify HEAD)"
+          tree="$(git rev-parse --verify 'HEAD^{tree}')"
+          [[ "$commit" == "$EXPECTED_COMMIT" ]] || exit 3
+          [[ "$tree" == "$EXPECTED_TREE" ]] || exit 3
+          printf 'commit=%s\n' "$commit" >> "$GITHUB_OUTPUT"
+          printf 'tree=%s\n' "$tree" >> "$GITHUB_OUTPUT"
