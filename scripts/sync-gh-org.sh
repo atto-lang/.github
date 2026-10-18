@@ -353,8 +353,11 @@ backup_remote_refs() {
   local after="$RUNDIR/$RUN-$name-prebackup-live.tsv" expected_file="$RUNDIR/$RUN-$name-remote-check.tsv" live="$RUNDIR/$RUN-$name-remote-live.tsv"
   : > "$expected_file"
   ordinary_remote_listing "$dir" > "$after" || { problem "$name" 'remote disappeared during backup'; return 1; }
-  # Stop if remote changed while being snapshotted (including tag changes).
-  if ! cmp -s "$before" "$after"; then problem "$name" 'remote refs changed during backup; rerun'; return 1; fi
+  # Unrelated branch/tag updates are ordinary activity in a busy org.
+  # Keep the newer snapshot, then independently validate only target refs.
+  if ! cmp -s "$before" "$after"; then
+    record "$name" 'CHURN' 'remote refs changed since fetch; using current per-ref state (unrelated changes do not block)'
+  fi
   while IFS=$'\t' read -r sha ref; do
     [[ "$ref" != *'^{}' ]] || continue
     case "$ref" in
@@ -364,6 +367,39 @@ backup_remote_refs() {
         if contained_in_main "$dir" "$sha"; then
           skipped_merged=$((skipped_merged + 1))
           continue
+        fi
+        if ! remote_branch_needs_backup "$dir" "$branch" "$sha"; then
+          skipped_untouched=$((skipped_untouched + 1))
+          continue
+        fi
+        # For an affected branch, fetch exactly that ref and confirm the
+        # fetched tip matches the live remote. Retry if it races again.
+        local tip="" current="" attempt=0 matched=0
+        while (( attempt < 3 )); do
+          attempt=$((attempt + 1))
+          if ! git -C "$dir" fetch --no-tags origin \
+              "+$ref:refs/remotes/origin/$branch" >> "$LOG" 2>&1; then
+            problem "$name" "cannot refresh changing target $ref"; return 1
+          fi
+          tip=$(git -C "$dir" rev-parse "refs/remotes/origin/$branch") || {
+            problem "$name" "target vanished after fetch: $ref"; return 1;
+          }
+          if ! current=$(git -C "$dir" ls-remote --heads origin "$ref"); then
+            problem "$name" "cannot check changing target $ref"; return 1
+          fi
+          current=$(printf '%s\n' "$current" | awk -F '\t' -v k="$ref" '$2 == k {print $1; exit}')
+          if [[ -n "$current" && "$tip" == "$current" ]]; then
+            matched=1
+            if [[ "$sha" != "$tip" ]]; then
+              record "$name" 'CHURN' "$ref advanced $sha -> $tip (refreshed)"
+            fi
+            sha=$tip
+            break
+          fi
+          record "$name" 'CHURN' "$ref moved during targeted fetch (attempt $attempt/3)"
+        done
+        if (( ! matched )); then
+          problem "$name" "target ref cannot stabilize after 3 checks: $ref"; return 1
         fi
         if ! remote_branch_needs_backup "$dir" "$branch" "$sha"; then
           skipped_untouched=$((skipped_untouched + 1))
@@ -388,7 +424,7 @@ backup_remote_refs() {
     fi
     printf '%s\t%s\n' "$sha" "$dest" >> "$expected_file"
     record "$name" 'BACKED_UP' "$ref => $dest ($sha)"
-  done < "$before"
+  done < "$after"
   record "$name" 'SKIPPED' "remote backups: merged-into-main=$skipped_merged untouched=$skipped_untouched tags-not-modified=$skipped_tags selected=$i"
   verify_expected "$name" "$dir" remote-backups "$expected_file" "$live"
 }
@@ -465,7 +501,15 @@ publish_all() {
     fi
     if git -C "$dir" show-ref --verify -q "refs/remotes/origin/$branch" &&
        [[ "$sha" == "$(git -C "$dir" rev-parse "refs/remotes/origin/$branch")" ]]; then
-      continue
+      # Cached origin/* is not proof that GitHub is unchanged. Never
+      # report 'already synced' based solely on a stale tracking ref.
+      local observed=""
+      if ! observed=$(git -C "$dir" ls-remote --heads origin "$ref"); then
+        problem "$name" "cannot verify live branch tip: $branch"; failed=1; continue
+      fi
+      observed=$(printf '%s\n' "$observed" | awk -F '\t' -v k="$ref" '$2 == k {print $1; exit }')
+      if [[ "$sha" == "$observed" ]]; then continue; fi
+      record "$name" 'CHURN' "$branch moved after fetch; attempting safe non-force push"
     fi
     if git -C "$dir" push origin "$ref:$ref" >> "$LOG" 2>&1; then
       printf '%s\t%s\n' "$sha" "$ref" >> "$local_expected"
