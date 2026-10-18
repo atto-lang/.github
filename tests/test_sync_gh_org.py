@@ -58,7 +58,9 @@ assert (wt/'detached.txt').exists()
 assert run('git','-C',str(r),'rev-parse','refs/stash').stdout.strip()==stash
 assert (r/'remote.txt').exists()
 refs=run('git','--git-dir',str(remote/'repo1.git'),'for-each-ref','--format=%(refname)','refs/heads/sync','refs/tags/sync-remote').stdout
-assert 'refs/heads/sync/local/' in refs and 'refs/heads/sync/stash/' in refs and 'refs/heads/sync/detached/' in refs and 'refs/heads/sync/remote/' in refs and 'refs/tags/sync-remote/' in refs,refs
+assert 'refs/heads/sync/local/' in refs and 'refs/heads/sync/stash/' in refs and 'refs/heads/sync/detached/' in refs,refs
+# Both remote branches and the tag were untouched or incorporated in main.
+assert 'refs/heads/sync/remote/' not in refs and 'refs/tags/sync-remote/' not in refs,refs
 print('MUTATION_OK','reports',len(list((root/'.org-sync'/'reports').glob('*.md'))))
 # conflicting merge: push remote newer commit for same file and local change
 p2root=B/'clash';p2root.mkdir()
@@ -74,7 +76,36 @@ assert p.returncode!=0,p.stdout
 assert 'merge conflict' in p.stdout.lower(),p.stdout
 assert run('git','-C',str(clash),'ls-files','-u').stdout.strip()
 assert 'local conflict' in (clash/'hello.txt').read_text() and 'remote conflict' in (clash/'hello.txt').read_text()
+# Main never needs a duplicate backup: non-force merges keep prior main reachable.
 print('CONFLICT_PRESERVED_OK')
+
+
+# A genuinely diverged, unmerged remote branch is selected for backup.
+seed2=B/'seed-repo2'
+run('git','-C',str(seed2),'switch','-qc','unmerged-feature')
+(seed2/'feature.txt').write_text('feature base\n')
+run('git','-C',str(seed2),'add','-A')
+run('git','-C',str(seed2),'commit','-qm','create feature')
+run('git','-C',str(seed2),'push','-q','origin','unmerged-feature')
+feature_root=B/'feature-sync';feature_root.mkdir()
+run('git','clone','-q','https://github.com/testorg/repo2.git',str(feature_root/'repo2'),env=env)
+feature_local=feature_root/'repo2'
+run('git','-C',str(feature_local),'config','user.name','Tester')
+run('git','-C',str(feature_local),'config','user.email','test@example.com')
+run('git','-C',str(feature_local),'switch','-q','-c','unmerged-feature','origin/unmerged-feature')
+(feature_local/'local-only.txt').write_text('feature-local\n')
+run('git','-C',str(feature_local),'add','-A')
+run('git','-C',str(feature_local),'commit','-qm','local feature')
+(seed2/'remote-only.txt').write_text('feature-remote\n')
+run('git','-C',str(seed2),'add','-A')
+run('git','-C',str(seed2),'commit','-qm','remote feature')
+run('git','-C',str(seed2),'push','-q','origin','unmerged-feature')
+p=run('bash',SCRIPT,'testorg','--root',str(feature_root),'--repo','repo2','--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+assert p.returncode==0,p.stdout
+feature_refs=run('git','--git-dir',str(remote/'repo2.git'),'for-each-ref','--format=%(refname)','refs/heads/sync/remote').stdout
+assert 'refs/heads/sync/remote/' in feature_refs,feature_refs
+assert 'SKIPPED: remote backups:' in p.stdout
+print('SELECTIVE_REMOTE_BACKUP_OK')
 
 # Fail-closed safety gate: reject push of sync backup refs.
 # Branch integration must not happen when the safety backup did not land.
