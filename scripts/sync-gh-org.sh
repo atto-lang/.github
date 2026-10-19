@@ -93,8 +93,11 @@ ordinary_remote_listing() {
 # duplicate backup. This deliberately uses ancestry, not PR merge status:
 # squash/rebase merges cannot be proved redundant by ancestry alone.
 contained_in_main() {
+  # A remote ref may advance after fetch; never pass a missing object to
+  # merge-base (Git otherwise prints a misleading fatal error).
   git -C "$1" show-ref --verify -q refs/remotes/origin/main &&
-    git -C "$1" merge-base --is-ancestor "$2" refs/remotes/origin/main
+    git -C "$1" cat-file -e "$2^{commit}" 2>/dev/null &&
+    git -C "$1" merge-base --is-ancestor "$2" refs/remotes/origin/main 2>/dev/null
 }
 # An ordinary remote ref is at risk only if this run may update its target.
 # No code path force-pushes, deletes refs, or overwrites existing tags.
@@ -160,6 +163,50 @@ discover_local() {
     COMMON_DIRS+=("$common"); ROOT_REPOS+=("$dir"); ROOT_NAMES+=("$name")
   done < <(find "$ROOT" -maxdepth 5 \( -name .git -o -name .org-sync \) -prune -print)
 }
+# When multiple independent clones share one GitHub repository, selecting
+# every clone for full integration makes them race with each other. In
+# particular .cache/compiler-* directories often contain disposable detached
+# clones. Never mutate secondary clones automatically: audit them, and block
+# if any unpreserved code might exist rather than silently dropping it.
+audit_secondary_clone() {
+  local name=$1 dir=$2 primary=$3 wt line dirty=0 stashes=0 commits=0 tags=0
+  local state entry
+  while IFS= read -r line; do
+    case "$line" in
+      'worktree '*)
+        wt=${line#worktree }
+        if [[ ! -d "$wt" ]]; then
+          problem "$name" "secondary clone has a missing worktree: $wt"; return 1
+        fi
+        if ! state=$(GIT_OPTIONAL_LOCKS=0 git -C "$wt" status --porcelain=v1 --untracked-files=all); then
+          problem "$name" "cannot inspect secondary worktree: $wt"; return 1
+        fi
+        if [[ -n "$state" ]] || has_unfinished_operation "$wt"; then
+          dirty=$((dirty + 1))
+        fi
+        ;;
+    esac
+  done < <(git -C "$dir" worktree list --porcelain)
+  if ! stashes=$(git -C "$dir" stash list --format='%H' | awk 'END {print NR+0}'); then
+    problem "$name" "cannot inspect secondary stashes: $dir"; return 1
+  fi
+  # Local branches, detached HEAD and tags must all be accounted for. If
+  # remote-tracking refs are stale this errs on the side of requiring review.
+  if ! commits=$(git -C "$dir" rev-list --count --branches HEAD --not --remotes 2>/dev/null); then
+    problem "$name" "cannot classify secondary branch history: $dir"; return 1
+  fi
+  if ! tags=$(git -C "$dir" rev-list --count --tags --not --remotes 2>/dev/null); then
+    problem "$name" "cannot classify secondary tag history: $dir"; return 1
+  fi
+  if (( dirty > 0 || stashes > 0 || commits > 0 || tags > 0 )); then
+    problem "$name" "secondary clone needs separate preservation: $dir (dirty-worktrees=$dirty stashes=$stashes branch-or-HEAD-only-commits=$commits tag-only-commits=$tags); primary=$primary; no changes made to secondary"
+    return 1
+  fi
+  record "$name" 'SKIPPED' "secondary clone, no local-only history/changes detected: $dir (primary=$primary)"
+}
+# Ignore cache clones for selecting a primary checkout, never for auditing.
+is_cache_clone() { [[ "$1" == */.cache/* ]]; }
+
 # Read names from gh without creating temporary files for dry-run.
 remote_names() {
   gh api --paginate "/orgs/$ORG/repos?type=all&per_page=100" \
@@ -507,7 +554,7 @@ publish_all() {
       if ! observed=$(git -C "$dir" ls-remote --heads origin "$ref"); then
         problem "$name" "cannot verify live branch tip: $branch"; failed=1; continue
       fi
-      observed=$(printf '%s\n' "$observed" | awk -F '\t' -v k="$ref" '$2 == k {print $1; exit }')
+      observed=$(printf '%s\n' "$observed" | awk -F '\t' -v k="$ref" '$2 == k {print $1; exit}')
       if [[ "$sha" == "$observed" ]]; then continue; fi
       record "$name" 'CHURN' "$branch moved after fetch; attempting safe non-force push"
     fi
@@ -572,16 +619,36 @@ else
   while IFS= read -r name; do [[ -n "$name" ]] && NAMES+=("$name"); done < <(remote_names)
   (( ${#NAMES[@]} > 0 )) || { say 'No accessible repositories returned; aborting'; exit 1; }
 fi
-# Process every standalone local clone of each repo; clone only when not found.
+# Exactly one primary clone per GitHub repo. Other clones are audited but
+# cannot independently merge/push the same refs in a single invocation.
 for name in "${NAMES[@]}"; do
-  found=0
-  for (( idx=0; idx<${#ROOT_NAMES[@]}; idx++ )); do
-    if [[ "${ROOT_NAMES[idx]}" == "$name" ]]; then
-      found=1
-      sync_one "$name" "${ROOT_REPOS[idx]}"
-    fi
-  done
-  if (( ! found )); then
+  primary=""
+  # Prefer the user's normal checkout, even if discovery entered through a
+  # linked worktree elsewhere. Only select it if Git recognizes its origin.
+  if [[ -e "$ROOT/$name/.git" ]]; then
+    for (( idx=0; idx<${#ROOT_NAMES[@]}; idx++ )); do
+      if [[ "${ROOT_NAMES[idx]}" == "$name" ]]; then
+        # A worktree in another directory may be the discovered entry for
+        # the SAME common Git directory.
+        root_common=$(git -C "$ROOT/$name" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+        discovered_common=$(git -C "${ROOT_REPOS[idx]}" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+        if [[ -n "$root_common" && "$root_common" == "$discovered_common" ]]; then
+          primary="$ROOT/$name"
+          break
+        fi
+      fi
+    done
+  fi
+  if [[ -z "$primary" ]]; then
+    for (( idx=0; idx<${#ROOT_NAMES[@]}; idx++ )); do
+      if [[ "${ROOT_NAMES[idx]}" == "$name" ]] && ! is_cache_clone "${ROOT_REPOS[idx]}"; then
+        primary="${ROOT_REPOS[idx]}"; break
+      fi
+    done
+  fi
+  if [[ -n "$primary" ]]; then
+    sync_one "$name" "$primary"
+  else
     dir="$ROOT/$name"
     if [[ -e "$dir" ]]; then
       problem "$name" "destination exists but isn't recognized as an org clone: $dir"
@@ -589,11 +656,25 @@ for name in "${NAMES[@]}"; do
       record "$name" 'PLAN' "would clone $ORG/$name into $dir"
     elif gh repo clone "$ORG/$name" "$dir" >> "$LOG" 2>&1; then
       record "$name" 'CLONED' "$dir"
+      primary="$dir"
       sync_one "$name" "$dir"
     else
       problem "$name" "clone failed: $dir"
     fi
   fi
+  for (( idx=0; idx<${#ROOT_NAMES[@]}; idx++ )); do
+    [[ "${ROOT_NAMES[idx]}" == "$name" ]] || continue
+    dir="${ROOT_REPOS[idx]}"
+    [[ "$dir" != "$primary" ]] || continue
+    # If the discovered directory is just another linked worktree of the
+    # same common Git directory, sync_one already processed all of it.
+    if [[ -n "$primary" ]]; then
+      root_common=$(git -C "$primary" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+      discovered_common=$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+      [[ -z "$root_common" || "$root_common" != "$discovered_common" ]] || continue
+    fi
+    audit_secondary_clone "$name" "$dir" "$primary" || true
+  done
 done
 if (( ! DRY && REPORT )); then
   {
