@@ -188,3 +188,49 @@ assert run('git','--git-dir',str(remote/'repo2.git'),'rev-parse','main').stdout.
 assert (gated/'gated-local.txt').exists()
 assert run('git','-C',str(gated),'log','-1','--pretty=%s').stdout.strip().startswith('sync: checkpoint')
 print('FAILED_BACKUP_BLOCKS_INTEGRATION_OK')
+
+# A compiler cache can contain an independent clone of the same remote.
+# Do not synchronize the remote a second time from an ephemeral detached HEAD.
+cache_root=B/'aux-clone';cache_root.mkdir()
+run('git','clone','-q','https://github.com/testorg/repo2.git',str(cache_root/'repo2'),env=env)
+parent=cache_root/'some-dependent-repo'/'.cache';parent.mkdir(parents=True)
+cache=parent/'compiler-abcdef'
+run('git','clone','-q','https://github.com/testorg/repo2.git',str(cache),env=env)
+run('git','-C',str(cache),'switch','--detach','HEAD',env=env)
+old_head=run('git','-C',str(cache),'rev-parse','HEAD').stdout.strip()
+p=run('bash',SCRIPT,'testorg','--root',str(cache_root),'--repo','repo2',
+      '--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+assert p.returncode == 0,p.stdout
+assert p.stdout.count('[repo2] START:') == 1,p.stdout
+assert '[repo2] SKIPPED: secondary clone' in p.stdout,p.stdout
+assert run('git','-C',str(cache),'rev-parse','HEAD').stdout.strip()==old_head
+assert run('git','-C',str(cache),'symbolic-ref','-q','--short','HEAD',check=False).returncode != 0
+print('CACHED_CLONE_NO_DUPLICATE_SYNC_OK')
+
+# Dirty cache clones may contain valuable code; they MUST NOT be mutated or
+# quietly ignored. Explicit BLOCKED is necessary before claiming full sync.
+(cache/'valuable.txt').write_text('unique uncommitted source\n')
+p=run('bash',SCRIPT,'testorg','--root',str(cache_root),'--repo','repo2',
+      '--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+assert p.returncode != 0,p.stdout
+assert p.stdout.count('[repo2] START:')==1,p.stdout
+assert '[repo2] BLOCKED: secondary clone needs separate preservation:' in p.stdout,p.stdout
+assert (cache/'valuable.txt').read_text() == 'unique uncommitted source\n'
+assert not run('git','-C',str(cache),'ls-files','valuable.txt').stdout.strip()
+print('DIRTY_CACHED_CLONE_FAIL_CLOSED_OK')
+
+# Committed but unpublished cache work must also be visible, not ignored.
+(cache/'valuable.txt').unlink()
+run('git','-C',str(cache),'config','user.name','Tester')
+run('git','-C',str(cache),'config','user.email','test@example.com')
+(cache/'committed-but-private.txt').write_text('unpublished commit\n')
+run('git','-C',str(cache),'add','-A')
+run('git','-C',str(cache),'commit','-qm','unpublished cache code')
+commit_sha=run('git','-C',str(cache),'rev-parse','HEAD').stdout.strip()
+p=run('bash',SCRIPT,'testorg','--root',str(cache_root),'--repo','repo2',
+      '--checkpoint','--backup-remote','--verify','--report',env=env,check=False)
+assert p.returncode != 0,p.stdout
+assert '[repo2] BLOCKED: secondary clone needs separate preservation:' in p.stdout,p.stdout
+assert run('git','-C',str(cache),'rev-parse','HEAD').stdout.strip()==commit_sha
+assert 'branch-or-HEAD-only-commits=1' in p.stdout,p.stdout
+print('UNPUBLISHED_CACHED_COMMIT_FAIL_CLOSED_OK')
