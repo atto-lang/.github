@@ -4,18 +4,18 @@ Run `scripts/sync-gh-org.sh` from the parent of your repositories; it is maintai
 
 ```bash
 # Nothing changes locally or remotely, including log creation.
-./scripts/sync-gh-org.sh ores-truffle-oreslang --dry-run
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --dry-run
 
 # Commit pending nonignored code, back up local and remote refs, sync one repo.
-./scripts/sync-gh-org.sh ores-truffle-oreslang --repo oreslang-source.java \
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --repo oreslang-source.java \
   --checkpoint --backup-remote --verify --report
 
 # Full organization only after reviewing the plan.
-./scripts/sync-gh-org.sh ores-truffle-oreslang --all \
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --all \
   --checkpoint --backup-remote --verify --report
 
 # Pass a different parent directory explicitly:
-./scripts/sync-gh-org.sh ores-truffle-oreslang --root ~/src/ores-truffle-oreslang --dry-run
+./.github/scripts/sync-gh-org.sh ores-truffle-oreslang --root ~/src/ores-truffle-oreslang --dry-run
 ```
 
 ## Preservation rules
@@ -26,6 +26,8 @@ Run `scripts/sync-gh-org.sh` from the parent of your repositories; it is maintai
 - Freshly fetched `origin/main` is the ancestry reference: local branches already contained in `main`, or already published at the same SHA on their corresponding remote, do **not** receive redundant `sync/local/<run>/bN` snapshots. Local branches with unpublished commits do. Existing stashes receive `sync/stash/<SHA>` branches, and detached worktrees receive named `sync/detached/<run>/wN` branches. Newly selected safety refs are pushed and verified before integration.
 - Local tags, including annotated tags, are snapshotted to `refs/tags/sync-local/<run>/tN` **only if their exact tag-object SHA is not already published at the same remote tag name**. All tag pushes remain non-force.
 - `--backup-remote` backs up only remote branch tips that have an existing local branch which could advance or merge them **and** that are not already ancestors of the freshly fetched remote `main`. Remote branches with no corresponding local branch and remote tags are not changed by this tool, so they need no duplicate safety refs. Existing historical `sync/*` backups are never removed. The report lists selected backups and skipped-ref counts.
+- **Exactly one primary checkout per repository is synchronized per invocation.** The regular `$ROOT/<repo>` clone is preferred over audit worktrees and `.cache` clones; linked worktrees of that primary are handled as usual. Secondary independent clones (such as `oreslang-demo-restful-server/.cache/compiler-*`) are inspected **read-only**, not merged or pushed again. Clean clones whose branch, detached HEAD, and tag commits are reachable from their remote-tracking refs are reported as `SKIPPED`. Any dirty worktree, stash, unpushed branch/HEAD commit, or local-only tag produces `BLOCKED` with its path; the secondary clone remains unchanged and must be preserved separately before full sync can be claimed. This avoids both the duplicate remote push races and silent loss of valuable changes in a secondary clone.
+- Remote tips missing from the local Git object database are treated as unknown for ancestry checks rather than producing noisy `fatal: Not a valid commit name` diagnostics.
 - Changes to **unrelated remote branches or tags do not abort** a sync. The tool logs `CHURN` and adopts the latest remote snapshot. Only branches the sync may actually advance get individual fetch-and-live-tip checks (with three bounded attempts); if a selected target keeps moving, that target fails closed rather than risking code loss. Non-force Git pushes still reject late non-fast-forward updates.
 - `origin/*` is a cache, not proof of live state: a branch is skipped as already synchronized only after checking the current remote SHA.
 - Selected remote backups are confirmed before merging. Existing local branch histories are never rewritten. Divergent branches use regular merge commits. Non-checked-out local branches are integrated in temporary worktrees. Squash-/rebase-merged commits are **not** assumed fully merged by name or PR status; only verified Git ancestry counts as merged.
