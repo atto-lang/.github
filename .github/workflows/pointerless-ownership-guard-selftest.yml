@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tools/check_oreslang_ownership.rs
+      - scripts/pointerless_ownership_guard.rs
       - .github/workflows/reusable-pointerless-ownership-guard.yml
       - .github/workflows/pointerless-ownership-guard-selftest.yml
   workflow_dispatch:
@@ -28,3 +29,12 @@ jobs:
           rustc --edition=2021 --test tools/check_oreslang_ownership.rs \
             -o "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
           "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
+
+      - name: Compile and test legacy compatible Rust entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustc --edition=2021 -D warnings --test scripts/pointerless_ownership_guard.rs -o "${RUNNER_TEMP}/legacy-ownership-tests"
+          "${RUNNER_TEMP}/legacy-ownership-tests"
+          rustc --edition=2021 -D warnings scripts/pointerless_ownership_guard.rs -o "${RUNNER_TEMP}/legacy-ownership"
+          "${RUNNER_TEMP}/legacy-ownership" .
