@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           guard=tools/check_oreslang_ownership.rs
           test -f "$guard" || { echo "Missing vendored ownership guard" >&2; exit 1; }
-          expected=1a4cd0d91fd40b812f749626582a57df14ce9b4e
+          expected=c0883a3d2bf8f79c20bea1359d37ec8cb21a73c5
           actual="$(git hash-object "$guard")"
           test "$actual" = "$expected" || {
             echo "Ownership guard SHA mismatch; expected $expected, found $actual" >&2
