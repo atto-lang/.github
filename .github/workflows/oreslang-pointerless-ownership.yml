@@ -13,6 +13,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Show and verify the exact checked-out Git tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "checkout commit: $(git rev-parse HEAD)"
+          echo "checkout tree: $(git rev-parse HEAD^{tree})"
+          test -z "$(git status --porcelain)"
       - name: Compile and run Rust checker unit tests
         shell: bash
         run: |
