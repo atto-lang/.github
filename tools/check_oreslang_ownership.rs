@@ -57,6 +57,12 @@ fn violations(src:&str)->Vec<String>{
         if x.text=="rt" && ts.get(i+1).is_some_and(|t|t.text=="borrow") && ts.get(i+2).is_some_and(|t|t.text=="mut"){
             issues.push(format!("{}: noncanonical 'rt borrow mut'; use 'rt mut borrow'",x.line));
         }
+        if x.text=="rt" && ts.get(i+1).is_some_and(|t|matches!(t.text.as_str(),"ref"|"deref"|"unref")){
+            issues.push(format!("{}: raw pointer intrinsic is forbidden",x.line));
+        }
+        if matches!(x.text.as_str(),"Pointer"|"RawPointer") && ts.get(i+1).is_some_and(|t|t.text=="<"){
+            issues.push(format!("{}: public pointer type is forbidden",x.line));
+        }
         if x.text!="&" && x.text!="*"{continue;}
         if i>0 && can_end_expr(&ts[i-1].text){continue;}
         let next=ts.get(i+1).map_or("",|t|t.text.as_str());
@@ -102,7 +108,7 @@ mod tests{
         assert!(violations("const x=rt borrow owner; let y=rt mut borrow owner; rt copy x; rt share x; rt take x; return a * b & c;").is_empty());
     }
     #[test]fn pointer_operations_rejected(){
-        for s in ["let y=&value;","return &mut value;","let y=*ptr;","foo(*ptr);","return rt borrow mut foo;"]{
+        for s in ["let y=&value;","return &mut value;","let y=*ptr;","foo(*ptr);","return rt borrow mut foo;","let p=Pointer<int>;","rt ref p;","rt deref p;","rt unref p;"]{
             assert!(!violations(s).is_empty(),"{s}");
         }
     }
