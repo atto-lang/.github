@@ -1,0 +1,54 @@
+name: Reusable Oreslang pointerless ownership guard
+
+on:
+  workflow_call:
+    inputs:
+      source_root:
+        description: Root of the checked-out caller repository to scan
+        required: false
+        default: .
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  pointerless-ownership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout caller
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Checkout organization policy tools
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ores-truffle-oreslang/.github
+          ref: main
+          path: .oreslang-policy
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Build and self-test Rust ownership guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v rustc >/dev/null
+          rustc --edition=2021 --test \
+            .oreslang-policy/scripts/pointerless_ownership_guard.rs \
+            -o "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
+          "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
+          rustc --edition=2021 \
+            .oreslang-policy/scripts/pointerless_ownership_guard.rs \
+            -o "${RUNNER_TEMP}/pointerless-ownership-guard"
+
+      - name: Scan positive Oreslang source
+        shell: bash
+        env:
+          SOURCE_ROOT: ${{ inputs.source_root }}
+        run: |
+          set -euo pipefail
+          "${RUNNER_TEMP}/pointerless-ownership-guard" "$SOURCE_ROOT"
