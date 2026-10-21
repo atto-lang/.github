@@ -59,6 +59,11 @@ onto the current enforcement line without reviving their source syntax.
 - `feat/pointerless-borrow-checking` — historical borrow-checker branch on a
   non-main base with legacy `rt borrow mut` and pointer-sigil fixtures; PR #49
   is closed. Restack only the useful ownership-analysis logic.
+- `smart-pointer-language-lowering` — diverged historical branch (7 ahead /
+  128 behind main at the 2026-10-21 audit) with internal `&` / `&mut` AST
+  markers and stale pointer-style diagnostic prose. Do not merge directly;
+  restack only useful Box/Arc/Rc/RefCell ownership semantics onto the current
+  pointerless frontend.
 
 ### LLVM
 
@@ -91,6 +96,9 @@ not leak a second source ownership/reference model:
   internal; no source `Ref<T>` / `Pointer<T>`.
 - Rust backend #6: compressed reference representation is internal MIR/backend
   state, not guest source syntax.
+- Java PR #1731 / `smart-pointer-runtime-foundation`: merged runtime-only
+  Box/Arc/Weak/Rc/RefCell substrate. Its host objects are implementation
+  machinery and do not authorize a second source pointer/borrow syntax.
 - Java #468: `Ref<T>/WeakRef<T>` may only survive review as a nominal
   actor-local cell/container API. It must not acquire address-of, explicit
   dereference, pointer arithmetic, or alternate borrow syntax.
