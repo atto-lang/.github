@@ -3,7 +3,7 @@ name: Pointerless ownership guard self-test
 on:
   pull_request:
     paths:
-      - scripts/pointerless_ownership_guard.rs
+      - tools/check_oreslang_ownership.rs
       - .github/workflows/reusable-pointerless-ownership-guard.yml
       - .github/workflows/pointerless-ownership-guard-selftest.yml
   workflow_dispatch:
@@ -25,6 +25,6 @@ jobs:
         run: |
           set -euo pipefail
           command -v rustc >/dev/null
-          rustc --edition=2021 --test scripts/pointerless_ownership_guard.rs \
+          rustc --edition=2021 --test tools/check_oreslang_ownership.rs \
             -o "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
           "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
