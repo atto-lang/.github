@@ -23,14 +23,18 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
 
-      - name: Checkout organization policy tools
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          repository: ores-truffle-oreslang/.github
-          ref: main
-          path: .oreslang-policy
-          persist-credentials: false
-          fetch-depth: 1
+      - name: Verify vendored Rust policy identity (no cross-repo token)
+        shell: bash
+        run: |
+          set -euo pipefail
+          guard=tools/check_oreslang_ownership.rs
+          test -f "$guard" || { echo "Missing vendored ownership guard" >&2; exit 1; }
+          expected=c9d93e66eb31d8a3e2f8e7d0cabf3bfafb546270
+          actual="$(git hash-object "$guard")"
+          test "$actual" = "$expected" || {
+            echo "Ownership guard SHA mismatch; expected $expected, found $actual" >&2
+            exit 1
+          }
 
       - name: Build and self-test Rust ownership guard
         shell: bash
@@ -38,11 +42,11 @@ jobs:
           set -euo pipefail
           command -v rustc >/dev/null
           rustc --edition=2021 --test \
-            .oreslang-policy/scripts/pointerless_ownership_guard.rs \
+            tools/check_oreslang_ownership.rs \
             -o "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
           "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
           rustc --edition=2021 \
-            .oreslang-policy/scripts/pointerless_ownership_guard.rs \
+            tools/check_oreslang_ownership.rs \
             -o "${RUNNER_TEMP}/pointerless-ownership-guard"
 
       - name: Scan positive Oreslang source
