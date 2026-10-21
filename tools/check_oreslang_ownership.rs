@@ -1,4 +1,4 @@
-//! Dependency-free lexical gate; real compiler ownership checking is still required.
+// Dependency-free lexical gate; real compiler ownership checking is still required.
 use std::{env,fs,path::{Path,PathBuf},process};
 #[derive(Clone,Debug,PartialEq,Eq)]
 struct Token { text:String, line:usize }
