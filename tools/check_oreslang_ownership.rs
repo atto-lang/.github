@@ -125,7 +125,7 @@ fn violations(src:&str)->Vec<String>{
                 }
                 opener.is_some_and(|open|open>=2
                     && matches!(ts[open-2].text.as_str(),"fnc"|"method"|"routine"))
-            });
+            };
             let in_declaration=matches!(before,"let"|"val"|"const"|":") || in_parameter;
             if is_type && in_declaration
                 && (after.is_empty() || after=="{" || after=="," || after==")"
