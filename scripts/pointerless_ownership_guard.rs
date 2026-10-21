@@ -105,7 +105,17 @@ fn tokenize(input: &str) -> Vec<Token> {
             tokens.push(Token { text: input[start..i].to_string(), line });
             continue;
         }
-        let two = if i + 1 < b.len() { &input[i..i + 2] } else { "" };
+        if !b[i].is_ascii() {
+            let len = input[i..].chars().next().expect("valid UTF-8").len_utf8();
+            tokens.push(Token { text: input[i..i + len].to_string(), line });
+            i += len;
+            continue;
+        }
+        let two = if i + 1 < b.len() && b[i + 1].is_ascii() {
+            &input[i..i + 2]
+        } else {
+            ""
+        };
         if matches!(two, "=>" | "->" | "::" | "==" | "!=" | "<=" | ">=" | "&&" | "||") {
             tokens.push(Token { text: two.to_string(), line });
             i += 2;
@@ -197,9 +207,13 @@ fn collect(root: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
         if name == ".git" || name == "target" || name == "build" || name == "node_modules" {
             continue;
         }
-        if path.is_dir() {
+        let ty = entry.file_type()?;
+        if ty.is_symlink() {
+            continue;
+        }
+        if ty.is_dir() {
             collect(&path, out)?;
-        } else if path.extension().and_then(|x| x.to_str()) == Some("ores") {
+        } else if ty.is_file() && path.extension().and_then(|x| x.to_str()) == Some("ores") {
             out.push(path);
         }
     }
@@ -269,6 +283,12 @@ mod tests {
         assert!(!findings("val x = &mut value;").is_empty());
         assert!(!findings("val x = *pointer;").is_empty());
         assert!(findings("val x = a * b; val y = a & b;").is_empty());
+    }
+
+    #[test]
+    fn handles_non_ascii_without_panicking() {
+        assert!(findings("val café = x * y;").is_empty());
+        assert!(!findings("val café = rt deref owner;").is_empty());
     }
 
     #[test]
