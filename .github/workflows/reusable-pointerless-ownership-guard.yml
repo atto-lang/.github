@@ -22,6 +22,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify vendored Rust policy identity (no cross-repo token)
         shell: bash
