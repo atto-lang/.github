@@ -1,0 +1,30 @@
+name: Pointerless ownership guard self-test
+
+on:
+  pull_request:
+    paths:
+      - scripts/pointerless_ownership_guard.rs
+      - .github/workflows/reusable-pointerless-ownership-guard.yml
+      - .github/workflows/pointerless-ownership-guard-selftest.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rust-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Compile and run unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v rustc >/dev/null
+          rustc --edition=2021 --test scripts/pointerless_ownership_guard.rs \
+            -o "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
+          "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
