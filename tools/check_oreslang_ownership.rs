@@ -2,56 +2,102 @@
 use std::{env,fs,path::{Path,PathBuf},process};
 #[derive(Clone,Debug,PartialEq,Eq)]
 struct Token { text:String, line:usize }
-fn lex(src:&str)->Vec<Token> {
-    let b=src.as_bytes();let mut i=0;let mut line=1;let mut out=Vec::new();
-    while i<b.len(){
-        let c=b[i];
-        if c==b'\n'{line+=1;i+=1;continue;}
-        if c.is_ascii_whitespace(){i+=1;continue;}
-        if i+1<b.len() && c==b'/' && b[i+1]==b'/' {
-            i+=2;while i<b.len() && b[i]!=b'\n'{i+=1;}continue;
-        }
-        if i+1<b.len() && c==b'/' && b[i+1]==b'*'{
-            i+=2;let mut depth=1;
-            while i<b.len() && depth>0{
-                if b[i]==b'\n'{line+=1;}
-                if i+1<b.len() && b[i]==b'/' && b[i+1]==b'*'{depth+=1;i+=2;}
-                else if i+1<b.len() && b[i]==b'*' && b[i+1]==b'/'{depth-=1;i+=2;}
-                else{i+=1;}
-            }
-            continue;
-        }
-        if c==b'\'' || c==b'"' || c==b'`'{
-            let triple=c!=b'`' && i+2<b.len() && b[i+1]==c && b[i+2]==c;
-            i+=if triple{3}else{1};
-            while i<b.len(){
-                if b[i]==b'\n'{line+=1;}
-                if b[i]==b'\\' && !triple{i=(i+2).min(b.len());continue;}
-                if triple && i+2<b.len() && b[i]==c && b[i+1]==c && b[i+2]==c{i+=3;break;}
-                if !triple && b[i]==c{i+=1;break;}
-                i+=1;
-            }
-            out.push(Token{text:"<literal>".into(),line});continue;
-        }
-        let start=i;
-        if c.is_ascii_alphabetic() || c==b'_'{
-            i+=1;while i<b.len() && (b[i].is_ascii_alphanumeric() || b[i]==b'_'){i+=1;}
-        }else if c.is_ascii_digit(){
-            i+=1;while i<b.len() && (b[i].is_ascii_alphanumeric() || b[i]==b'_'){i+=1;}
-        }else if i+1<b.len() && ((c==b'&' && b[i+1]==b'&') || (c==b'*' && b[i+1]==b'*')){
-            i+=2;
-        }else{i+=1;}
-        out.push(Token{text:String::from_utf8_lossy(&b[start..i]).into_owned(),line});
+struct Lex<'a> {
+    b: &'a [u8], i: usize, line: usize, out: Vec<Token>, errors: Vec<String>
+}
+impl<'a> Lex<'a> {
+    fn new(s: &'a str)->Self {
+        Self { b:s.as_bytes(), i:0, line:1, out:Vec::new(), errors:Vec::new() }
     }
-    out
+    fn pair(&self,c:u8)->bool {self.b.get(self.i+1)==Some(&c)}
+    fn token(&mut self,s:&str,line:usize){self.out.push(Token{text:s.into(),line});}
+    fn quote(&mut self,q:u8){
+        let start=self.line;
+        let triple=q!=b'\x60' && self.b.get(self.i+1)==Some(&q) && self.b.get(self.i+2)==Some(&q);
+        self.i+=if triple{3}else{1};
+        while self.i<self.b.len(){
+            let c=self.b[self.i];
+            if !triple && c==b'\\'{
+                if self.i+1>=self.b.len(){
+                    self.errors.push(format!("{start}: incomplete quoted escape"));self.i+=1;return;
+                }
+                if self.b[self.i+1]==b'\n'{self.line+=1;}
+                self.i+=2;continue;
+            }
+            if q==b'\x60' && c==b'$' && self.pair(b'{'){
+                let line=self.line;
+                self.i+=2;
+                self.token("__tpl_start__",line);
+                self.code(true);
+                self.token("__tpl_end__",self.line);
+                continue;
+            }
+            if triple && self.b.get(self.i..self.i+3)==Some([q,q,q].as_slice()){
+                self.i+=3;self.token("<literal>",start);return;
+            }
+            if !triple && c==q{
+                self.i+=1;self.token("<literal>",start);return;
+            }
+            if c==b'\n'{self.line+=1;}
+            self.i+=1;
+        }
+        self.errors.push(format!("{start}: unterminated literal"));
+    }
+    fn comment(&mut self){
+        let start=self.line;self.i+=2;let mut depth=1usize;
+        while self.i<self.b.len(){
+            if self.b[self.i]==b'\n'{self.line+=1;}
+            if self.b[self.i]==b'/' && self.pair(b'*'){depth+=1;self.i+=2;}
+            else if self.b[self.i]==b'*' && self.pair(b'/'){
+                depth-=1;self.i+=2;if depth==0{return;}
+            }else{self.i+=1;}
+        }
+        self.errors.push(format!("{start}: unterminated block comment"));
+    }
+    fn code(&mut self,interpolation:bool){
+        let mut depth=0usize;
+        while self.i<self.b.len(){
+            let c=self.b[self.i];
+            if c.is_ascii_whitespace(){
+                if c==b'\n'{self.line+=1;}self.i+=1;continue;
+            }
+            if c==b'/' && self.pair(b'/'){
+                self.i+=2;while self.i<self.b.len() && self.b[self.i]!=b'\n'{self.i+=1;}continue;
+            }
+            if c==b'/' && self.pair(b'*'){self.comment();continue;}
+            if matches!(c,b'\''|b'"'|b'\x60'){self.quote(c);continue;}
+            if interpolation && c==b'}'{
+                self.i+=1;
+                if depth==0{return;}
+                depth-=1;self.token("}",self.line);continue;
+            }
+            if interpolation && c==b'{'{depth+=1;}
+            let start=self.i;let line=self.line;
+            if c.is_ascii_alphanumeric() || c==b'_'{
+                self.i+=1;
+                while self.i<self.b.len()
+                    && (self.b[self.i].is_ascii_alphanumeric()||self.b[self.i]==b'_'){self.i+=1;}
+            }else if (c==b'&' && self.pair(b'&')) || (c==b'*' && self.pair(b'*')){
+                self.i+=2;
+            }else{self.i+=1;}
+            self.out.push(Token{
+                text:String::from_utf8_lossy(&self.b[start..self.i]).into_owned(),line
+            });
+        }
+        if interpolation{self.errors.push(format!("{}: unterminated interpolation",self.line));}
+    }
+}
+fn lex(src:&str)->(Vec<Token>,Vec<String>){
+    let mut scanner=Lex::new(src);scanner.code(false);
+    (scanner.out,scanner.errors)
 }
 fn can_end_expr(s:&str)->bool{
-    s==")" || s=="]" || s=="}" || s=="<literal>" ||
+    s==")" || s=="]" || s=="}" || s=="<literal>" || s=="__tpl_end__" ||
     (s.as_bytes().first().is_some_and(|b|b.is_ascii_alphanumeric() || *b==b'_') &&
     !matches!(s,"return"|"let"|"val"|"const"|"as"|"in"|"then"|"else"|"on"|"case"|"when"|"await"|"rt"|"borrow"|"mut"|"take"|"share"|"copy"))
 }
 fn violations(src:&str)->Vec<String>{
-    let ts=lex(src);let mut issues=Vec::new();
+    let (ts,mut issues)=lex(src);
     for i in 0..ts.len(){
         let x=&ts[i];
         if x.text=="rt" && ts.get(i+1).is_some_and(|t|t.text=="borrow") && ts.get(i+2).is_some_and(|t|t.text=="mut"){
