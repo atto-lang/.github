@@ -54,14 +54,14 @@ fn violations(src:&str)->Vec<String>{
     let ts=lex(src);let mut issues=Vec::new();
     for i in 0..ts.len(){
         let x=&ts[i];
-        if x.text=="rt" && ts.get(i+1).is_some_and(|t|t.text=="mut") && ts.get(i+2).is_some_and(|t|t.text=="borrow"){
-            issues.push(format!("{}: noncanonical 'rt mut borrow'; use 'rt borrow mut'",x.line));
+        if x.text=="rt" && ts.get(i+1).is_some_and(|t|t.text=="borrow") && ts.get(i+2).is_some_and(|t|t.text=="mut"){
+            issues.push(format!("{}: noncanonical 'rt borrow mut'; use 'rt mut borrow'",x.line));
         }
         if x.text!="&" && x.text!="*"{continue;}
         if i>0 && can_end_expr(&ts[i-1].text){continue;}
         let next=ts.get(i+1).map_or("",|t|t.text.as_str());
         if next.is_empty() || next==";" || next=="}"{continue;}
-        let msg=if x.text=="&"{"borrow/address '&' forbidden; use 'rt borrow' or 'rt borrow mut'"}else{"pointer dereference '*' forbidden; use explicit rt ownership operations"};
+        let msg=if x.text=="&"{"borrow/address '&' forbidden; use 'rt borrow' or 'rt mut borrow'"}else{"pointer dereference '*' forbidden; use explicit rt ownership operations"};
         issues.push(format!("{}: {}",x.line,msg));
     }
     issues
@@ -99,10 +99,10 @@ fn main(){
 mod tests{
     use super::*;
     #[test]fn canonical_and_arithmetic(){
-        assert!(violations("const x=rt borrow owner; let y=rt borrow mut owner; rt copy x; rt share x; rt take x; return a * b & c;").is_empty());
+        assert!(violations("const x=rt borrow owner; let y=rt mut borrow owner; rt copy x; rt share x; rt take x; return a * b & c;").is_empty());
     }
     #[test]fn pointer_operations_rejected(){
-        for s in ["let y=&value;","return &mut value;","let y=*ptr;","foo(*ptr);","return rt mut borrow foo;"]{
+        for s in ["let y=&value;","return &mut value;","let y=*ptr;","foo(*ptr);","return rt borrow mut foo;"]{
             assert!(!violations(s).is_empty(),"{s}");
         }
     }
