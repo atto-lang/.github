@@ -115,7 +115,17 @@ fn violations(src:&str)->Vec<String>{
             let name=ts[i-1].text.as_str();
             let after=ts.get(i+1).map_or("",|t|t.text.as_str());
             let is_type=name.as_bytes().first().is_some_and(|b|b.is_ascii_alphabetic());
-            let in_parameter=before=="(" && i>=4 && ts[i-4].text=="fnc";
+            let in_parameter=matches!(before,"("|",") && {
+                let mut depth=0usize;let mut opener=None;
+                for j in (0..i-1).rev(){
+                    if ts[j].text==")"{depth+=1;}
+                    else if ts[j].text=="("{
+                        if depth==0{opener=Some(j);break;}else{depth-=1;}
+                    }
+                }
+                opener.is_some_and(|open|open>=2
+                    && matches!(ts[open-2].text.as_str(),"fnc"|"method"|"routine"))
+            });
             let in_declaration=matches!(before,"let"|"val"|"const"|":") || in_parameter;
             if is_type && in_declaration
                 && (after.is_empty() || after=="{" || after=="," || after==")"
@@ -195,6 +205,8 @@ mod tests{
         for source in [
             "fnc get(): Box* { return value; }",
             "fnc use(Box* arg): int { return 1; }",
+            "fnc use2(int ok, Box* arg): int { return ok; }",
+            "pub fnc use3(int a, int b, Box* arg): int { return a+b; }",
         ]{
             assert!(violations(source).iter().any(|s|s.contains("pointer type")),"{source}");
         }
