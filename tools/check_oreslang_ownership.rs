@@ -94,7 +94,7 @@ fn lex(src:&str)->(Vec<Token>,Vec<String>){
 fn can_end_expr(s:&str)->bool{
     s==")" || s=="]" || s=="}" || s=="<literal>" || s=="__tpl_end__" ||
     (s.as_bytes().first().is_some_and(|b|b.is_ascii_alphanumeric() || *b==b'_') &&
-    !matches!(s,"return"|"let"|"val"|"const"|"as"|"in"|"then"|"else"|"on"|"case"|"when"|"await"|"rt"|"borrow"|"mut"|"take"|"share"|"copy"))
+    !matches!(s,"return"|"let"|"val"|"const"|"as"|"in"|"then"|"else"|"on"|"case"|"when"|"await"|"rt"|"borrow"|"mut"|"take"|"share"|"copy"|"__tpl_start__"))
 }
 fn violations(src:&str)->Vec<String>{
     let (ts,mut issues)=lex(src);
@@ -110,11 +110,19 @@ fn violations(src:&str)->Vec<String>{
             issues.push(format!("{}: public pointer type is forbidden",x.line));
         }
         // Only classify these sigils in Oreslang source, not host-language code.
-        if x.text=="*" && i>=2
-            && matches!(ts[i-2].text.as_str(),"let"|"val"|"const")
-            && ts.get(i+1).is_some_and(|t|t.text.as_bytes().first().is_some_and(u8::is_ascii_alphabetic)){
-            issues.push(format!("{}: source pointer type T* is forbidden",x.line));
-            continue;
+        if x.text=="*" && i>=2 {
+            let before=ts[i-2].text.as_str();
+            let name=ts[i-1].text.as_str();
+            let after=ts.get(i+1).map_or("",|t|t.text.as_str());
+            let is_type=name.as_bytes().first().is_some_and(|b|b.is_ascii_alphabetic());
+            let in_parameter=before=="(" && i>=4 && ts[i-4].text=="fnc";
+            let in_declaration=matches!(before,"let"|"val"|"const"|":") || in_parameter;
+            if is_type && in_declaration
+                && (after.is_empty() || after=="{" || after=="," || after==")"
+                    || after.as_bytes().first().is_some_and(|b|b.is_ascii_alphabetic())) {
+                issues.push(format!("{}: source pointer type T* is forbidden",x.line));
+                continue;
+            }
         }
         if x.text!="&" && x.text!="*"{continue;}
         if i>0 && can_end_expr(&ts[i-1].text){continue;}
@@ -131,9 +139,14 @@ fn inspect(p:&Path,src:&str,issues:&mut Vec<String>){
 fn walk(dir:&Path,issues:&mut Vec<String>)->std::io::Result<()>{
     for ent in fs::read_dir(dir)?{
         let ent=ent?;let p=ent.path();let name=ent.file_name();let name=name.to_string_lossy();
-        if p.is_dir(){
+        let kind=ent.file_type()?;
+        if kind.is_symlink(){
+            if matches!(p.extension().and_then(|x|x.to_str()),Some("ores"|"oreslang"|"ore")) || p.is_dir(){
+                issues.push(format!("{}: symlinked guest source or directory cannot bypass source scan",p.display()));
+            }
+        }else if kind.is_dir(){
             if !matches!(name.as_ref(),".git"|"target"|"node_modules"|".gradle"|"build"|"dist"){walk(&p,issues)?;}
-        }else if p.is_file() && matches!(p.extension().and_then(|x|x.to_str()),Some("ores"|"oreslang"|"ore")){
+        }else if kind.is_file() && matches!(p.extension().and_then(|x|x.to_str()),Some("ores"|"oreslang"|"ore")){
             // Compile-fail fixtures are verified by each real compiler, not by this advisory gate.
             let in_tests=p.components().any(|c|matches!(c.as_os_str().to_str(),Some("tests"|"test"|"fixtures")));
             if in_tests && (name.contains(".negative.") || name.contains(".compile_fail.") || name.starts_with("unsupported-") || name.ends_with("-reject.ores")){continue;}
@@ -177,5 +190,50 @@ mod tests{
     #[test]fn string_and_template_text_are_not_code(){assert!(violations("val quoted='&ptr'; val template=`*ptr &x`;").is_empty());}
     #[test]fn typed_pointer_detection(){assert!(violations("let Box* address;")[0].contains("pointer type"));}
     #[test]fn scan_reports_path(){let mut issues=Vec::new();inspect(Path::new("example.ores"),"return &foo;",&mut issues);assert!(issues[0].contains("example.ores:1:"));}
+
+    #[test]fn rejects_pointer_types_in_function_signatures(){
+        for source in [
+            "fnc get(): Box* { return value; }",
+            "fnc use(Box* arg): int { return 1; }",
+        ]{
+            assert!(violations(source).iter().any(|s|s.contains("pointer type")),"{source}");
+        }
+    }
+    #[test]fn detects_pointer_operations_in_template_interpolations(){
+        let tick=char::from(96);
+        let dollar=char::from(36);
+        let src=format!("let s={tick}{dollar}{{ &ptr }}{tick};");
+        assert!(!violations(&src).is_empty());
+        let nested=format!("let s={tick}{dollar}{{ fnc(){{return rt ref ptr;}} }}{tick};");
+        assert!(!violations(&nested).is_empty());
+        let escaped=format!("let s={tick}\\{dollar}{{ &ptr }}{tick};");
+        assert!(violations(&escaped).is_empty());
+    }
+    #[test]fn rejects_unterminated_comments_and_literals(){
+        for source in ["/* unterminated","\"unterminated","'unterminated"]{
+            assert!(!violations(source).is_empty(),"{source}");
+        }
+        let tick=char::from(96);
+        assert!(!violations(&format!("let s={tick}unterminated")).is_empty());
+    }
+    #[test]fn binary_ops_remain_valid_inside_templates(){
+        let tick=char::from(96);
+        let dollar=char::from(36);
+        let src=format!("let s={tick}calc {dollar}{{ a*b & c }}{tick};");
+        assert!(violations(&src).is_empty(),"{:?}",violations(&src));
+    }
+    #[cfg(unix)]
+    #[test]fn source_symlink_is_reported(){
+        use std::os::unix::fs::symlink;
+        let root=env::temp_dir().join(format!("ores-ownership-check-{}",process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let target=root.join("source.ores");
+        fs::write(&target,"let x=1;").unwrap();
+        symlink(&target,root.join("alias.ores")).unwrap();
+        let mut issues=Vec::new();
+        walk(&root,&mut issues).unwrap();
+        assert!(issues.iter().any(|s|s.contains("symlinked guest source")));
+        fs::remove_dir_all(&root).unwrap();
+    }
 
 }
