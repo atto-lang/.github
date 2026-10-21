@@ -1,0 +1,41 @@
+name: Oreslang pointerless ownership
+on:
+  push:
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  check-ownership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Rust lexical checker tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustc --version
+          rustc --edition=2021 -D warnings --test tools/check_oreslang_ownership.rs -o /tmp/oreslang-ownership-tests
+          /tmp/oreslang-ownership-tests
+      - name: Build and scan source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustc --edition=2021 -D warnings tools/check_oreslang_ownership.rs -o /tmp/oreslang-ownership
+          /tmp/oreslang-ownership .
+      - name: Positive/negative integration smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$(mktemp -d)"
+          trap 'rm -rf "$d"' EXIT
+          printf '%s\n' 'let x = rt borrow owner; let y = rt borrow mut owner; return a * b;' > "$d/accepted.ores"
+          printf '%s\n' 'let x = &owner;' > "$d/forbidden.ores"
+          /tmp/oreslang-ownership "$d/accepted.ores"
+          if /tmp/oreslang-ownership "$d/forbidden.ores"; then
+            echo 'ERROR: pointer-style ownership unexpectedly accepted' >&2
+            exit 1
+          fi
