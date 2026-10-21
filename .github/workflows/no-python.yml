@@ -22,6 +22,11 @@ jobs:
           rustc --edition=2021 -D warnings --test tools/check_no_python.rs -o /tmp/check-no-python-tests
           /tmp/check-no-python-tests
           rustc --edition=2021 -D warnings tools/check_no_python.rs -o /tmp/check-no-python
+      - name: Run Rust org-sync safety regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path tools/sync-gh-org-tests/Cargo.toml --all-targets
       - name: Reject Python artifacts
         shell: bash
         run: |
