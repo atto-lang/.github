@@ -128,7 +128,7 @@ mod tests{
     #[test]fn logical_and(){assert!(violations("return x && y;").is_empty());}
     #[test]fn canonical_mutable_borrow(){assert!(violations("let loan=rt mut borrow value;").is_empty());}
     #[test]fn legacy_order_rejected(){assert!(violations("rt borrow mut value;")[0].contains("noncanonical"));}
-    #[test]fn string_and_template_text_are_not_code(){assert!(violations("val quoted='&ptr'; val template=\`*ptr &x\`;").is_empty());}
+    #[test]fn string_and_template_text_are_not_code(){assert!(violations("val quoted='&ptr'; val template=`*ptr &x`;").is_empty());}
     #[test]fn typed_pointer_detection(){assert!(violations("let Box* address;")[0].contains("pointer type"));}
     #[test]fn scan_reports_path(){let mut issues=Vec::new();inspect(Path::new("example.ores"),"return &foo;",&mut issues);assert!(issues[0].contains("example.ores:1:"));}
 
