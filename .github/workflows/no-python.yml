@@ -3,15 +3,35 @@ on:
   workflow_call:
   push:
   pull_request:
+permissions:
+  contents: read
 jobs:
   prohibit-python:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - name: Reject Python artifacts using Rust
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Compile and test the Rust policy gate
         shell: bash
         run: |
-          rustc --edition=2021 --deny warnings tools/check_no_python.rs -o /tmp/check-no-python
+          set -euo pipefail
+          rustc --version
+          rustc --edition=2021 -D warnings --test tools/check_no_python.rs -o /tmp/check-no-python-tests
+          /tmp/check-no-python-tests
+          rustc --edition=2021 -D warnings tools/check_no_python.rs -o /tmp/check-no-python
+      - name: Run migrated Rust organization-sync tests when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f tests/test_sync_gh_org.rs ]]; then
+            rustc --edition=2021 -D warnings --test tests/test_sync_gh_org.rs -o /tmp/test-sync-gh-org
+            SYNC_SCRIPT="$PWD/scripts/sync-gh-org.sh" /tmp/test-sync-gh-org --nocapture
+          fi
+      - name: Reject Python artifacts and execution paths
+        shell: bash
+        run: |
+          set -euo pipefail
           /tmp/check-no-python .
