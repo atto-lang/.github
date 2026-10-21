@@ -1,0 +1,17 @@
+name: Rust-only / no Python
+on:
+  workflow_call:
+  push:
+  pull_request:
+jobs:
+  prohibit-python:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject Python artifacts using Rust
+        shell: bash
+        run: |
+          rustc --edition=2021 --deny warnings tools/check_no_python.rs -o /tmp/check-no-python
+          /tmp/check-no-python .
