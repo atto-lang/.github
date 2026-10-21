@@ -53,15 +53,23 @@ fn invocation(line:&str)->Option<&'static str>{
     if l.contains("pythonpath")||l.contains("pythonhome"){return Some("runtime environment")}
     if ["command::new(","processbuilder(","runtime.getruntime().exec(","process.start(","child_process","spawn("].iter().any(|x|l.contains(x))
         && ["\"python\"","\"python3\"","'python'","'python3'","\"pip\"","\"pytest\""].iter().any(|x|l.contains(x)){return Some("host process launch")}
-    let v=tokens(t);
-    let wrap=|s:&str|matches!(s,"run"|"shell"|"command"|"exec"|"spawn"|"env"|"sudo"|"time"|"xargs");
-    for i in 0..v.len(){
-        let b=base(&v[i]); let pos=i==0||v.get(i.wrapping_sub(1)).is_some_and(|p|wrap(base(p)));
-        if pos&&pyexec(b){return Some("interpreter")}
-        if pos&&pipexec(b){return Some("package manager")}
-        if pos&&matches!(b,"pytest"|"poetry"){return Some("tool")}
-        if pos&&b=="uv"&&v.get(i+1).is_some_and(|n|matches!(n.as_str(),"run"|"pip"|"sync"|"lock"|"venv")){return Some("uv tool")}
-        if pos&&(b.ends_with(".py")||b.ends_with(".pyi")){return Some("script reference")}
+    for segment in t.split(|c:char|matches!(c,';'|'|'|'&')){
+        let v=tokens(segment);
+        let lead=|s:&str|matches!(s,
+            "run"|"shell"|"command"|"exec"|"spawn"|"env"|"sudo"|"time"|"xargs"|
+            "if"|"then"|"do"|"else"|"elif"|"while"|"until"|"which");
+        for i in 0..v.len(){
+            let b=base(&v[i]);
+            let prev=v.get(i.wrapping_sub(1)).map(|p|base(p));
+            let probe=i>=2 && matches!(base(&v[i-2]),"command"|"type") &&
+                matches!(v[i-1].as_str(),"-v"|"-p"|"-a");
+            let pos=i==0||prev.is_some_and(lead)||probe;
+            if pos&&pyexec(b){return Some("interpreter")}
+            if pos&&pipexec(b){return Some("package manager")}
+            if pos&&matches!(b,"pytest"|"poetry"){return Some("tool")}
+            if pos&&b=="uv"&&v.get(i+1).is_some_and(|n|matches!(n.as_str(),"run"|"pip"|"sync"|"lock"|"venv")){return Some("uv tool")}
+            if pos&&(b.ends_with(".py")||b.ends_with(".pyi")){return Some("script reference")}
+        }
     }
     None
 }
@@ -115,7 +123,7 @@ fn main(){
 mod tests{
     use super::*;
     #[test] fn paths(){for p in ["x.py","x.pyi","x.ipynb","pyproject.toml","requirements-dev.txt"]{assert!(artifact(Path::new(p)))}assert!(!artifact(Path::new("main.rs")))}
-    #[test] fn commands(){for l in ["python3 x.py","uses: actions/setup-python@v5","pip install x","pytest -q","poetry install","uv run x.py","let x=Command::new(\"python\");","find_package(Python3 REQUIRED)","#!/usr/bin/env python3"]{assert!(invocation(l).is_some(),"{l}")}}
+    #[test] fn commands(){for l in ["python3 x.py","uses: actions/setup-python@v5","pip install x","pytest -q","poetry install","uv run x.py","let x=Command::new(\"python\");","find_package(Python3 REQUIRED)","#!/usr/bin/env python3","echo ok && python3 x.py","if python3 x.py; then echo bad; fi","command -v python3","which pytest"]{assert!(invocation(l).is_some(),"{l}")}}
     #[test] fn labels(){assert!(invocation("name: Rust-only / no Python").is_none());assert!(invocation("# Python is prohibited").is_none());assert!(invocation("echo pythonic").is_none())}
     #[test] fn full_scan(){let r=std::env::temp_dir().join(format!("no-python-{}",std::process::id()));let _=fs::remove_dir_all(&r);fs::create_dir_all(&r).unwrap();fs::write(r.join("legacy.py"),"legacy").unwrap();assert!(!run(&r).unwrap().is_empty());fs::remove_dir_all(r).unwrap()}
 }
