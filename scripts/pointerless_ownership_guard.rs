@@ -1,3 +1,8 @@
+// Compatibility path: execute the exact canonical Rust checker.
+// Retained older implementation is compile-time disabled.
+include!("../tools/check_oreslang_ownership.rs");
+#[cfg(any())]
+mod legacy {
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -295,4 +300,6 @@ mod tests {
     fn ignores_comments_and_strings() {
         assert!(findings("// rt deref p\nval s = \"&mut Pointer<int>\";").is_empty());
     }
+}
+
 }
