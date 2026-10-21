@@ -52,3 +52,7 @@ jobs:
             echo 'ERROR: obsolete mutable borrow order was accepted' >&2
             exit 1
           fi
+  reusable-policy:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-pointerless-ownership-guard.yml
