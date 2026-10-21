@@ -1,129 +1,437 @@
 #[cfg(not(test))]
 use std::env;
-use std::{fs, io, path::{Path, PathBuf}};
+use std::{
+    fs,
+    io,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct Finding { path: PathBuf, detail: String }
-
-fn name(p: &Path) -> String {
-    p.file_name().and_then(|x| x.to_str()).unwrap_or("").to_ascii_lowercase()
+struct Finding {
+    path: PathBuf,
+    kind: &'static str,
+    detail: String,
 }
 
-fn artifact(p: &Path) -> bool {
-    let n=name(p);
-    n.ends_with(".py") || n.ends_with(".pyi") || n.ends_with(".ipynb")
-        || matches!(n.as_str(),"pipfile"|"pipfile.lock"|"poetry.lock"|"pytest.ini"|"tox.ini"|"setup.py"|"pyproject.toml"|"uv.lock"|".python-version")
-        || n=="requirements.txt" || (n.starts_with("requirements-") && n.ends_with(".txt"))
-        || n=="__pycache__" || n.ends_with(".egg-info")
+fn lower_name(path: &Path) -> String {
+    path.file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase()
 }
 
-fn doc(p:&Path)->bool {
-    matches!(p.extension().and_then(|x|x.to_str()).map(|x|x.to_ascii_lowercase()).as_deref(),Some("md"|"mdx"|"rst"|"adoc"))
+fn python_artifact_reason(path: &Path) -> Option<&'static str> {
+    let name = lower_name(path);
+    if name.ends_with(".py") || name.ends_with(".pyi") {
+        return Some("Python source/stub");
+    }
+    if name.ends_with(".ipynb") {
+        return Some("Python-capable notebook");
+    }
+    if [
+        "pipfile",
+        "pipfile.lock",
+        "poetry.lock",
+        "pytest.ini",
+        "tox.ini",
+        "setup.py",
+        "pyproject.toml",
+        "uv.lock",
+        ".python-version",
+    ]
+    .contains(&name.as_str())
+    {
+        return Some("Python package/tool manifest");
+    }
+    if name == "requirements.txt"
+        || (name.starts_with("requirements-") && name.ends_with(".txt"))
+        || (name.starts_with("requirements.") && name.ends_with(".txt"))
+    {
+        return Some("Python requirements manifest");
+    }
+    if name == "__pycache__" || name.ends_with(".egg-info") {
+        return Some("Python generated/package artifact");
+    }
+    None
 }
 
-fn text_candidate(p:&Path)->bool {
-    let n=name(p);
-    if matches!(n.as_str(),"makefile"|"gnumakefile"|"cmakelists.txt"|"dockerfile"|"justfile"|"taskfile"){return true}
-    matches!(p.extension().and_then(|x|x.to_str()).map(|x|x.to_ascii_lowercase()).as_deref(),
-        Some("sh"|"bash"|"zsh"|"yml"|"yaml"|"toml"|"json"|"jsonc"|"xml"|"gradle"|"kts"|"rs"|"java"|"kt"|"c"|"cc"|"cpp"|"h"|"hpp"|"js"|"mjs"|"cjs"|"ts"|"tsx"|"jsx"|"cs"|"ps1"|"cmd"|"bat"|"cmake"|"mk"|"go"|"swift"|"scala"))
+fn is_documentation(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|s| s.to_str()).map(|s| s.to_ascii_lowercase()).as_deref(),
+        Some("md" | "mdx" | "rst" | "adoc")
+    )
 }
 
-fn base(t:&str)->&str { t.rsplit('/').next().unwrap_or(t).trim_end_matches(".exe") }
-fn pyexec(b:&str)->bool {
-    if matches!(b,"python"|"python2"|"python3"){return true}
-    b.strip_prefix("python").is_some_and(|r|!r.is_empty()&&r.chars().all(|c|c.is_ascii_digit()||c=='.'))
-}
-fn pipexec(b:&str)->bool {
-    if matches!(b,"pip"|"pip2"|"pip3"|"pipenv"){return true}
-    b.strip_prefix("pip").is_some_and(|r|!r.is_empty()&&r.chars().all(|c|c.is_ascii_digit()||c=='.'))
+fn is_scanner_source(root: &Path, path: &Path) -> bool {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .replace('\\', "/")
+        == "tools/check_no_python.rs"
 }
 
-fn tokens(line:&str)->Vec<String>{
-    line.split(|c:char|c.is_whitespace()||matches!(c,'|'|'&'|';'|'('|')'|'{'|'}'|'['|']'|'='|':'|','|'"'|'\''))
-        .filter(|x|!x.is_empty()).map(|x|x.trim_matches('$').to_ascii_lowercase()).collect()
+fn should_scan_text(path: &Path) -> bool {
+    let name = lower_name(path);
+    if [
+        "makefile",
+        "gnumakefile",
+        "cmakelists.txt",
+        "dockerfile",
+        "justfile",
+        "taskfile",
+    ]
+    .contains(&name.as_str())
+    {
+        return true;
+    }
+    matches!(
+        path.extension().and_then(|s| s.to_str()).map(|s| s.to_ascii_lowercase()).as_deref(),
+        Some(
+            "sh" | "bash" | "zsh" | "fish" | "yml" | "yaml" | "toml" | "json" | "jsonc"
+                | "xml" | "gradle" | "kts" | "rs" | "java" | "kt" | "c" | "cc" | "cpp"
+                | "h" | "hpp" | "js" | "mjs" | "cjs" | "ts" | "tsx" | "jsx" | "cs"
+                | "fs" | "fsx" | "ps1" | "cmd" | "bat" | "cmake" | "mk" | "go" | "swift"
+                | "scala"
+        )
+    )
 }
 
-fn invocation(line:&str)->Option<&'static str>{
-    let t=line.trim();
-    if t.is_empty() || ((t.starts_with('#')&&!t.starts_with("#!"))||t.starts_with("//")){return None}
-    let l=t.to_ascii_lowercase();
-    if l.contains("actions/setup-python@")||l.contains("python-version:"){return Some("workflow config")}
-    if l.starts_with("#!")&&l.contains("python"){return Some("shebang")}
-    if l.contains("find_package(python")||l.contains("python3_add_")||l.contains("python_add_"){return Some("build dependency")}
-    if l.contains("pythonpath")||l.contains("pythonhome"){return Some("runtime environment")}
-    if ["command::new(","processbuilder(","runtime.getruntime().exec(","process.start(","child_process","spawn("].iter().any(|x|l.contains(x))
-        && ["\"python\"","\"python3\"","'python'","'python3'","\"pip\"","\"pytest\""].iter().any(|x|l.contains(x)){return Some("host process launch")}
-    for segment in t.split(|c:char|matches!(c,';'|'|'|'&')){
-        let v=tokens(segment);
-        let lead=|s:&str|matches!(s,
-            "run"|"shell"|"command"|"exec"|"spawn"|"env"|"sudo"|"time"|"xargs"|
-            "if"|"then"|"do"|"else"|"elif"|"while"|"until"|"which");
-        for i in 0..v.len(){
-            let b=base(&v[i]);
-            let prev=v.get(i.wrapping_sub(1)).map(|p|base(p));
-            let probe=i>=2 && matches!(base(&v[i-2]),"command"|"type") &&
-                matches!(v[i-1].as_str(),"-v"|"-p"|"-a");
-            let pos=i==0||prev.is_some_and(lead)||probe;
-            if pos&&pyexec(b){return Some("interpreter")}
-            if pos&&pipexec(b){return Some("package manager")}
-            if pos&&matches!(b,"pytest"|"poetry"){return Some("tool")}
-            if pos&&b=="uv"&&v.get(i+1).is_some_and(|n|matches!(n.as_str(),"run"|"pip"|"sync"|"lock"|"venv")){return Some("uv tool")}
-            if pos&&(b.ends_with(".py")||b.ends_with(".pyi")){return Some("script reference")}
+fn command_tokens(line: &str) -> Vec<String> {
+    line.split(|c: char| {
+        c.is_whitespace()
+            || matches!(
+                c,
+                '|' | '&' | ';' | '(' | ')' | '{' | '}' | '[' | ']' | '=' | ':' | ',' | '"' | '\''
+            )
+    })
+    .filter(|s| !s.is_empty())
+    .map(|s| s.trim_matches('$').to_ascii_lowercase())
+    .filter(|s| !s.is_empty())
+    .collect()
+}
+
+fn executable_basename(token: &str) -> &str {
+    token.rsplit('/').next().unwrap_or(token).trim_end_matches(".exe")
+}
+
+fn is_python_exec_name(base: &str) -> bool {
+    if matches!(base, "python" | "python2" | "python3") {
+        return true;
+    }
+    if let Some(rest) = base.strip_prefix("python") {
+        return !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit() || c == '.');
+    }
+    false
+}
+
+fn is_pip_exec_name(base: &str) -> bool {
+    if matches!(base, "pip" | "pip2" | "pip3" | "pipenv") {
+        return true;
+    }
+    if let Some(rest) = base.strip_prefix("pip") {
+        return !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit() || c == '.');
+    }
+    false
+}
+
+fn python_invocation_reason(line: &str) -> Option<&'static str> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if (trimmed.starts_with('#') && !trimmed.starts_with("#!")) || trimmed.starts_with("//") {
+        return None;
+    }
+
+    let lower = trimmed.to_ascii_lowercase();
+    if lower.contains("actions/setup-python@") || lower.contains("python-version:") {
+        return Some("GitHub Actions Python setup/configuration");
+    }
+    if lower.starts_with("#!") && lower.contains("python") {
+        return Some("Python shebang");
+    }
+    if lower.contains("find_package(python")
+        || lower.contains("python3_add_")
+        || lower.contains("python_add_")
+    {
+        return Some("build-system Python dependency");
+    }
+    if lower.contains("pythonpath") || lower.contains("pythonhome") {
+        return Some("Python runtime environment dependency");
+    }
+
+    let process_api = [
+        "command::new(",
+        "std::process::command",
+        "processbuilder(",
+        "runtime.getruntime().exec(",
+        "process.start(",
+        "child_process",
+        "spawn(",
+        "execfile(",
+    ]
+    .iter()
+    .any(|needle| lower.contains(needle));
+
+    if process_api
+        && [
+            "\"python\"",
+            "\"python3\"",
+            "'python'",
+            "'python3'",
+            "\"pip\"",
+            "\"pytest\"",
+        ]
+        .iter()
+        .any(|needle| lower.contains(needle))
+    {
+        return Some("host source launches Python tooling");
+    }
+
+    let tokens = command_tokens(trimmed);
+    let wrapper = |s: &str| {
+        matches!(
+            s,
+            "run" | "shell" | "command" | "exec" | "spawn" | "env" | "sudo" | "time" | "xargs"
+        )
+    };
+
+    for (i, token) in tokens.iter().enumerate() {
+        let base = executable_basename(token);
+        let command_position = i == 0
+            || tokens
+                .get(i.wrapping_sub(1))
+                .is_some_and(|prev| wrapper(executable_basename(prev)));
+
+        if command_position && is_python_exec_name(base) {
+            return Some("Python interpreter invocation/reference");
+        }
+        if command_position && is_pip_exec_name(base) {
+            return Some("Python package manager invocation/reference");
+        }
+        if command_position && matches!(base, "pytest" | "poetry") {
+            return Some("Python tool invocation/reference");
+        }
+        if command_position && base == "uv" {
+            let next = tokens.get(i + 1).map(String::as_str).unwrap_or_default();
+            if matches!(next, "run" | "pip" | "sync" | "lock" | "venv") {
+                return Some("Python uv tool invocation/reference");
+            }
+        }
+        if command_position
+            && (base.ends_with(".py") || base.ends_with(".pyi"))
+            && !token.starts_with("http://")
+            && !token.starts_with("https://")
+        {
+            return Some("Python script reference from executable/build configuration");
         }
     }
     None
 }
 
-fn inspect(root:&Path,p:&Path,out:&mut Vec<Finding>)->io::Result<()>{
-    let rel=p.strip_prefix(root).unwrap_or(p);
-    if rel!=Path::new("")&&artifact(rel){out.push(Finding{path:rel.to_path_buf(),detail:"Python artifact".into()})}
-    let m=fs::symlink_metadata(p)?;
-    if m.file_type().is_symlink(){return Ok(())}
-    if m.is_dir(){
-        if p!=root&&name(p)==".git"{return Ok(())}
-        for e in fs::read_dir(p)?{inspect(root,&e?.path(),out)?}
-        return Ok(())
-    }
-    if !m.is_file(){return Ok(())}
-    if rel.to_string_lossy().replace('\\',"/")=="tools/check_no_python.rs"{return Ok(())}
-    if !text_candidate(p)&&!doc(p){return Ok(())}
-    let Ok(s)=String::from_utf8(fs::read(p)?) else{return Ok(())};
-    if doc(p){
-        let mut fenced=false;
-        for (i,line) in s.lines().enumerate(){
-            let b=line.trim_start().as_bytes();
-            if b.starts_with(&[96,96,96])||line.trim_start().starts_with("~~~"){fenced=!fenced;continue}
-            let low=line.to_ascii_lowercase();
-            if (fenced&&invocation(line).is_some()) || (!fenced&&(low.contains("requires")||low.contains("requirement")||low.contains("dependency"))&&low.contains("python")){
-                out.push(Finding{path:rel.to_path_buf(),detail:format!("Python dependency/command at line {}",i+1)});break
+fn scan_markdown_commands(content: &str) -> Option<String> {
+    let mut fenced = false;
+    for (idx, line) in content.lines().enumerate() {
+        let trimmed = line.trim_start();
+        let bytes = trimmed.as_bytes();
+        if bytes.starts_with(&[96, 96, 96]) || trimmed.starts_with("~~~") {
+            fenced = !fenced;
+            continue;
+        }
+
+        if fenced {
+            if let Some(reason) = python_invocation_reason(line) {
+                return Some(format!("line {}: {reason}", idx + 1));
+            }
+        } else {
+            let lower = line.to_ascii_lowercase();
+            if (lower.contains("requires")
+                || lower.contains("requirement")
+                || lower.contains("dependency"))
+                && lower.contains("python")
+            {
+                return Some(format!(
+                    "line {}: documentation declares a Python dependency",
+                    idx + 1
+                ));
             }
         }
-    }else{
-        for (i,line) in s.lines().enumerate(){if let Some(k)=invocation(line){out.push(Finding{path:rel.to_path_buf(),detail:format!("{k} at line {}",i+1)});break}}
+    }
+    None
+}
+
+fn scan_file_content(root: &Path, path: &Path, findings: &mut Vec<Finding>) -> io::Result<()> {
+    if is_scanner_source(root, path) {
+        return Ok(());
+    }
+    if !should_scan_text(path) && !is_documentation(path) {
+        return Ok(());
+    }
+
+    let bytes = fs::read(path)?;
+    let Ok(content) = String::from_utf8(bytes) else {
+        return Ok(());
+    };
+    let rel = path.strip_prefix(root).unwrap_or(path).to_path_buf();
+
+    if is_documentation(path) {
+        if let Some(detail) = scan_markdown_commands(&content) {
+            findings.push(Finding {
+                path: rel,
+                kind: "python-reference",
+                detail,
+            });
+        }
+        return Ok(());
+    }
+
+    for (idx, line) in content.lines().enumerate() {
+        if let Some(reason) = python_invocation_reason(line) {
+            findings.push(Finding {
+                path: rel,
+                kind: "python-invocation",
+                detail: format!("line {}: {reason}", idx + 1),
+            });
+            break;
+        }
     }
     Ok(())
 }
 
-fn run(root:&Path)->io::Result<Vec<Finding>>{
-    let mut v=Vec::new(); inspect(root,root,&mut v)?;
-    v.sort_by(|a,b|a.path.cmp(&b.path).then(a.detail.cmp(&b.detail)));v.dedup();Ok(v)
+fn scan(root: &Path, path: &Path, findings: &mut Vec<Finding>) -> io::Result<()> {
+    let rel = path.strip_prefix(root).unwrap_or(path);
+    if rel != Path::new("") {
+        if let Some(reason) = python_artifact_reason(rel) {
+            findings.push(Finding {
+                path: rel.to_path_buf(),
+                kind: "python-artifact",
+                detail: reason.to_string(),
+            });
+        }
+    }
+
+    let meta = fs::symlink_metadata(path)?;
+    if meta.file_type().is_symlink() {
+        return Ok(());
+    }
+    if meta.is_dir() {
+        if path != root && lower_name(path) == ".git" {
+            return Ok(());
+        }
+        for entry in fs::read_dir(path)? {
+            scan(root, &entry?.path(), findings)?;
+        }
+    } else if meta.is_file() {
+        scan_file_content(root, path, findings)?;
+    }
+    Ok(())
+}
+
+fn run(root: &Path) -> io::Result<Vec<Finding>> {
+    let mut findings = Vec::new();
+    scan(root, root, &mut findings)?;
+    findings.sort_by(|a, b| {
+        a.path
+            .cmp(&b.path)
+            .then(a.kind.cmp(b.kind))
+            .then(a.detail.cmp(&b.detail))
+    });
+    findings.dedup();
+    Ok(findings)
 }
 
 #[cfg(not(test))]
-fn main(){
-    let root=env::args_os().nth(1).map(PathBuf::from).unwrap_or_else(||PathBuf::from("."));
-    match run(&root){
-        Ok(v) if v.is_empty()=>println!("PASS: no Python artifacts, dependencies, or execution paths detected"),
-        Ok(v)=>{eprintln!("Python is prohibited. Port required functionality to Rust:");for f in v{eprintln!("  {}: {}",f.path.display(),f.detail)}std::process::exit(1)}
-        Err(e)=>{eprintln!("FAIL-CLOSED: incomplete scan: {e}");std::process::exit(2)}
+fn main() {
+    let root = env::args_os()
+        .nth(1)
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+
+    match run(&root) {
+        Ok(findings) if findings.is_empty() => {
+            println!("PASS: no Python artifacts, dependencies, or execution paths detected");
+        }
+        Ok(findings) => {
+            eprintln!("Python is prohibited. Port required functionality to Rust:");
+            for finding in findings {
+                eprintln!(
+                    "  {} [{}] {}",
+                    finding.path.display(),
+                    finding.kind,
+                    finding.detail
+                );
+            }
+            std::process::exit(1);
+        }
+        Err(err) => {
+            eprintln!("FAIL-CLOSED: could not completely scan repository: {err}");
+            std::process::exit(2);
+        }
     }
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
-    #[test] fn paths(){for p in ["x.py","x.pyi","x.ipynb","pyproject.toml","requirements-dev.txt"]{assert!(artifact(Path::new(p)))}assert!(!artifact(Path::new("main.rs")))}
-    #[test] fn commands(){for l in ["python3 x.py","uses: actions/setup-python@v5","pip install x","pytest -q","poetry install","uv run x.py","let x=Command::new(\"python\");","find_package(Python3 REQUIRED)","#!/usr/bin/env python3","echo ok && python3 x.py","if python3 x.py; then echo bad; fi","command -v python3","which pytest"]{assert!(invocation(l).is_some(),"{l}")}}
-    #[test] fn labels(){assert!(invocation("name: Rust-only / no Python").is_none());assert!(invocation("# Python is prohibited").is_none());assert!(invocation("echo pythonic").is_none())}
-    #[test] fn full_scan(){let r=std::env::temp_dir().join(format!("no-python-{}",std::process::id()));let _=fs::remove_dir_all(&r);fs::create_dir_all(&r).unwrap();fs::write(r.join("legacy.py"),"legacy").unwrap();assert!(!run(&r).unwrap().is_empty());fs::remove_dir_all(r).unwrap()}
+
+    #[test]
+    fn rejects_python_artifact_names() {
+        for path in [
+            "x.py",
+            "x.pyi",
+            "x.ipynb",
+            "pyproject.toml",
+            "requirements-dev.txt",
+            ".python-version",
+        ] {
+            assert!(python_artifact_reason(Path::new(path)).is_some(), "{path}");
+        }
+        assert!(python_artifact_reason(Path::new("src/main.rs")).is_none());
+    }
+
+    #[test]
+    fn rejects_python_execution_paths() {
+        for line in [
+            "python3 scripts/check.py",
+            "uses: actions/setup-python@v5",
+            "pip install something",
+            "pytest -q",
+            "poetry install",
+            "uv run tool.py",
+            "let x = Command::new(\"python\");",
+            "find_package(Python3 REQUIRED)",
+            "#!/usr/bin/env python3",
+        ] {
+            assert!(python_invocation_reason(line).is_some(), "{line}");
+        }
+    }
+
+    #[test]
+    fn permits_policy_labels_and_discussion_comments() {
+        assert!(python_invocation_reason("name: Rust-only / no Python").is_none());
+        assert!(python_invocation_reason("# Python is prohibited here").is_none());
+        assert!(python_invocation_reason("// Python migration policy").is_none());
+        assert!(python_invocation_reason("echo pythonic-language").is_none());
+    }
+
+    #[test]
+    fn markdown_checks_commands_and_declared_dependencies() {
+        assert!(scan_markdown_commands("~~~sh\npython3 x.py\n~~~\n").is_some());
+        assert!(scan_markdown_commands("Requires Python3 and LLVM.\n").is_some());
+        assert!(scan_markdown_commands("Python is prohibited; replacements use Rust.\n").is_none());
+    }
+
+    #[test]
+    fn full_scan_finds_python_artifact() {
+        let root = std::env::temp_dir().join(format!(
+            "check-no-python-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("legacy.py"), "print('legacy')\n").unwrap();
+        let findings = run(&root).unwrap();
+        assert!(findings.iter().any(|f| f.path == Path::new("legacy.py")));
+        fs::remove_dir_all(&root).unwrap();
+    }
 }
