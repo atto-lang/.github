@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "protocol": "oreslang-ecosystem-integration",
+  "repository": "ores-truffle-oreslang/.github",
+  "role": "infrastructure",
+  "upstreams": [],
+  "evidence": "not-attested",
+  "note": "Declared integration touchpoints only; no CI or runtime parity is asserted."
+}
