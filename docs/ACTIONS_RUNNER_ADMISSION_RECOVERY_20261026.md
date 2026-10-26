@@ -36,6 +36,18 @@ and test steps. It compiled standalone **source-free** Rust using `rustc
 --edition=2021 --test`, then reported **12 passed / 0 failed**.
 No Oreslang source, Git tree or cross-repository checkout was transferred.
 
+The exact test source has also been retained in this draft recovery PR as
+[`tools/source_free_ci_evidence_model.rs`](../tools/source_free_ci_evidence_model.rs).
+Its Git blob SHA is `4992708c6396c146746377cde8b3533873f967a4`
+in **both** repositories. This proves content identity of the standalone
+synthetic fixture, not execution of the Oreslang compiler. To rerun without
+Python or external Rust dependencies, use:
+```sh
+rustc --edition=2021 --test tools/source_free_ci_evidence_model.rs -o /tmp/ores-source-free-evidence-tests
+/tmp/ores-source-free-evidence-tests --nocapture
+```
+
+
 Those fixture tests model rejection of missing runner IDs, zero steps,
 skipped/failed/queued steps, failed or incomplete jobs, wrong or malformed
 commit/tree identities, untrusted workflows, and unapproved cross-repository
