@@ -25,6 +25,46 @@ identify the root cause: **billing, spending cap, workflow policy, runner
 eligibility, and GitHub service failure remain hypotheses**. Do not treat
 `failure` with zero steps as a failed unit test or a successful test.
 
+## Source-free independent runner and negative-test evidence (NOT backend CI)
+
+On 2026-10-26 an alternate **private** test repository,
+`sonus-auris-test/clients-api-contract` (repository ID `1323599063`),
+executed [synthetic Actions run 40422046692](https://github.com/sonus-auris-test/clients-api-contract/actions/runs/40422046692)
+at test-branch head `c92e4f99eac89d4b56755e062ec655706c123de9`.
+Job `121918589780` recorded completed/success with actual checkout, compile
+and test steps. It compiled standalone **source-free** Rust using `rustc
+--edition=2021 --test`, then reported **12 passed / 0 failed**.
+No Oreslang source, Git tree or cross-repository checkout was transferred.
+
+Those fixture tests model rejection of missing runner IDs, zero steps,
+skipped/failed/queued steps, failed or incomplete jobs, wrong or malformed
+commit/tree identities, untrusted workflows, and unapproved cross-repository
+destinations. The illustrative positive case is **NOT a release attestation,
+not destination approval, and not a substitute for real compiler tests**.
+
+### Mandatory classification of real evidence
+
+- **NOT_EXECUTED** when no runner is allocated, job steps are absent or
+  empty, the run/job is skipped/cancelled/queued, or logs are unavailable
+  without corroborating executed steps. An accepted rerun API request does
+  not count.
+- **EXECUTED_FAILED** only when steps actually ran and native tests failed;
+  do not label admission failures as regressions.
+- **EXECUTED_PASSED** requires a trusted workflow selected independently
+  from the PR code; exact source commit AND root tree identity; authoritative
+  run and job IDs, assigned runner, nonempty completed successful steps,
+  successful native check conclusion, and independent review/branch gates.
+  A self-reported fixture bool or synthetic model success proves none of this.
+- **CROSS_ORG_BLOCKED** whenever private source would leave the source
+  organization without both a reviewed immutable destination ID on protected
+  source `main` **and** explicit clearance of the open exposure incidents.
+  A private destination, working runner, or user-requested mirroring technique
+  alone never authorizes the export.
+
+The synthetic external run is useful only as proof of **independent runner
+capacity and fail-closed model tests**. Keep source-local and backend-native
+CI conclusions separate in dashboards and release gates.
+
 ## Five already-merged PRs still need executable post-merge checks
 
 The PRs below are **already merged**, and representative native or compiler
