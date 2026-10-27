@@ -3,12 +3,37 @@
 //! checkout provenance, effective review/ruleset checks are separate gates.
 //! Run only in a protected, trusted, source-local workflow. Never with PR code.
 #[cfg(test)]
-use std::{collections::BTreeMap, io::Write, process::{Command, Stdio}};
+use std::{collections::BTreeMap, io::Write, process::Stdio};
 #[cfg(not(test))]
-use std::{env, process::Command};
+use std::env;
+use std::process::Command;
 
 trait ReadOnlyApi {
     fn get_tsv(&self, path: &str, query: &str) -> Result<String, String>;
+}
+
+// Never resolve an authenticated gh executable through PATH. A build step
+// that prepends a writable directory to PATH must not redirect the token
+// into a sibling executable. Use the system-owned location on Ubuntu 24.04.
+// Missing binary is a hard failure, not an unpinned fallback.
+const PINNED_GH_EXECUTABLE: &str = "/usr/bin/gh";
+
+fn get_tsv_via_gh(binary: &str, path: &str, query: &str) -> Result<String, String> {
+    let result = Command::new(binary)
+        .args(["api", "--method", "GET", "-H",
+               "Accept: application/vnd.github+json", path, "--jq", query])
+        .output()
+        .map_err(|_| "pinned GitHub CLI unavailable".to_string())?;
+    if !result.status.success() {
+        // Never emit stderr: it may include upstream or private data.
+        return Err("authenticated read-only GitHub API request failed".into());
+    }
+    let raw = String::from_utf8(result.stdout)
+        .map_err(|_| "API result is not valid UTF-8".to_string())?;
+    if raw.len() > 8192 || raw.contains('\0') {
+        return Err("API scalar response too large or malformed".into());
+    }
+    Ok(raw.trim_end_matches('\n').to_string())
 }
 
 #[cfg(not(test))]
@@ -16,21 +41,7 @@ struct GhApi;
 #[cfg(not(test))]
 impl ReadOnlyApi for GhApi {
     fn get_tsv(&self, path: &str, query: &str) -> Result<String, String> {
-        let result = Command::new("gh")
-            .args(["api", "--method", "GET", "-H",
-                   "Accept: application/vnd.github+json", path, "--jq", query])
-            .output()
-            .map_err(|_| "github cli not available".to_string())?;
-        if !result.status.success() {
-            // Never echo stderr: upstream errors might contain private details.
-            return Err("authenticated read-only GitHub API request failed".into());
-        }
-        let raw = String::from_utf8(result.stdout)
-            .map_err(|_| "API result is not valid UTF-8".to_string())?;
-        if raw.len() > 8192 || raw.contains('\0') {
-            return Err("API scalar response too large or malformed".into());
-        }
-        Ok(raw.trim_end_matches('\n').to_string())
+        get_tsv_via_gh(PINNED_GH_EXECUTABLE, path, query)
     }
 }
 
@@ -377,6 +388,39 @@ mod tests {
         a.0.insert("repos/trusted/source".into(),"901\ttrue\textra".into());
         assert!(audit(&a,&e).is_err());
     }
+    #[test]
+    fn pinned_executable_never_uses_path_lookup() {
+        assert_eq!(PINNED_GH_EXECUTABLE,"/usr/bin/gh");
+        assert!(std::path::Path::new(PINNED_GH_EXECUTABLE).is_absolute());
+    }
+
+    #[test]
+    fn command_adapter_executes_only_get_and_suppresses_cli_errors() {
+        use std::{fs,os::unix::fs::PermissionsExt};
+        let dir=std::env::temp_dir().join(format!("oreslang-gh-command-test-{}",std::process::id()));
+        let _=fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let bin=dir.join("fake-gh");
+        fs::write(&bin,r#"#!/bin/sh
+case "$1 $2 $3" in
+  "api --method GET") printf "901\ttrue\n"; exit 0 ;;
+  *) echo "secret source path in stderr" >&2; exit 2 ;;
+esac
+"#).unwrap();
+        let mut permissions=fs::metadata(&bin).unwrap().permissions();
+        permissions.set_mode(0o700);
+        fs::set_permissions(&bin,permissions).unwrap();
+        let success=get_tsv_via_gh(bin.to_str().unwrap(),"repos/trusted/source",REPO_Q);
+        assert_eq!(success,Ok("901\ttrue".into()));
+        fs::write(&bin,r#"#!/bin/sh
+echo "secret source path in stderr" >&2
+exit 2
+"#).unwrap();
+        let failure=get_tsv_via_gh(bin.to_str().unwrap(),"repos/trusted/source",REPO_Q);
+        assert_eq!(failure,Err("authenticated read-only GitHub API request failed".into()));
+        let _=fs::remove_dir_all(&dir);
+    }
+
     #[test] fn rejects_unsafe_repo_names_and_ids() {
         let (a,mut e)=fixture();e.repo="trusted/../../other";
         assert!(audit(&a,&e).is_err());
