@@ -329,3 +329,64 @@ source destination allowlists, or use tokens to bypass these controls.
 - [GitHub: budgets and alerts](https://docs.github.com/en/billing/concepts/budgets-and-alerts)
 - [GitHub: branch protection rule eligibility](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
 - [GitHub: private-repository ruleset eligibility](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets)
+
+## Auditor integration checkpoint — 2026-10-27
+
+The independently executed source-free CI carrier has a more complete Rust
+metadata collector than the initial fixture. That exact-tested collector
+has now been synchronized into this **draft PR**, without changing source
+permissions, required checks, private source visibility or source-org
+runner settings.
+
+- [Private source-free CI run 40451198067](https://github.com/usa-acc/usa-acc-e2e/actions/runs/40451198067)
+  at carrier commit `0df086ef1fb6654d85538a9930280d5646557a54`,
+  job `122014072187`, recorded checkout, rustc compile, test and
+  guarded-execution steps. Logs: `25 + 23 + 3 = 51` Rust tests
+  passed, with zero failed.
+- Source file `tools/ci_evidence_live.rs` has identical Git blob
+  `bdcd51a406cac4fddc8d72c7f1228a0f2cc5bbd2` in the passing
+  carrier and this draft PR.
+- Process test file `tools/tests/ci_evidence_process.rs` has identical
+  Git blob `fca085b45bb6b078e4b0522015ba650a63e5611f`
+  in the passing carrier and draft PR. It specifically verifies that
+  untrusted PR/foreign-repository/stale-SHA contexts do not invoke a
+  fake GitHub client; that mock signed-in contexts attempt only GET;
+  and that the executable never exits with a release-certification pass.
+- Hardened collector queries require strict admin protections, required
+  App-bound check context, codeowner reviews and stale-review dismissal,
+  no bypass entries, exact main head/commit/tree/run/job/check linkage,
+  and recheck unchanged branch protection and main at end.
+  It denies unknown GitHub host, unprotected refs, token absence or
+  GitHub API errors.
+
+These are **synthetic source-free tests**. The collector's `gh api`
+commands are designed for a protected source-local workflow, but neither
+the source-org runner budget nor the collector's API access has been
+verified in production. The collector still exits with status `3`
+(NOT_CERTIFIED), even if all API metadata is consistent, because real
+native compiler execution, trusted checkout-root attestations, reviewer
+approval provenance and publisher independence are not yet proven.
+Neither a private test carrier nor the current user request authorizes
+mirroring private Oreslang Git trees to another organization.
+
+**Reproduction after source-local runner admission is restored** (Linux
+runner, stock `rustc`, `jq`; no external Rust dependencies):
+
+```bash
+set -euo pipefail
+bin_dir="$(mktemp -d)"
+trap 'rm -rf "$bin_dir"' EXIT
+rustc --edition=2021 --test tools/source_free_ci_evidence_model.rs -o "$bin_dir/model_tests"
+rustc --edition=2021 --test tools/ci_evidence_live.rs -o "$bin_dir/collector_tests"
+rustc --edition=2021 tools/ci_evidence_live.rs -o "$bin_dir/collector"
+rustc --edition=2021 --test tools/tests/ci_evidence_process.rs -o "$bin_dir/process_tests"
+"$bin_dir/model_tests"
+"$bin_dir/collector_tests"
+CI_EVIDENCE_BINARY="$bin_dir/collector" "$bin_dir/process_tests"
+```
+
+**Release status unchanged:** pass the administrator-owned runner-admission
+smoke, enforce private `main` protection and independent review,
+establish a trusted source-local checkout receipt and native compiler
+test provenance, and resolve P0 exposure incidents before any
+cross-organization private-source transfer.
