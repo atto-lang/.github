@@ -13,10 +13,6 @@ struct Step<'a> {
 struct Receipt<'a> {
     source_repo_id: u64,
     runner_repo_id: u64,
-    approved_destination_id: Option<u64>,
-    destination_is_private: bool,
-    independent_export_approval: bool,
-    disclosure_incidents_cleared: bool,
     trusted_workflow_on_protected_ref: bool,
     expected_commit: &'a str,
     actual_commit: &'a str,
@@ -92,10 +88,6 @@ mod tests {
         Receipt {
             source_repo_id: 101,
             runner_repo_id: 101,
-            approved_destination_id: None,
-            destination_is_private: true,
-            independent_export_approval: false,
-            disclosure_incidents_cleared: false,
             trusted_workflow_on_protected_ref: true,
             expected_commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             actual_commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -165,43 +157,34 @@ mod tests {
         let mut r=local(); r.runner_repo_id=202;
         assert_eq!(validate(&r), Err("cross-organization source export not authorized"));
     }
-    #[test] fn denies_cross_org_without_each_gate() {
-        let mut r=local();
-        r.runner_repo_id=202;
-        r.approved_destination_id=Some(202);
-        r.destination_is_private=true;
-        r.independent_export_approval=true;
-        r.disclosure_incidents_cleared=true;
-        assert_eq!(
-            validate(&r),
-            Err("cross-organization source export not authorized")
-        ); // Even all forged permission flags cannot authorize private source.
-        r.destination_is_private=false;
-        assert!(validate(&r).is_err());
-        r.destination_is_private=true;
-        r.approved_destination_id=Some(203);
-        assert!(validate(&r).is_err());
-        r.approved_destination_id=Some(202);
-        r.independent_export_approval=false;
-        assert!(validate(&r).is_err());
-        r.independent_export_approval=true;
-        r.disclosure_incidents_cleared=false;
-        assert!(validate(&r).is_err());
+    #[test]
+    fn denies_foreign_destination_for_many_repository_ids() {
+        let mut r = local();
+        for destination_id in [0, 1, 100, 102, 202, u64::MAX] {
+            r.runner_repo_id = destination_id;
+            assert_eq!(
+                validate(&r),
+                Err(if destination_id == 0 {
+                    "missing immutable repository ID"
+                } else {
+                    "cross-organization source export not authorized"
+                }),
+                "unapproved destination {destination_id}"
+            );
+        }
     }
     #[test]
-    fn rejects_cross_org_with_fake_completed_incident_approval() {
+    fn denies_foreign_destination_even_when_other_evidence_is_valid() {
         let mut r = local();
-        r.runner_repo_id = 902;
-        r.approved_destination_id = Some(902);
-        r.destination_is_private = true;
-        r.independent_export_approval = true;
-        r.disclosure_incidents_cleared = true;
+        r.runner_repo_id = 202;
         assert_eq!(
             validate(&r),
             Err("cross-organization source export not authorized")
         );
+        assert!(canonical_sha(r.expected_commit));
+        assert!(canonical_sha(r.actual_tree));
+        assert_eq!(r.run_conclusion, "success");
     }
-
     #[test] fn denies_empty_step_name() {
         let step=[Step {name:"",status:"completed",conclusion:"success"}];
         let mut r=local(); r.steps=&step;
@@ -283,8 +266,21 @@ struct TrustedReleasePolicy<'a> {
     expected_workflow_id: u64,
     expected_app_id: u64,
     expected_commit: &'a str,
+    expected_root_tree: &'a str,
     base_ref: &'a str,
     pr_author_id: u64,
+}
+
+// An independently collected checkout tree receipt would be a separate
+// authenticated input. This structure alone is mock data, not a signature,
+// identity attestation, or a GitHub Actions run API field.
+#[derive(Debug, Clone)]
+struct GithubCheckoutReceipt<'a> {
+    source_repo_id: u64,
+    run_id: u64,
+    job_id: u64,
+    checked_commit: &'a str,
+    checked_root_tree: &'a str,
 }
 
 fn classify_execution(run: &GithubRun<'_>, job: &GithubJob<'_>) -> Execution {
@@ -312,6 +308,7 @@ fn verify_native_release(
     check: &GithubCheck<'_>,
     protection: &GithubBranchProtection<'_>,
     reviews: &[GithubReview<'_>],
+    checkout: Option<&GithubCheckoutReceipt<'_>>,
 ) -> Result<(), &'static str> {
     if policy.source_repo_id == 0
         || run.repo_id != policy.source_repo_id
@@ -333,6 +330,17 @@ fn verify_native_release(
         || check.head_sha != policy.expected_commit
     {
         return Err("stale commit or check");
+    }
+    let receipt = checkout.ok_or("missing independent checkout tree receipt")?;
+    if receipt.source_repo_id != policy.source_repo_id
+        || receipt.run_id != run.id || receipt.job_id != job.id
+        || !canonical_sha(policy.expected_root_tree)
+        || !canonical_sha(receipt.checked_commit)
+        || !canonical_sha(receipt.checked_root_tree)
+        || receipt.checked_commit != policy.expected_commit
+        || receipt.checked_root_tree != policy.expected_root_tree
+    {
+        return Err("wrong or unverified checkout commit/root tree");
     }
     if run.event != "push" && run.event != "pull_request" && run.event != "merge_group" {
         return Err("unexpected workflow event");
@@ -381,13 +389,16 @@ mod api_fact_tests {
 
     fn fixture<'a>() -> (
         TrustedReleasePolicy<'a>, GithubRun<'a>, GithubJob<'a>,
-        GithubCheck<'a>, GithubBranchProtection<'a>, Vec<GithubReview<'a>>
+        GithubCheck<'a>, GithubBranchProtection<'a>, Vec<GithubReview<'a>>,
+        GithubCheckoutReceipt<'a>
     ) {
         let sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         (
             TrustedReleasePolicy {
                 source_repo_id: 901, expected_workflow_id: 200, expected_app_id: 15368,
-                expected_commit: sha, base_ref: "main", pr_author_id: 100,
+                expected_commit: sha,
+                expected_root_tree: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                base_ref: "main", pr_author_id: 100,
             },
             GithubRun {
                 id: 400, repo_id: 901, workflow_id: 200, head_sha: sha,
@@ -410,18 +421,23 @@ mod api_fact_tests {
                 review_id: 700, reviewer_id: 101, reviewed_head_sha: sha,
                 state: "APPROVED", permission: "write",
             }],
+            GithubCheckoutReceipt {
+                source_repo_id: 901, run_id: 400, job_id: 500,
+                checked_commit: sha,
+                checked_root_tree: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            },
         )
     }
 
     #[test]
     fn allows_only_synthetic_fully_reviewed_source_local_receipt() {
-        let (p,r,j,c,b,v) = fixture();
-        assert_eq!(verify_native_release(&p,&r,&j,&c,&b,&v), Ok(()));
+        let (p,r,j,c,b,v, proof) = fixture();
+        assert_eq!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)), Ok(()));
     }
 
     #[test]
     fn classifies_observed_zero_step_source_runner_failure() {
-        let (_,mut r,mut j,_,_,_) = fixture();
+        let (_,mut r,mut j,_,_,_, _proof) = fixture();
         r.conclusion="failure"; j.conclusion="failure";
         j.runner_id=None; j.steps=None;
         assert_eq!(classify_execution(&r,&j), Execution::NotExecuted);
@@ -431,7 +447,7 @@ mod api_fact_tests {
 
     #[test]
     fn distinguishes_real_native_test_failures_from_admission() {
-        let (_,mut r,mut j,_,_,_) = fixture();
+        let (_,mut r,mut j,_,_,_, _proof) = fixture();
         r.conclusion="failure"; j.conclusion="failure";
         assert_eq!(classify_execution(&r,&j), Execution::ExecutedFailed);
         r.conclusion="success"; j.conclusion="success";
@@ -440,88 +456,111 @@ mod api_fact_tests {
 
     #[test]
     fn denies_cross_repository_and_forged_check_references() {
-        let (p,mut r,mut j,mut c,b,v) = fixture();
+        let (p,mut r,mut j,mut c,b,v, proof) = fixture();
         r.repo_id=902;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         r.repo_id=901; c.repo_id=902;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         c.repo_id=901; c.run_id=401;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         c.run_id=400; j.run_id=401;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
 
     #[test]
     fn denies_wrong_check_issuer_or_workflow_id() {
-        let (mut p,mut r,j,mut c,b,v) = fixture();
+        let (mut p,mut r,j,mut c,b,v, proof) = fixture();
         c.app_id=1234;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         c.app_id=15368; r.workflow_id=201;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         r.workflow_id=200; p.expected_workflow_id=0;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
 
     #[test]
     fn denies_stale_sha_or_forged_merge_check() {
-        let (p,mut r,j,mut c,b,v) = fixture();
+        let (p,mut r,j,mut c,b,v, proof) = fixture();
         c.head_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         c.head_sha=p.expected_commit;
         r.head_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
 
     #[test]
     fn denies_missing_branch_protection_rules() {
-        let (p,r,j,c,mut b,v) = fixture();
-        b.protected=false; assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        let (p,r,j,c,mut b,v, proof) = fixture();
+        b.protected=false; assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         b.protected=true; b.requires_checks=false;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         b.requires_checks=true; b.requires_codeowners=false;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         b.requires_codeowners=true; b.applies_to_admins=false;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         b.applies_to_admins=true; b.permits_bypass=true;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
 
     #[test]
     fn denies_author_self_approval_or_unknown_permission() {
-        let (p,r,j,c,b,mut v) = fixture();
+        let (p,r,j,c,b,mut v, proof) = fixture();
         v[0].reviewer_id=100;
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         v[0].reviewer_id=101; v[0].permission="read";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         v[0].permission="write"; v[0].reviewed_head_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
 
     #[test]
     fn denies_outstanding_change_request_even_with_approval() {
-        let (p,r,j,c,b,mut v) = fixture();
+        let (p,r,j,c,b,mut v, proof) = fixture();
         v.push(GithubReview {
             review_id: 701, reviewer_id: 102, reviewed_head_sha: p.expected_commit,
             state: "CHANGES_REQUESTED", permission: "write",
         });
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
 
     #[test]
     fn denies_skipped_job_or_workflow_event_spoof() {
-        let (p,mut r,mut j,c,b,v) = fixture();
+        let (p,mut r,mut j,c,b,v, proof) = fixture();
         j.status="queued";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         j.status="completed"; r.event="workflow_dispatch";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
 
     #[test]
     fn denies_github_check_without_success() {
-        let (p,r,j,mut c,b,v) = fixture();
+        let (p,r,j,mut c,b,v, proof) = fixture();
         c.conclusion="neutral";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
         c.conclusion="success"; c.status="in_progress";
-        assert!(verify_native_release(&p,&r,&j,&c,&b,&v).is_err());
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
     }
+    #[test]
+    fn denies_missing_or_wrong_checkout_tree_receipt() {
+        let (p,r,j,c,b,v,mut proof)=fixture();
+        assert_eq!(
+            verify_native_release(&p,&r,&j,&c,&b,&v,None),
+            Err("missing independent checkout tree receipt")
+        );
+        proof.checked_root_tree="cccccccccccccccccccccccccccccccccccccccc";
+        assert_eq!(
+            verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)),
+            Err("wrong or unverified checkout commit/root tree")
+        );
+        proof.checked_root_tree=p.expected_root_tree;
+        proof.run_id=401;
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
+        proof.run_id=400;
+        proof.checked_commit="cccccccccccccccccccccccccccccccccccccccc";
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
+        proof.checked_commit=p.expected_commit;
+        proof.source_repo_id=902;
+        assert!(verify_native_release(&p,&r,&j,&c,&b,&v,Some(&proof)).is_err());
+    }
+
 }
