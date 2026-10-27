@@ -44,14 +44,11 @@ fn validate(r: &Receipt<'_>) -> Result<(), &'static str> {
     if r.source_repo_id == 0 || r.runner_repo_id == 0 {
         return Err("missing immutable repository ID");
     }
+    // Source export is forbidden while confidentiality incidents and
+    // independent destination authorization are unresolved. Never promote
+    // PR-controlled booleans into permission to move private source.
     if r.source_repo_id != r.runner_repo_id {
-        if !r.destination_is_private
-            || r.approved_destination_id != Some(r.runner_repo_id)
-            || !r.independent_export_approval
-            || !r.disclosure_incidents_cleared
-        {
-            return Err("cross-organization source export not authorized");
-        }
+        return Err("cross-organization source export not authorized");
     }
     if !canonical_sha(r.expected_commit)
         || !canonical_sha(r.actual_commit)
@@ -175,7 +172,10 @@ mod tests {
         r.destination_is_private=true;
         r.independent_export_approval=true;
         r.disclosure_incidents_cleared=true;
-        assert_eq!(validate(&r), Ok(())); // synthetic model: NOT real authorization
+        assert_eq!(
+            validate(&r),
+            Err("cross-organization source export not authorized")
+        ); // Even all forged permission flags cannot authorize private source.
         r.destination_is_private=false;
         assert!(validate(&r).is_err());
         r.destination_is_private=true;
@@ -188,6 +188,20 @@ mod tests {
         r.disclosure_incidents_cleared=false;
         assert!(validate(&r).is_err());
     }
+    #[test]
+    fn rejects_cross_org_with_fake_completed_incident_approval() {
+        let mut r = local();
+        r.runner_repo_id = 902;
+        r.approved_destination_id = Some(902);
+        r.destination_is_private = true;
+        r.independent_export_approval = true;
+        r.disclosure_incidents_cleared = true;
+        assert_eq!(
+            validate(&r),
+            Err("cross-organization source export not authorized")
+        );
+    }
+
     #[test] fn denies_empty_step_name() {
         let step=[Step {name:"",status:"completed",conclusion:"success"}];
         let mut r=local(); r.steps=&step;
