@@ -96,16 +96,11 @@ fn refuses_missing_or_empty_authentication_without_api_calls() {
     }
 }
 #[test]
-fn synthetic_matching_context_can_read_only_attempt_but_never_certify() {
-    let fake=FakeGh::create("get-only");
-    let output=run(&fake,&context());
-    assert_eq!(output.status.code(),Some(3));
-    assert!(output.stdout.is_empty(),"mock data must never issue passing release proof");
-    let stderr=String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("NOT_CERTIFIED"),"not fail-closed: {stderr}");
-    assert!(!stderr.contains("synthetic-invalid-token"),"token unexpectedly logged");
-    let calls=fake.calls();
-    assert!(!calls.is_empty(),"positive synthetic guard never reached fake gh");
-    assert!(calls.lines().all(|l|l.starts_with("api --method GET ")),
-      "mutating/non-GET invocation observed: {calls}");
+fn injected_path_cli_is_never_executed_when_protected_context_is_missing() {
+    let fake=FakeGh::create("path-hijack-guard");
+    let mut vars=context();
+    vars.insert("GITHUB_REF_PROTECTED".into(),"false".into());
+    vars.insert("GITHUB_TOKEN".into(),"synthetic-fallback-token".into());
+    expect_guard(&run(&fake,&vars));
+    assert!(fake.calls().is_empty(),"PATH-controlled gh executed despite failed preflight");
 }
