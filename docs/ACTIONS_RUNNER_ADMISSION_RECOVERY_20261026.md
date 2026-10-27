@@ -38,7 +38,7 @@ No Oreslang source, Git tree or cross-repository checkout was transferred.
 
 The exact test source has also been retained in this draft recovery PR as
 [`tools/source_free_ci_evidence_model.rs`](../tools/source_free_ci_evidence_model.rs).
-Its latest hardened Git blob SHA is `45a3d348499ae4f0167dbc32d09732b0653e8f34`
+Its latest hardened Git blob SHA is `ddedc86f5e3ebcbb7db94b352dec5acefcb0671d`
 in **both** the Oreslang draft PR and the independently executed private
 `usa-acc/usa-acc-e2e` test repository. This proves content identity of the
 standalone synthetic fixture, not execution of the Oreslang compiler. To rerun without
@@ -125,6 +125,41 @@ is identical in the carrier and this draft PR. Neither a synthetic
 positive test nor private runner availability reauthorizes private-source
 transfers. A future genuinely reviewed export system requires a **separate,
 explicit security design and approval**, not toggling the retired mock flags.
+
+### Third hardening pass — 25 executed Rust tests; checkout-tree receipt required
+
+A follow-up review removed four obsolete simulated private-source export-approval
+fields from the source-local `Receipt` model altogether. Cross-repository
+execution remains unconditionally denied. No combination of self-declared
+approval flags can transform a foreign repository into an authorized
+source-local CI target.
+
+The API-shaped `verify_native_release` fixture previously checked only the
+40-character commit, but **did not require the source root Git-tree identity**.
+It now requires a separate `GithubCheckoutReceipt` containing the repository,
+run and job identifiers, checked commit, and checked root tree. Missing receipts,
+wrong trees, wrong checked commits, foreign repository IDs, and mismatched
+run/job IDs fail closed. This prevents success in *the unit model* without
+an exact-tree receipt. It does **not** make fixture data authentic.
+
+The precise validated version of `tools/source_free_ci_evidence_model.rs`
+(Git blob `ddedc86f5e3ebcbb7db94b352dec5acefcb0671d`) was compiled and
+executed on an actual private runner at
+[`usa-acc/usa-acc-e2e` run 40429213864](https://github.com/usa-acc/usa-acc-e2e/actions/runs/40429213864)
+at exact test-carrier commit `2889474d52758313df2bbef87ee9c65b47e0d070`,
+job `121942515183`: **25 passed / 0 failed, no Rust compiler warnings**,
+with recorded checkout, compile and test steps. The file's Git blob is
+identical in the test carrier and this Oreslang PR; no private Oreslang
+compiler source crossed an organization boundary.
+
+**Production blocker:** `GithubCheckoutReceipt` is currently a deliberately
+synthetic structure. Real authorization requires independently controlled,
+authenticated checkout/tree provenance tied to the exact source revision and
+trusted workflow identity; neither a JSON `tree_sha` field nor an asserted
+receipt from candidate PR code is acceptable. Also obtain effective protected
+branch state, independent review history and native backend test checks. These
+are not implemented by the fixture and cannot be inferred from 25 passing
+source-free tests.
 
 ### Mandatory classification of real evidence
 
