@@ -38,9 +38,10 @@ No Oreslang source, Git tree or cross-repository checkout was transferred.
 
 The exact test source has also been retained in this draft recovery PR as
 [`tools/source_free_ci_evidence_model.rs`](../tools/source_free_ci_evidence_model.rs).
-Its Git blob SHA is `4992708c6396c146746377cde8b3533873f967a4`
-in **both** repositories. This proves content identity of the standalone
-synthetic fixture, not execution of the Oreslang compiler. To rerun without
+Its hardened Git blob SHA is `ff6eea952de8814208b13061a07ca5dfb8cc124f`
+in **both** the Oreslang draft PR and the independently executed private
+`usa-acc/usa-acc-e2e` test repository. This proves content identity of the
+standalone synthetic fixture, not execution of the Oreslang compiler. To rerun without
 Python or external Rust dependencies, use:
 ```sh
 rustc --edition=2021 --test tools/source_free_ci_evidence_model.rs -o /tmp/ores-source-free-evidence-tests
@@ -53,6 +54,56 @@ skipped/failed/queued steps, failed or incomplete jobs, wrong or malformed
 commit/tree identities, untrusted workflows, and unapproved cross-repository
 destinations. The illustrative positive case is **NOT a release attestation,
 not destination approval, and not a substitute for real compiler tests**.
+
+### Second runner, hardened API-shaped synthetic fixtures
+
+The first rerun of the expanded fixture on `sonus-auris-test` failed **before
+steps were recorded**: [run 40423475206](https://github.com/sonus-auris-test/clients-api-contract/actions/runs/40423475206),
+both initial attempt and failed-jobs rerun. This is NOT_EXECUTED; it
+does not indicate a Rust compiler regression.
+
+A separate private source-free test carrier,
+`usa-acc/usa-acc-e2e`, executed [run 40423684313](https://github.com/usa-acc/usa-acc-e2e/actions/runs/40423684313)
+at exact carrier HEAD `0114f6c5041d88b9590d7da792e47e2e69e9a2a0`,
+job `121924020094`. GitHub reported completed/success with actual
+checkout, `rustc --test` compile and test execution steps. The log
+reports **23 passed / 0 failed**. The test fixture's Git blob identity
+(`ff6eea952de8814208b13061a07ca5dfb8cc124f`) matches this draft
+PR. No Oreslang compiler sources were exported.
+
+The additional 11 cases exercise **API-shaped fixtures** for run/job/check
+linkage, expected trusted workflow and check-issuer App ID, exact commit,
+protected base branch, independent exact-head approval and change requests,
+and fail-closed admission classification. Their success is **only a
+unit-test result for mock data**. The Rust file still does NOT fetch or
+authenticate GitHub API payloads and does NOT verify a real checkout tree,
+trusted workflow content, native compiler test semantics, or effective
+production branch protections.
+
+**Production adapter follow-up (release-blocking):**
+1. Obtain source repository ID, current base-branch protection/ruleset,
+   reviews and reviewer collaborator permissions through an **authenticated,
+   read-only trusted GitHub installation**, not from PR-supplied fields;
+   require that the collector/reviewer identity cannot be controlled by the
+   candidate source changes.
+2. Read actual workflow run/job/check identities and issuer from the same
+   authenticated trust boundary; require checks bound to an immutable
+   source head and a separately reviewed workflow definition, not just
+   workflow names or a self-asserted `trusted` flag.
+3. Verify root Git-tree identity using a **real executed checkout** and
+   authenticated immutable result receipt. The synthetic `GithubRun`
+   fixture does not include this proof.
+4. Verify an independently pinned required *native test* workflow/job
+   and actual positive/negative compiler tests. A job named `test`,
+   a successful shell, or `Step { conclusion: "success" }` alone is
+   insufficient, even if all synthetic fixtures pass.
+5. Evaluate each reviewer's latest effective review after the final head,
+   detect stale approvals, and independently validate CODEOWNER status.
+   The synthetic review model is deliberately conservative and does not
+   implement the full GitHub review state machine.
+6. Run production negative cases proving missing steps, stale head/tree,
+   disabled protections, wrong issuer, missing approval and revoked access
+   fail closed before enabling any required checks.
 
 ### Mandatory classification of real evidence
 
