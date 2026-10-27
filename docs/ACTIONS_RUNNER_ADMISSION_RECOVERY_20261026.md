@@ -38,7 +38,7 @@ No Oreslang source, Git tree or cross-repository checkout was transferred.
 
 The exact test source has also been retained in this draft recovery PR as
 [`tools/source_free_ci_evidence_model.rs`](../tools/source_free_ci_evidence_model.rs).
-Its hardened Git blob SHA is `ff6eea952de8814208b13061a07ca5dfb8cc124f`
+Its latest hardened Git blob SHA is `45a3d348499ae4f0167dbc32d09732b0653e8f34`
 in **both** the Oreslang draft PR and the independently executed private
 `usa-acc/usa-acc-e2e` test repository. This proves content identity of the
 standalone synthetic fixture, not execution of the Oreslang compiler. To rerun without
@@ -104,6 +104,27 @@ production branch protections.
 6. Run production negative cases proving missing steps, stale head/tree,
    disabled protections, wrong issuer, missing approval and revoked access
    fail closed before enabling any required checks.
+
+### Additional P0 export safety hardening — 24 verified tests
+
+A follow-up audit found the original synthetic `Receipt` validator could
+return `Ok(())` for cross-repository source execution if model-only
+`independent_export_approval` / `disclosure_incidents_cleared` Booleans
+were set. **That positive path is now removed**: it returns
+`cross-organization source export not authorized` for every nonlocal
+repository ID, regardless of modeled approval or private visibility.
+This deliberately prevents accidental use of editable flags as export
+authorization while P0 exposure incidents are still open.
+
+The exact independently compiled and executed revised fixture is
+[`usa-acc/usa-acc-e2e` run 40424169727](https://github.com/usa-acc/usa-acc-e2e/actions/runs/40424169727)
+at commit `dc94f236783cf3a6351720b2241ad5dc337cb366`,
+job `121925686274`: **24 passed / 0 failed** with actual runner steps.
+The Rust test blob `45a3d348499ae4f0167dbc32d09732b0653e8f34`
+is identical in the carrier and this draft PR. Neither a synthetic
+positive test nor private runner availability reauthorizes private-source
+transfers. A future genuinely reviewed export system requires a **separate,
+explicit security design and approval**, not toggling the retired mock flags.
 
 ### Mandatory classification of real evidence
 
