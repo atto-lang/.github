@@ -161,6 +161,72 @@ branch state, independent review history and native backend test checks. These
 are not implemented by the fixture and cannot be inferred from 25 passing
 source-free tests.
 
+### Source-local authenticated metadata collector — added, not certified
+
+A new Rust/std-only collector,
+[`tools/ci_evidence_live.rs`](../tools/ci_evidence_live.rs), performs
+**GET-only** authenticated GitHub REST reads via the installed `gh api` CLI.
+It accepts only a repository of the form `owner/repo`, a protected `main`
+push context, immutable SHA/tree and numeric run/job/check/workflow/issuer
+identifiers. It never executes remote code or transfers Git objects.
+It fails closed on any inaccessible/malformed REST response.
+
+When invoked **inside a trusted, protected source-local GitHub Actions job**
+with a read-only `GITHUB_TOKEN`/GH CLI token and
+`GITHUB_REF_PROTECTED=true`, it requests:
+
+- `GET /repos/{owner}/{repo}`: immutable repo ID and private visibility
+- `GET /repos/{owner}/{repo}/branches/main`: protected state/current commit
+- `GET /repos/{owner}/{repo}/actions/runs/{run_id}`: run, workflow,
+  repository, SHA, event, completion and check-suite linkage
+- `GET /repos/{owner}/{repo}/actions/jobs/{job_id}`: assigned runner and
+  actual completed/successful steps; zero-step or skipped steps fail
+- `GET /repos/{owner}/{repo}/check-runs/{check_id}`: GitHub App issuer,
+  check SHA/status and suite identity; must match the expected job
+- `GET /repos/{owner}/{repo}/git/commits/{commit}`: Git object root tree
+  must match the independently configured expected tree
+
+The fixed CLI argument contract is:
+
+```sh
+rustc --edition=2021 tools/ci_evidence_live.rs -o /tmp/ci-evidence-readonly
+/tmp/ci-evidence-readonly OWNER/PRIVATE_REPO main EXPECTED_COMMIT_SHA EXPECTED_TREE_SHA RUN_ID JOB_ID CHECK_ID WORKFLOW_ID ISSUER_APP_ID
+```
+
+**Important:** The expected IDs and commit/tree must be configured in a
+separately protected workflow, not passed through untrusted PR parameters.
+The GitHub token must have the minimum necessary read permissions
+(`contents: read`, `actions: read`, `checks: read` and appropriate
+repository metadata); permission errors fail closed. This code does not
+create or modify branch rules, workflows, checks or reviews. Neither
+the token nor unfiltered GitHub API error messages are printed.
+
+**Deliberate release-block:** even if metadata checks pass, the binary prints
+`METADATA_VERIFIED_ONLY` and exits nonzero. It does **not** yet verify
+independent author/approver/CODEOWNER review history or obtain a trusted
+*executed checkout* tree receipt. Reading the commit Git object's `tree.sha`
+cannot prove what a runner built. In addition, `protected=true` alone
+does not prove all required review/check rules are effective. This is
+not a full release evidence collector until these trusted inputs are
+added and cross-checked. Do **not** mark it as a required passing CI check
+or promote a result to certified status.
+
+**Independent source-free validation:** the exact collector Rust file has
+Git blob SHA `6381db8b2a2fcefc4964be35ad00db2e15d3f540`,
+identical to the one compiled in private
+[`usa-acc/usa-acc-e2e` Actions run #40431039574](https://github.com/usa-acc/usa-acc-e2e/actions/runs/40431039574)
+at test-carrier head `4d1eb81a334cec762db1e5d6eeef958f71da8ea3`,
+job `121948473858`. There were **37 passing Rust tests**:
+25 existing receipt-model cases and 12 read-only collector
+API-response/mock adversarial tests. The job also compiled the real CLI
+binary and verified that it exits nonzero with `NOT_CERTIFIED` in an
+unprotected Actions environment. All checkout, compile, test and
+guard steps actually executed.
+
+No authenticated GitHub metadata reads from an Oreslang source-local job
+have been executed; source-org runner admission remains broken. No Oreslang
+compiler source or Git tree was exported to the private test carrier.
+
 ### Mandatory classification of real evidence
 
 - **NOT_EXECUTED** when no runner is allocated, job steps are absent or
