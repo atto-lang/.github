@@ -10,7 +10,8 @@ with an explicit allowlist for the two private compiler source repositories.
 It reads only run metadata, the selected job, GitHub check annotations,
 the default branch's protected flag, ruleset list, and Actions policy.
 It never accesses repository contents, Git objects, artifacts, secrets,
-or write endpoints. It cannot inspect private Actions billing settings.
+or write endpoints. Every GitHub API request pins the host to `github.com`
+and ignores any ambient `GH_HOST` setting. It cannot inspect private Actions billing settings.
 
 ## Independent administrator action
 
@@ -71,8 +72,8 @@ license to broaden the GitHub App installation or bypass source governance.
 ## Test receipt
 
 This tool was originally created as source-free code and built on
-[Beamscale run 41251408684](https://github.com/beamscale/bmscl-compiler/actions/runs/41251408684):
-job `124685519951` executed real runner steps for the earlier 10-test revision. The current revision adds check-run provenance tests and must be re-executed independently before its new test count is claimed as passing.
+[Beamscale run 41251408684](https://github.com/beamscale/bmscl-compiler/actions/runs/41252658483):
+job `124689222468` executed real runner steps for the earlier 10-test revision. The current revision adds check-run provenance tests and must be re-executed independently before its new test count is claimed as passing.
 It did **not** access Oreslang private compiler source or use organization
 administrator credentials, so it did not retrieve the actual check-run
 annotations. Its outcome is tool validation only.
