@@ -1,0 +1,30 @@
+name: Source-free GitHub Actions admission diagnostics (Rust)
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-free-gh-run-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Compile Rust diagnostic and run eight source-free tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustc --edition=2021 -D warnings --test tools/gh_run_admission.rs -o /tmp/ores-gh-admission-test
+          /tmp/ores-gh-admission-test
+          rustc --edition=2021 -D warnings tools/gh_run_admission.rs -o /tmp/ores-gh-admission
+          if /tmp/ores-gh-admission ores-truffle-oreslang/oreslang-source.llvm 0 1; then
+            echo "::error::Untrusted run identity accepted"
+            exit 1
+          fi
+          if /tmp/ores-gh-admission untrusted/private 1 2; then
+            echo "::error::Unapproved repository accepted"
+            exit 1
+          fi
+          echo "SOURCE_FREE_RUST_ADMISSION_TOOL_TEST=PASS"
