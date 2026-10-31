@@ -29,6 +29,13 @@ fn canonical_id(value: &str) -> bool {
         && value.parse::<u64>().is_ok()
 }
 
+fn canonical_sha(value: &str) -> bool {
+    value.len() == 40
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
 fn parse(args: &[String]) -> Result<Args, &'static str> {
     if args.len() != 4 {
         return Err("usage: gh-run-admission OWNER/REPO RUN_ID JOB_ID");
@@ -47,12 +54,30 @@ fn parse(args: &[String]) -> Result<Args, &'static str> {
     })
 }
 
-fn endpoint(parts: &Args, part: &str) -> String {
+fn check_run_id_from_url(repository: &str, url: &str) -> Result<String, &'static str> {
+    let prefix = format!("https://api.github.com/repos/{repository}/check-runs/");
+    let id = url
+        .strip_prefix(&prefix)
+        .ok_or("selected job check_run_url is outside the audited repository")?;
+    if !canonical_id(id) {
+        return Err("selected job check_run_url does not end in one canonical check-run id");
+    }
+    Ok(id.to_owned())
+}
+
+fn endpoint(parts: &Args, part: &str, check_run_id: Option<&str>) -> String {
     let prefix = format!("repos/{}/", parts.repository);
     match part {
-        "run" => format!("{prefix}actions/runs/{}", parts.run_id),
+        "run" | "run_head" => format!("{prefix}actions/runs/{}", parts.run_id),
         "job" | "job_identity" => format!("{prefix}actions/jobs/{}", parts.job_id),
-        "annotations" => format!("{prefix}check-runs/{}/annotations?per_page=100", parts.job_id),
+        "check_run" | "check_identity" => format!(
+            "{prefix}check-runs/{}",
+            check_run_id.expect("check-run id required for check-run endpoint")
+        ),
+        "annotations" => format!(
+            "{prefix}check-runs/{}/annotations?per_page=100",
+            check_run_id.expect("check-run id required for annotation endpoint")
+        ),
         "branch" => format!("{prefix}branches/main"),
         "rulesets" => format!("{prefix}rulesets?per_page=100"),
         "permissions" => format!("{prefix}actions/permissions"),
@@ -63,8 +88,11 @@ fn endpoint(parts: &Args, part: &str) -> String {
 fn projection(part: &str) -> &'static str {
     match part {
         "run" => r#"{id,run_attempt,head_sha,event,status,conclusion,created_at,updated_at}"#,
-        "job" => r#"{id,run_id,name,status,conclusion,runner_id,runner_name,started_at,completed_at,step_count:((.steps // [])|length)}"#,
-        "job_identity" => ".run_id",
+        "run_head" => ".head_sha",
+        "job" => r#"{id,run_id,name,status,conclusion,runner_id,runner_name,started_at,completed_at,step_count:((.steps // [])|length),check_run_url}"#,
+        "job_identity" => r#"[.run_id,.check_run_url]|@tsv"#,
+        "check_run" => r#"{id,head_sha,status,conclusion,app_slug:.app.slug,started_at,completed_at,annotations_count:.output.annotations_count}"#,
+        "check_identity" => r#"[.head_sha,.app.slug]|@tsv"#,
         "annotations" => r#"[.[]|{level:.annotation_level,title,message,path,start_line,end_line}]"#,
         "branch" => r#"{name,protected,sha:.commit.sha}"#,
         "rulesets" => r#"[.[]|{id,name,enforcement,source_type,source}]"#,
@@ -73,35 +101,67 @@ fn projection(part: &str) -> &'static str {
     }
 }
 
-fn gh_read(parts: &Args, part: &str) -> Result<String, String> {
-    let path = endpoint(parts, part);
+fn gh_read(parts: &Args, part: &str, check_run_id: Option<&str>) -> Result<String, String> {
+    let path = endpoint(parts, part, check_run_id);
     let result = Command::new("gh")
-        // The administrator's ambient GH_HOST must never redirect an
-        // authenticated read to an unexpected host.
+        // Preserve the administrator's chosen credentials, but never allow
+        // ambient GH_HOST to redirect a privileged API request elsewhere.
         .env_remove("GH_HOST")
         .args(["api", "--hostname", GITHUB_API_HOST, "--method", "GET",
                &path, "--jq", projection(part)])
         .output()
         .map_err(|_| "GitHub CLI unavailable (install gh and authenticate)".to_owned())?;
     if !result.status.success() {
-        // No credential values or unfiltered stderr are printed.
         return Err(format!(
             "GitHub API refused read-only {} request (exit {:?}); inspect access/plan in the UI",
-            part, result.status.code()
+            part,
+            result.status.code()
         ));
     }
-    let output = String::from_utf8(result.stdout)
-        .map_err(|_| format!("{part}: non-UTF8 API output"))?;
+    let output =
+        String::from_utf8(result.stdout).map_err(|_| format!("{part}: non-UTF8 API output"))?;
     if output.len() > 64 * 1024 {
         return Err(format!("{part}: diagnostic output exceeded 64 KiB limit"));
     }
     Ok(output)
 }
 
-fn verify_job_identity(parts: &Args, observed: &str) -> Result<(), &'static str> {
-    let id = observed.trim();
-    if !canonical_id(id) || id != parts.run_id {
+fn parse_job_identity(parts: &Args, observed: &str) -> Result<String, &'static str> {
+    let line = observed.trim_end_matches(['\r', '\n']);
+    if line.contains('\n') || line.contains('\r') {
+        return Err("selected job identity projection returned multiple records");
+    }
+    let mut fields = line.split('\t');
+    let run_id = fields.next().ok_or("selected job identity is missing run_id")?;
+    let check_run_url = fields
+        .next()
+        .ok_or("selected job identity is missing check_run_url")?;
+    if fields.next().is_some() || !canonical_id(run_id) || run_id != parts.run_id {
         return Err("selected job does not belong to supplied workflow run");
+    }
+    check_run_id_from_url(&parts.repository, check_run_url)
+}
+
+fn verify_check_identity(run_head: &str, observed: &str) -> Result<(), &'static str> {
+    let expected_head = run_head.trim();
+    if !canonical_sha(expected_head) {
+        return Err("workflow run head_sha is not one canonical lowercase 40-hex SHA");
+    }
+    let line = observed.trim_end_matches(['\r', '\n']);
+    if line.contains('\n') || line.contains('\r') {
+        return Err("check-run identity projection returned multiple records");
+    }
+    let mut fields = line.split('\t');
+    let check_head = fields
+        .next()
+        .ok_or("check-run identity is missing head_sha")?;
+    let app_slug = fields.next().ok_or("check-run identity is missing app slug")?;
+    if fields.next().is_some()
+        || !canonical_sha(check_head)
+        || check_head != expected_head
+        || app_slug != "github-actions"
+    {
+        return Err("selected check-run does not match workflow head/GitHub Actions identity");
     }
     Ok(())
 }
@@ -115,32 +175,66 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    // Verify job membership before retrieving its annotations. Job and run
-    // IDs are individually valid but an arbitrary unrelated job is not
-    // evidence for the supplied run/head.
-    let job_run_id = match gh_read(&args, "job_identity") {
+
+    // A workflow job has a check_run_url; job IDs and check-run IDs are
+    // different identity domains and must never be assumed equal.
+    let job_identity = match gh_read(&args, "job_identity", None) {
         Ok(s) => s,
         Err(reason) => {
             eprintln!("Cannot attest job/run identity: {reason}");
             return ExitCode::from(1);
         }
     };
-    if let Err(reason) = verify_job_identity(&args, &job_run_id) {
+    let check_run_id = match parse_job_identity(&args, &job_identity) {
+        Ok(id) => id,
+        Err(reason) => {
+            eprintln!("{reason}");
+            return ExitCode::from(1);
+        }
+    };
+
+    let run_head = match gh_read(&args, "run_head", None) {
+        Ok(s) => s,
+        Err(reason) => {
+            eprintln!("Cannot attest workflow run head: {reason}");
+            return ExitCode::from(1);
+        }
+    };
+    let check_identity = match gh_read(&args, "check_identity", Some(&check_run_id)) {
+        Ok(s) => s,
+        Err(reason) => {
+            eprintln!("Cannot attest check-run identity: {reason}");
+            return ExitCode::from(1);
+        }
+    };
+    if let Err(reason) = verify_check_identity(&run_head, &check_identity) {
         eprintln!("{reason}");
         return ExitCode::from(1);
     }
+
     println!("SOURCE_FREE_READ_ONLY_ADMISSION_REPORT");
-    println!("repo={} run={} job={}", args.repository, args.run_id, args.job_id);
-    // Check job.run_id against the supplied run_id when reviewing results.
-    // Never assume a zero-step failure is a compile/test failure.
+    println!(
+        "repo={} run={} job={} check_run={}",
+        args.repository, args.run_id, args.job_id, check_run_id
+    );
+
     let mut essential_ok = true;
-    for part in ["run", "job", "annotations", "branch", "rulesets", "permissions"] {
+    for part in [
+        "run",
+        "job",
+        "check_run",
+        "annotations",
+        "branch",
+        "rulesets",
+        "permissions",
+    ] {
         println!("--- {part} ---");
-        match gh_read(&args, part) {
+        let selected = matches!(part, "check_run" | "annotations").then_some(check_run_id.as_str());
+        match gh_read(&args, part, selected) {
             Ok(data) => print!("{data}"),
             Err(message) => {
                 println!("UNAVAILABLE: {message}");
-                if part == "run" || part == "job" || part == "annotations" {
+                if matches!(part, "run" | "job" | "check_run" | "annotations") {
                     essential_ok = false;
                 }
             }
@@ -161,34 +255,45 @@ mod tests {
     fn argv(repo: &str, run: &str, job: &str) -> Vec<String> {
         vec!["tool".into(), repo.into(), run.into(), job.into()]
     }
+
     #[test]
     fn accepts_pinned_audit_repos() {
         for repo in ALLOWED_REPOS {
-            assert_eq!(parse(&argv(repo, "41236569150", "124641494087")).unwrap().repository, repo);
+            assert_eq!(
+                parse(&argv(repo, "41236569150", "124641494087"))
+                    .unwrap()
+                    .repository,
+                repo
+            );
         }
     }
+
     #[test]
     fn rejects_empty_and_zero_ids() {
         for bad in ["", "0", "00", "01", "-1", "+1", "1 ", "1/2", "1?x", "1\n2"] {
             assert!(!canonical_id(bad), "accepted {bad:?}");
         }
     }
+
     #[test]
     fn rejects_overflow_and_unbounded_ids() {
         for bad in ["18446744073709551616", "99999999999999999999999"] {
             assert!(!canonical_id(bad));
         }
     }
+
     #[test]
     fn accepts_canonical_positive_id() {
         for good in ["1", "123", "41236569150", "9999999999999999999"] {
             assert!(canonical_id(good));
         }
     }
+
     #[test]
     fn rejects_arbitrary_or_injected_repositories() {
         for bad in [
-            "someone/private", "ores-truffle-oreslang/../admin",
+            "someone/private",
+            "ores-truffle-oreslang/../admin",
             "ores-truffle-oreslang/oreslang-source.llvm?ref=main",
             "ores-truffle-oreslang/oreslang-source.net\n--method DELETE",
             "ores-truffle-oreslang/.github",
@@ -196,6 +301,7 @@ mod tests {
             assert!(parse(&argv(bad, "12", "34")).is_err(), "{bad:?}");
         }
     }
+
     #[test]
     fn rejects_missing_and_extra_arguments() {
         assert!(parse(&["tool".into()]).is_err());
@@ -203,41 +309,116 @@ mod tests {
         many.push("--write".into());
         assert!(parse(&many).is_err());
     }
+
     #[test]
     fn accepts_read_only_explicit_paths() {
-        let args = parse(&argv(ALLOWED_REPOS[1], "41249665953", "124680332733")).unwrap();
+        let args =
+            parse(&argv(ALLOWED_REPOS[1], "41250696587", "124683413992")).unwrap();
         assert_eq!(
-            endpoint(&args, "annotations"),
-            "repos/ores-truffle-oreslang/oreslang-source.net/check-runs/124680332733/annotations?per_page=100"
+            endpoint(&args, "job", None),
+            "repos/ores-truffle-oreslang/oreslang-source.net/actions/jobs/124683413992"
         );
         assert_eq!(
-            endpoint(&args, "job"),
-            "repos/ores-truffle-oreslang/oreslang-source.net/actions/jobs/124680332733"
+            endpoint(&args, "annotations", Some("124683413992")),
+            "repos/ores-truffle-oreslang/oreslang-source.net/check-runs/124683413992/annotations?per_page=100"
         );
     }
+
     #[test]
-    fn rejects_wrong_job_run_even_if_both_ids_valid() {
-        let a = parse(&argv(ALLOWED_REPOS[0], "41236569150", "124641494087")).unwrap();
-        let matching = format!("{}{}", a.run_id, char::from(10));
-        assert!(verify_job_identity(&a, &matching).is_ok());
-        assert!(verify_job_identity(&a, "41236569149").is_err());
-        assert!(verify_job_identity(&a, "0").is_err());
-        assert!(verify_job_identity(&a, "invalid").is_err());
+    fn extracts_check_run_from_selected_job_identity() {
+        let args =
+            parse(&argv(ALLOWED_REPOS[1], "41250696587", "124683413992")).unwrap();
+        let observed = concat!(
+            "41250696587\t",
+            "https://api.github.com/repos/ores-truffle-oreslang/",
+            "oreslang-source.net/check-runs/124683413992\n"
+        );
+        assert_eq!(parse_job_identity(&args, observed).unwrap(), "124683413992");
     }
+
+    #[test]
+    fn rejects_wrong_job_run_even_if_ids_valid() {
+        let args =
+            parse(&argv(ALLOWED_REPOS[1], "41250696587", "124683413992")).unwrap();
+        let observed = concat!(
+            "41250696586\t",
+            "https://api.github.com/repos/ores-truffle-oreslang/",
+            "oreslang-source.net/check-runs/124683413992\n"
+        );
+        assert!(parse_job_identity(&args, observed).is_err());
+    }
+
+    #[test]
+    fn rejects_spoofed_check_run_urls() {
+        let args =
+            parse(&argv(ALLOWED_REPOS[1], "41250696587", "124683413992")).unwrap();
+        for url in [
+            "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.llvm/check-runs/124683413992",
+            "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.net/check-runs/124683413992?x=1",
+            "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.net/check-runs/01",
+            "https://evil.example/repos/ores-truffle-oreslang/oreslang-source.net/check-runs/124683413992",
+        ] {
+            let observed = format!("{}\t{}\n", args.run_id, url);
+            assert!(parse_job_identity(&args, &observed).is_err(), "{url}");
+        }
+    }
+
+    #[test]
+    fn verifies_check_run_head_and_actions_app() {
+        let head = "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\n";
+        let good =
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\n";
+        assert!(verify_check_identity(head, good).is_ok());
+        assert!(verify_check_identity(
+            head,
+            "125e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\n"
+        )
+        .is_err());
+        assert!(verify_check_identity(
+            head,
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tuntrusted-app\n"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_shas() {
+        for bad in [
+            "",
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8",
+            "025E88ECA0C308C5F34FE8E4D58C88C915EB8D8E",
+            "g25e88eca0c308c5f34fe8e4d58c88c915eb8d8",
+        ] {
+            assert!(!canonical_sha(bad), "{bad:?}");
+        }
+    }
+
     #[test]
     fn job_identity_uses_read_only_selected_job_route() {
         let a = parse(&argv(ALLOWED_REPOS[0], "2", "3")).unwrap();
-        assert_eq!(endpoint(&a, "job_identity"), endpoint(&a, "job"));
-        assert_eq!(projection("job_identity"), ".run_id");
+        assert_eq!(endpoint(&a, "job_identity", None), endpoint(&a, "job", None));
+        assert_eq!(projection("job_identity"), r#"[.run_id,.check_run_url]|@tsv"#);
     }
+
     #[test]
-    fn github_host_is_literal_and_not_tenant_input() {
+    fn api_host_is_pinned_to_official_github() {
         assert_eq!(GITHUB_API_HOST, "github.com");
         assert!(ALLOWED_REPOS.iter().all(|r| r.starts_with("ores-truffle-oreslang/")));
     }
     #[test]
     fn all_projections_are_literal_and_constrained() {
-        for part in ["run", "job", "annotations", "branch", "rulesets", "permissions"] {
+        for part in [
+            "run",
+            "run_head",
+            "job",
+            "job_identity",
+            "check_run",
+            "check_identity",
+            "annotations",
+            "branch",
+            "rulesets",
+            "permissions",
+        ] {
             assert!(!projection(part).contains("secret"));
             assert!(!projection(part).contains("token"));
             assert!(!projection(part).contains("environment"));
