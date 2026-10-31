@@ -31,7 +31,7 @@ umask 077
 
 The sample run/job IDs refer to real matching jobs. Replace both IDs with
 the current **matching** run and job values when diagnosing a later head.
-The tool prints both IDs and the job's `run_id` to support this cross-check.
+The tool independently reads the selected job's `run_id` and **rejects mismatched run/job IDs before querying annotations**.
 Never equate a successful diagnostic with a successful compiler run.
 
 Review the local output privately before quoting or sanitizing the exact
@@ -71,9 +71,9 @@ license to broaden the GitHub App installation or bypass source governance.
 ## Test receipt
 
 This tool was originally created as source-free code and built on
-[Beamscale run 41251167458](https://github.com/beamscale/bmscl-compiler/actions/runs/41251167458):
-job `124684797331` executed real runner steps; `rustc -D warnings`
-compiled the test binary and standalone CLI and **8/8 Rust tests passed**.
+[Beamscale run 41251408684](https://github.com/beamscale/bmscl-compiler/actions/runs/41251167458):
+job `124685519951` executed real runner steps; `rustc -D warnings`
+compiled the test binary and standalone CLI and **10/10 Rust tests passed**.
 It did **not** access Oreslang private compiler source or use organization
 administrator credentials, so it did not retrieve the actual check-run
 annotations. Its outcome is tool validation only.
