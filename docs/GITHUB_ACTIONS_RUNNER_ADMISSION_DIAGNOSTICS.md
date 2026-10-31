@@ -26,11 +26,11 @@ rustc --edition=2021 -D warnings tools/gh_run_admission.rs -o /tmp/ores-gh-diagn
 # Secure local capture: annotations may contain private identifiers.
 umask 077
 /tmp/ores-gh-diagnostic ores-truffle-oreslang/oreslang-source.llvm 41236569150 124641494087 > llvm-admission-local.txt
-/tmp/ores-gh-diagnostic ores-truffle-oreslang/oreslang-source.net 41250696587 124680332733 > net-admission-local.txt
+/tmp/ores-gh-diagnostic ores-truffle-oreslang/oreslang-source.net 41250696587 124683413992 > net-admission-local.txt
 ```
 
-For **the .NET example**, the run/job IDs shown above are from different
-attempts, so replace them with matching run and job values before executing.
+The sample run/job IDs refer to real matching jobs. Replace both IDs with
+the current **matching** run and job values when diagnosing a later head.
 The tool prints both IDs and the job's `run_id` to support this cross-check.
 Never equate a successful diagnostic with a successful compiler run.
 
