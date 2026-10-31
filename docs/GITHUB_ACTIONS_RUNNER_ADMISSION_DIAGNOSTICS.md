@@ -71,7 +71,7 @@ license to broaden the GitHub App installation or bypass source governance.
 ## Test receipt
 
 This tool was originally created as source-free code and built on
-[Beamscale run 41251408684](https://github.com/beamscale/bmscl-compiler/actions/runs/41251167458):
+[Beamscale run 41251408684](https://github.com/beamscale/bmscl-compiler/actions/runs/41251408684):
 job `124685519951` executed real runner steps; `rustc -D warnings`
 compiled the test binary and standalone CLI and **10/10 Rust tests passed**.
 It did **not** access Oreslang private compiler source or use organization
