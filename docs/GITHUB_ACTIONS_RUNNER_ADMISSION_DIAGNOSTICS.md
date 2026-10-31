@@ -71,15 +71,9 @@ license to broaden the GitHub App installation or bypass source governance.
 ## Test receipt
 
 The exact Rust source in this draft was compiled and executed on
-[Beamscale run 41252832319](https://github.com/beamscale/bmscl-compiler/actions/runs/41252832319),
-job `124689745230`: **15/15 tests passed** for the prior host-pinning revision. The current revision adds zero-step/failure-only and absolute-CLI-path tests and must be re-executed independently before its new test count is claimed as passing. Prior execution used `rustc -D warnings`,
-and the source-free execution marker was recorded in a real job log.
-The previously validated Git blob was `09f06dd09e0a4acd1afa5cca49005f4fcbd3cf96`. The current Rust blob supersedes it and requires a fresh exact-blob receipt.
+[Beamscale run 41253433658](https://github.com/beamscale/bmscl-compiler/actions/runs/41253433658),
+job `124691512059` in Beamscale run `41253433658`: **18/18 tests passed**, `rustc -D warnings`, the pinned `/usr/bin/gh` preflight passed, and `SOURCE_FREE_GH_ZERO_STEP_HARDENING_TEST=PASS` was recorded in a real job log. The exact validated Rust blob is `2891937bf07b37ef9c993432fe3bae172de50a50`, identical to the current proposed organization tool.
 
-The tests cover bounded argument identities, strict run/job membership,
-check-run URL repository binding, expected head SHA and GitHub Actions
-application identity, spoofed URL and malformed input rejection, and
-pinning authenticated API reads to `github.com` rather than trusting
-ambient `GH_HOST`. No private Oreslang compiler source or secrets
+The tests cover bounded argument identities, strict run/job membership, completed-failure/zero-step gating, check-run URL repository binding, expected head SHA and GitHub Actions application identity, spoofed URL and malformed input rejection, an absolute `/usr/bin/gh` executable path, and pinning authenticated API reads to `github.com` rather than trusting ambient `GH_HOST`. No private Oreslang compiler source or secrets
 were copied. This does **not** diagnose or repair source-organization
 runner admission; source-org CI must execute separately.
