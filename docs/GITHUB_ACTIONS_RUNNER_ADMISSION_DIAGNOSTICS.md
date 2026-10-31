@@ -10,8 +10,7 @@ with an explicit allowlist for the two private compiler source repositories.
 It reads only run metadata, the selected job, GitHub check annotations,
 the default branch's protected flag, ruleset list, and Actions policy.
 It never accesses repository contents, Git objects, artifacts, secrets,
-or write endpoints. Every GitHub API request pins the host to `github.com`
-and ignores any ambient `GH_HOST` setting. It cannot inspect private Actions billing settings.
+or write endpoints. Every GitHub API request pins the host to `github.com`, ignores any ambient `GH_HOST` setting, and invokes the reviewed `/usr/bin/gh` binary directly rather than resolving `gh` through `PATH`. It cannot inspect private Actions billing settings.
 
 ## Independent administrator action
 
@@ -32,7 +31,7 @@ umask 077
 
 The sample run/job IDs refer to real matching jobs. Replace both IDs with
 the current **matching** run and job values when diagnosing a later head.
-The tool independently reads the selected job's `run_id` **and its actual `check_run_url`**, rejects mismatched run/job IDs, derives the check-run ID only from the exact audited-repository URL, then verifies the check-run `head_sha` and `github-actions` app identity against the workflow run **before querying annotations**. It never assumes a workflow job ID and check-run ID are interchangeable identity domains.
+The tool independently reads the selected job's `run_id` **and its actual `check_run_url`**, rejects mismatched run/job IDs, and refuses to proceed unless the selected job is a **completed failure with zero steps**. It derives the check-run ID only from the exact audited-repository URL, then verifies the check-run `head_sha`, `github-actions` app identity, completed status, and failed conclusion against the workflow run **before querying annotations**. It never assumes a workflow job ID and check-run ID are interchangeable identity domains.
 Never equate a successful diagnostic with a successful compiler run.
 
 Review the local output privately before quoting or sanitizing the exact
@@ -73,11 +72,9 @@ license to broaden the GitHub App installation or bypass source governance.
 
 The exact Rust source in this draft was compiled and executed on
 [Beamscale run 41252832319](https://github.com/beamscale/bmscl-compiler/actions/runs/41252832319),
-job `124689745230`: **15/15 tests passed**, `rustc -D warnings`,
+job `124689745230`: **15/15 tests passed** for the prior host-pinning revision. The current revision adds zero-step/failure-only and absolute-CLI-path tests and must be re-executed independently before its new test count is claimed as passing. Prior execution used `rustc -D warnings`,
 and the source-free execution marker was recorded in a real job log.
-The validated Git blob is
-`09f06dd09e0a4acd1afa5cca49005f4fcbd3cf96`,
-identical to the proposed Oreslang organization Rust file.
+The previously validated Git blob was `09f06dd09e0a4acd1afa5cca49005f4fcbd3cf96`. The current Rust blob supersedes it and requires a fresh exact-blob receipt.
 
 The tests cover bounded argument identities, strict run/job membership,
 check-run URL repository binding, expected head SHA and GitHub Actions

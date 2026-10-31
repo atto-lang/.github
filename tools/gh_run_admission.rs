@@ -7,6 +7,7 @@ use std::env;
 use std::process::{Command, ExitCode};
 
 const GITHUB_API_HOST: &str = "github.com";
+const GH_CLI_PATH: &str = "/usr/bin/gh";
 
 const ALLOWED_REPOS: [&str; 2] = [
     "ores-truffle-oreslang/oreslang-source.llvm",
@@ -90,9 +91,9 @@ fn projection(part: &str) -> &'static str {
         "run" => r#"{id,run_attempt,head_sha,event,status,conclusion,created_at,updated_at}"#,
         "run_head" => ".head_sha",
         "job" => r#"{id,run_id,name,status,conclusion,runner_id,runner_name,started_at,completed_at,step_count:((.steps // [])|length),check_run_url}"#,
-        "job_identity" => r#"[.run_id,.check_run_url]|@tsv"#,
+        "job_identity" => r#"[.run_id,.check_run_url,.status,.conclusion,((.steps // [])|length)]|@tsv"#,
         "check_run" => r#"{id,head_sha,status,conclusion,app_slug:.app.slug,started_at,completed_at,annotations_count:.output.annotations_count}"#,
-        "check_identity" => r#"[.head_sha,.app.slug]|@tsv"#,
+        "check_identity" => r#"[.head_sha,.app.slug,.status,.conclusion]|@tsv"#,
         "annotations" => r#"[.[]|{level:.annotation_level,title,message,path,start_line,end_line}]"#,
         "branch" => r#"{name,protected,sha:.commit.sha}"#,
         "rulesets" => r#"[.[]|{id,name,enforcement,source_type,source}]"#,
@@ -103,7 +104,7 @@ fn projection(part: &str) -> &'static str {
 
 fn gh_read(parts: &Args, part: &str, check_run_id: Option<&str>) -> Result<String, String> {
     let path = endpoint(parts, part, check_run_id);
-    let result = Command::new("gh")
+    let result = Command::new(GH_CLI_PATH)
         // Preserve the administrator's chosen credentials, but never allow
         // ambient GH_HOST to redirect a privileged API request elsewhere.
         .env_remove("GH_HOST")
@@ -136,8 +137,18 @@ fn parse_job_identity(parts: &Args, observed: &str) -> Result<String, &'static s
     let check_run_url = fields
         .next()
         .ok_or("selected job identity is missing check_run_url")?;
+    let status = fields.next().ok_or("selected job identity is missing status")?;
+    let conclusion = fields
+        .next()
+        .ok_or("selected job identity is missing conclusion")?;
+    let step_count = fields
+        .next()
+        .ok_or("selected job identity is missing step_count")?;
     if fields.next().is_some() || !canonical_id(run_id) || run_id != parts.run_id {
         return Err("selected job does not belong to supplied workflow run");
+    }
+    if status != "completed" || conclusion != "failure" || step_count != "0" {
+        return Err("selected job is not one completed zero-step failure");
     }
     check_run_id_from_url(&parts.repository, check_run_url)
 }
@@ -156,12 +167,20 @@ fn verify_check_identity(run_head: &str, observed: &str) -> Result<(), &'static 
         .next()
         .ok_or("check-run identity is missing head_sha")?;
     let app_slug = fields.next().ok_or("check-run identity is missing app slug")?;
+    let status = fields.next().ok_or("check-run identity is missing status")?;
+    let conclusion = fields
+        .next()
+        .ok_or("check-run identity is missing conclusion")?;
     if fields.next().is_some()
         || !canonical_sha(check_head)
         || check_head != expected_head
         || app_slug != "github-actions"
+        || status != "completed"
+        || conclusion != "failure"
     {
-        return Err("selected check-run does not match workflow head/GitHub Actions identity");
+        return Err(
+            "selected check-run does not match completed failed workflow head/GitHub Actions identity",
+        );
     }
     Ok(())
 }
@@ -331,7 +350,7 @@ mod tests {
         let observed = concat!(
             "41250696587\t",
             "https://api.github.com/repos/ores-truffle-oreslang/",
-            "oreslang-source.net/check-runs/124683413992\n"
+            "oreslang-source.net/check-runs/124683413992\tcompleted\tfailure\t0\n"
         );
         assert_eq!(parse_job_identity(&args, observed).unwrap(), "124683413992");
     }
@@ -343,7 +362,7 @@ mod tests {
         let observed = concat!(
             "41250696586\t",
             "https://api.github.com/repos/ores-truffle-oreslang/",
-            "oreslang-source.net/check-runs/124683413992\n"
+            "oreslang-source.net/check-runs/124683413992\tcompleted\tfailure\t0\n"
         );
         assert!(parse_job_identity(&args, observed).is_err());
     }
@@ -358,7 +377,7 @@ mod tests {
             "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.net/check-runs/01",
             "https://evil.example/repos/ores-truffle-oreslang/oreslang-source.net/check-runs/124683413992",
         ] {
-            let observed = format!("{}\t{}\n", args.run_id, url);
+            let observed = format!("{}\t{}\tcompleted\tfailure\t0\n", args.run_id, url);
             assert!(parse_job_identity(&args, &observed).is_err(), "{url}");
         }
     }
@@ -367,16 +386,16 @@ mod tests {
     fn verifies_check_run_head_and_actions_app() {
         let head = "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\n";
         let good =
-            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\n";
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\tcompleted\tfailure\n";
         assert!(verify_check_identity(head, good).is_ok());
         assert!(verify_check_identity(
             head,
-            "125e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\n"
+            "125e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\tcompleted\tfailure\n"
         )
         .is_err());
         assert!(verify_check_identity(
             head,
-            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tuntrusted-app\n"
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tuntrusted-app\tcompleted\tfailure\n"
         )
         .is_err());
     }
@@ -397,7 +416,10 @@ mod tests {
     fn job_identity_uses_read_only_selected_job_route() {
         let a = parse(&argv(ALLOWED_REPOS[0], "2", "3")).unwrap();
         assert_eq!(endpoint(&a, "job_identity", None), endpoint(&a, "job", None));
-        assert_eq!(projection("job_identity"), r#"[.run_id,.check_run_url]|@tsv"#);
+        assert_eq!(
+            projection("job_identity"),
+            r#"[.run_id,.check_run_url,.status,.conclusion,((.steps // [])|length)]|@tsv"#
+        );
     }
 
     #[test]
@@ -405,6 +427,43 @@ mod tests {
         assert_eq!(GITHUB_API_HOST, "github.com");
         assert!(ALLOWED_REPOS.iter().all(|r| r.starts_with("ores-truffle-oreslang/")));
     }
+    #[test]
+    fn rejects_nonzero_or_nonfailed_job_evidence() {
+        let args =
+            parse(&argv(ALLOWED_REPOS[1], "41250696587", "124683413992")).unwrap();
+        let base = concat!(
+            "41250696587\thttps://api.github.com/repos/ores-truffle-oreslang/",
+            "oreslang-source.net/check-runs/124683413992"
+        );
+        for suffix in [
+            "\tcompleted\tsuccess\t0\n",
+            "\tcompleted\tfailure\t1\n",
+            "\tin_progress\t\t0\n",
+            "\tqueued\t\t0\n",
+        ] {
+            assert!(parse_job_identity(&args, &format!("{base}{suffix}")).is_err());
+        }
+    }
+
+    #[test]
+    fn rejects_nonfailed_or_incomplete_check_evidence() {
+        let head = "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\n";
+        for observed in [
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\tcompleted\tsuccess\n",
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\tin_progress\t\n",
+            "025e88eca0c308c5f34fe8e4d58c88c915eb8d8e\tgithub-actions\tqueued\t\n",
+        ] {
+            assert!(verify_check_identity(head, observed).is_err());
+        }
+    }
+
+    #[test]
+    fn gh_executable_is_absolute_and_pinned() {
+        assert_eq!(GH_CLI_PATH, "/usr/bin/gh");
+        assert!(GH_CLI_PATH.starts_with('/'));
+        assert!(!GH_CLI_PATH.contains(".."));
+    }
+
     #[test]
     fn all_projections_are_literal_and_constrained() {
         for part in [
