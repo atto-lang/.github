@@ -71,9 +71,18 @@ license to broaden the GitHub App installation or bypass source governance.
 
 ## Test receipt
 
-This tool was originally created as source-free code and built on
-[Beamscale run 41251408684](https://github.com/beamscale/bmscl-compiler/actions/runs/41252658483):
-job `124689222468` executed real runner steps for the earlier 10-test revision. The current revision adds check-run provenance tests and must be re-executed independently before its new test count is claimed as passing.
-It did **not** access Oreslang private compiler source or use organization
-administrator credentials, so it did not retrieve the actual check-run
-annotations. Its outcome is tool validation only.
+The exact Rust source in this draft was compiled and executed on
+[Beamscale run 41252832319](https://github.com/beamscale/bmscl-compiler/actions/runs/41252832319),
+job `124689745230`: **15/15 tests passed**, `rustc -D warnings`,
+and the source-free execution marker was recorded in a real job log.
+The validated Git blob is
+`09f06dd09e0a4acd1afa5cca49005f4fcbd3cf96`,
+identical to the proposed Oreslang organization Rust file.
+
+The tests cover bounded argument identities, strict run/job membership,
+check-run URL repository binding, expected head SHA and GitHub Actions
+application identity, spoofed URL and malformed input rejection, and
+pinning authenticated API reads to `github.com` rather than trusting
+ambient `GH_HOST`. No private Oreslang compiler source or secrets
+were copied. This does **not** diagnose or repair source-organization
+runner admission; source-org CI must execute separately.
