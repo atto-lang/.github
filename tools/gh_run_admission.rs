@@ -49,7 +49,7 @@ fn endpoint(parts: &Args, part: &str) -> String {
     let prefix = format!("repos/{}/", parts.repository);
     match part {
         "run" => format!("{prefix}actions/runs/{}", parts.run_id),
-        "job" => format!("{prefix}actions/jobs/{}", parts.job_id),
+        "job" | "job_identity" => format!("{prefix}actions/jobs/{}", parts.job_id),
         "annotations" => format!("{prefix}check-runs/{}/annotations?per_page=100", parts.job_id),
         "branch" => format!("{prefix}branches/main"),
         "rulesets" => format!("{prefix}rulesets?per_page=100"),
@@ -62,6 +62,7 @@ fn projection(part: &str) -> &'static str {
     match part {
         "run" => r#"{id,run_attempt,head_sha,event,status,conclusion,created_at,updated_at}"#,
         "job" => r#"{id,run_id,name,status,conclusion,runner_id,runner_name,started_at,completed_at,step_count:((.steps // [])|length)}"#,
+        "job_identity" => ".run_id",
         "annotations" => r#"[.[]|{level:.annotation_level,title,message,path,start_line,end_line}]"#,
         "branch" => r#"{name,protected,sha:.commit.sha}"#,
         "rulesets" => r#"[.[]|{id,name,enforcement,source_type,source}]"#,
@@ -91,6 +92,14 @@ fn gh_read(parts: &Args, part: &str) -> Result<String, String> {
     Ok(output)
 }
 
+fn verify_job_identity(parts: &Args, observed: &str) -> Result<(), &'static str> {
+    let id = observed.trim();
+    if !canonical_id(id) || id != parts.run_id {
+        return Err("selected job does not belong to supplied workflow run");
+    }
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let argv: Vec<_> = env::args().collect();
     let args = match parse(&argv) {
@@ -100,6 +109,20 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    // Verify job membership before retrieving its annotations. Job and run
+    // IDs are individually valid but an arbitrary unrelated job is not
+    // evidence for the supplied run/head.
+    let job_run_id = match gh_read(&args, "job_identity") {
+        Ok(s) => s,
+        Err(reason) => {
+            eprintln!("Cannot attest job/run identity: {reason}");
+            return ExitCode::from(1);
+        }
+    };
+    if let Err(reason) = verify_job_identity(&args, &job_run_id) {
+        eprintln!("{reason}");
+        return ExitCode::from(1);
+    }
     println!("SOURCE_FREE_READ_ONLY_ADMISSION_REPORT");
     println!("repo={} run={} job={}", args.repository, args.run_id, args.job_id);
     // Check job.run_id against the supplied run_id when reviewing results.
@@ -185,6 +208,21 @@ mod tests {
             endpoint(&args, "job"),
             "repos/ores-truffle-oreslang/oreslang-source.net/actions/jobs/124680332733"
         );
+    }
+    #[test]
+    fn rejects_wrong_job_run_even_if_both_ids_valid() {
+        let a = parse(&argv(ALLOWED_REPOS[0], "41236569150", "124641494087")).unwrap();
+        let matching = format!("{}{}", a.run_id, char::from(10));
+        assert!(verify_job_identity(&a, &matching).is_ok());
+        assert!(verify_job_identity(&a, "41236569149").is_err());
+        assert!(verify_job_identity(&a, "0").is_err());
+        assert!(verify_job_identity(&a, "invalid").is_err());
+    }
+    #[test]
+    fn job_identity_uses_read_only_selected_job_route() {
+        let a = parse(&argv(ALLOWED_REPOS[0], "2", "3")).unwrap();
+        assert_eq!(endpoint(&a, "job_identity"), endpoint(&a, "job"));
+        assert_eq!(projection("job_identity"), ".run_id");
     }
     #[test]
     fn all_projections_are_literal_and_constrained() {
