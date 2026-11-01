@@ -1,0 +1,76 @@
+name: Exact checkout physical-integrity negative tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  physical-preflight-selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Test actual reusable-workflow script against isolated Git trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          gate="$tmp/extracted-gate.sh"
+          awk '
+            /^        run: \|$/ { inside=1; next }
+            inside && /^          / { sub(/^          /, ""); print; next }
+            inside { exit }
+          ' .github/workflows/reusable-source-tree-preflight.yml > "$gate"
+          [[ -s "$gate" ]] || { echo 'Failed to extract actual gate' >&2; exit 1; }
+          bash -n "$gate"
+          root="$tmp/repo"
+          git init -q "$root"
+          git -C "$root" config user.email "preflight@example.invalid"
+          git -C "$root" config user.name "Physical integrity test"
+          printf 'ignored.txt\n' > "$root/.gitignore"
+          printf 'ok\n' > "$root/data.txt"
+          chmod 644 "$root/.gitignore" "$root/data.txt"
+          git -C "$root" add .
+          git -C "$root" commit -qm fixture
+          head="$(git -C "$root" rev-parse --verify HEAD)"
+          tree="$(git -C "$root" rev-parse --verify 'HEAD^{tree}')"
+          run_gate() {
+            (cd "$root" &&
+              EXPECTED_COMMIT="$head" EXPECTED_TREE="$tree" \
+              RUNNER_TEMP="$tmp" GITHUB_OUTPUT="$tmp/outputs" bash "$gate") >/dev/null 2>&1
+          }
+          reject() {
+            if run_gate; then
+              echo "FAIL: tampered checkout accepted: $1" >&2
+              exit 2
+            fi
+            echo "PASS: rejected $1"
+          }
+          run_gate || { echo 'FAIL: pristine checkout rejected' >&2; exit 3; }
+          printf 'tampered\n' >> "$root/data.txt"
+          reject tracked-content
+          git -C "$root" checkout -q -- data.txt
+          chmod 755 "$root/data.txt"
+          reject file-mode
+          chmod 644 "$root/data.txt"
+          printf 'x\n' > "$root/untracked.txt"
+          reject untracked
+          rm "$root/untracked.txt"
+          printf 'x\n' > "$root/ignored.txt"
+          reject ignored
+          rm "$root/ignored.txt"
+          rm "$root/data.txt"
+          ln -s .gitignore "$root/data.txt"
+          reject symlink
+          rm "$root/data.txt"
+          git -C "$root" checkout -q -- data.txt
+          printf 'staged\n' > "$root/data.txt"
+          git -C "$root" add data.txt
+          reject index-drift
+          git -C "$root" reset -q --hard HEAD
+          run_gate || { echo 'FAIL: restored checkout rejected' >&2; exit 4; }
+          echo '6/6 adversarial negative controls passed; genuine compiler execution not tested'
