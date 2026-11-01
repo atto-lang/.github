@@ -53,15 +53,9 @@ jobs:
           [[ -s "$manifest" ]] || { echo 'Empty checkout manifest' >&2; exit 5; }
           files=0
           while IFS= read -r -d '' record; do
-            [[ "$record" == *
-          printf 'tree=%s\n' "$tree" >> "$GITHUB_OUTPUT"
-\t'* ]] || { echo 'Malformed Git index record' >&2; exit 6; }
-            meta=${record%%
-          printf 'tree=%s\n' "$tree" >> "$GITHUB_OUTPUT"
-\t'*}
-            path=${record#*
-          printf 'tree=%s\n' "$tree" >> "$GITHUB_OUTPUT"
-\t'}
+            [[ "$record" == *$'\t'* ]] || { echo 'Malformed Git index record' >&2; exit 6; }
+            meta=${record%%$'\t'*}
+            path=${record#*$'\t'}
             read -r mode expected_blob stage <<< "$meta"
             [[ "$mode" == 100644 || "$mode" == 100755 ]] || {
               echo "Reject symlink/submodule or unsafe mode: $mode" >&2
