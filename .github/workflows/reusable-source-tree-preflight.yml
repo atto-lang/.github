@@ -67,6 +67,17 @@ jobs:
             [[ -f "$path" && ! -L "$path" ]] || {
               echo "Missing or symlinked physical file: $path" >&2; exit 9
             }
+            # A tracked regular file can still be reached through a symlinked
+            # ancestor directory. Reject every component, not just the leaf.
+            parent="${path%/*}"
+            while [[ "$parent" != "$path" && "$parent" != "." ]]; do
+              [[ -d "$parent" && ! -L "$parent" ]] || {
+                echo "Missing or symlinked ancestor directory: $parent" >&2
+                exit 9
+              }
+              [[ "$parent" == */* ]] || break
+              parent="${parent%/*}"
+            done
             actual_mode="$(stat -c '%a' -- "$path")"
             expected_mode=644
             [[ "$mode" == 100755 ]] && expected_mode=755
