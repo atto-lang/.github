@@ -45,11 +45,13 @@ jobs:
               EXPECTED_COMMIT="$head" EXPECTED_TREE="$tree" \
               RUNNER_TEMP="$tmp" GITHUB_OUTPUT="$tmp/outputs" bash "$gate") >/dev/null 2>&1
           }
+          rejection_count=0
           reject() {
             if run_gate; then
               echo "FAIL: tampered checkout accepted: $1" >&2
               exit 2
             fi
+            rejection_count=$((rejection_count + 1))
             echo "PASS: rejected $1"
           }
           run_gate || { echo 'FAIL: pristine checkout rejected' >&2; exit 3; }
@@ -87,16 +89,19 @@ jobs:
               RUNNER_TEMP="$tmp" GITHUB_OUTPUT="$tmp/outputs" bash "$gate") >/dev/null 2>&1; then
             echo 'FAIL: wrong commit accepted' >&2; exit 5
           fi
+          rejection_count=$((rejection_count + 1))
           echo 'PASS: rejected wrong-commit'
           if (cd "$root" &&
               EXPECTED_COMMIT="$head" EXPECTED_TREE=0000000000000000000000000000000000000000 \
               RUNNER_TEMP="$tmp" GITHUB_OUTPUT="$tmp/outputs" bash "$gate") >/dev/null 2>&1; then
             echo 'FAIL: wrong tree accepted' >&2; exit 6
           fi
+          rejection_count=$((rejection_count + 1))
           echo 'PASS: rejected wrong-tree'
           printf 'staged\n' > "$root/data.txt"
           git -C "$root" add data.txt
           reject index-drift
           git -C "$root" reset -q --hard HEAD
           run_gate || { echo 'FAIL: restored checkout rejected' >&2; exit 4; }
+          [[ "$rejection_count" == 10 ]] || { echo "Expected 10 rejections, got $rejection_count" >&2; exit 7; }
           echo '10/10 adversarial negative controls passed; genuine compiler execution not tested'
