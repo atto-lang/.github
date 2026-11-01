@@ -9,6 +9,11 @@ if [[ $# == 5 ]]; then expected_attempt=$5; fi
 [[ "$expected_sha" =~ ^[a-f0-9]{40}$ ]] || { echo 'REJECT invalid commit SHA' >&2; exit 65; }
 [[ -z "$expected_attempt" || "$expected_attempt" =~ ^[1-9][0-9]*$ ]] || { echo 'REJECT invalid run attempt' >&2; exit 65; }
 command -v jq >/dev/null || { echo 'REJECT requires jq' >&2; exit 69; }
+required_step=${ORES_CI_REQUIRED_STEP-}
+[[ -n "$required_step" && "$required_step" != 'Set up job' && "$required_step" != 'Complete job' ]] || {
+  echo 'REJECT requires explicit ORES_CI_REQUIRED_STEP matching the executed test step' >&2
+  exit 65
+}
 t=$(mktemp -d)
 trap 'rm -rf "$t"' EXIT
 run=$t/run.json
@@ -36,7 +41,7 @@ jq -e --arg sha "$expected_sha" --arg attempt "$expected_attempt" '
   and ($attempt=="" or (.run_attempt|tostring)==$attempt)
   and (.id|type=="number") and (.id>0)
 ' "$run" >/dev/null || { echo 'REJECT run head/status/attempt/ID mismatch' >&2; exit 68; }
-jq -e '
+jq -e --arg required "$required_step" '
   (. as $doc
     | (.total_count|type=="number") and (.total_count>=1) and (.total_count<=100)
       and (.jobs|type=="array") and ((.jobs|length)==$doc.total_count)
@@ -50,9 +55,9 @@ jq -e '
         and (.runner_name|type=="string") and (.runner_name|length>0)
         and (.steps|type=="array") and (.steps|length>=3)
         and all(.steps[]; .status=="completed" and .conclusion=="success")
-        and any(.steps[]; (.name|type=="string") and (.name!="Set up job") and (.name!="Complete job"))
+        and any(.steps[]; .name==$required and .status=="completed" and .conclusion=="success")
       )
   )
 ' "$jobs" >/dev/null || { echo 'REJECT unassigned/zero-step/partial/duplicate/failed jobs' >&2; exit 68; }
-echo "EXECUTED-CI-ONLY: head=$expected_sha run=$(jq -r .id "$run") attempt=$(jq -r .run_attempt "$run") jobs=$(jq -r .total_count "$jobs") steps=$(jq -r '[.jobs[].steps[]]|length' "$jobs")"
+echo "EXECUTED-CI-ONLY: head=$expected_sha run=$(jq -r .id "$run") attempt=$(jq -r .run_attempt "$run") jobs=$(jq -r .total_count "$jobs") steps=$(jq -r '[.jobs[].steps[]]|length' "$jobs") required_step=$required_step"
 echo 'NOT_NATIVE_GUEST_EVIDENCE: separate compiler digest, tree and guest status required'
