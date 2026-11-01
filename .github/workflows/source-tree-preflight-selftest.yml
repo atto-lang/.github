@@ -33,7 +33,9 @@ jobs:
           git -C "$root" config user.name "Physical integrity test"
           printf 'ignored.txt\n' > "$root/.gitignore"
           printf 'ok\n' > "$root/data.txt"
-          chmod 644 "$root/.gitignore" "$root/data.txt"
+          mkdir -p "$root/nested"
+          printf 'nested content\n' > "$root/nested/deep.txt"
+          chmod 644 "$root/.gitignore" "$root/data.txt" "$root/nested/deep.txt"
           git -C "$root" add .
           git -C "$root" commit -qm fixture
           head="$(git -C "$root" rev-parse --verify HEAD)"
@@ -68,9 +70,33 @@ jobs:
           reject symlink
           rm "$root/data.txt"
           git -C "$root" checkout -q -- data.txt
+          # Parent symlink aliases identical bytes to demonstrate a real bypass
+          # that leaf-only symlink detection would miss.
+          cp -p "$root/nested/deep.txt" "$tmp/deep.txt"
+          rm -r "$root/nested"
+          ln -s "$tmp" "$root/nested"
+          reject ancestor-symlink
+          rm "$root/nested"
+          mkdir "$root/nested"
+          cp -p "$tmp/deep.txt" "$root/nested/deep.txt"
+          rm "$root/nested/deep.txt"
+          reject missing-tracked
+          cp -p "$tmp/deep.txt" "$root/nested/deep.txt"
+          if (cd "$root" &&
+              EXPECTED_COMMIT=0000000000000000000000000000000000000000 EXPECTED_TREE="$tree" \
+              RUNNER_TEMP="$tmp" GITHUB_OUTPUT="$tmp/outputs" bash "$gate") >/dev/null 2>&1; then
+            echo 'FAIL: wrong commit accepted' >&2; exit 5
+          fi
+          echo 'PASS: rejected wrong-commit'
+          if (cd "$root" &&
+              EXPECTED_COMMIT="$head" EXPECTED_TREE=0000000000000000000000000000000000000000 \
+              RUNNER_TEMP="$tmp" GITHUB_OUTPUT="$tmp/outputs" bash "$gate") >/dev/null 2>&1; then
+            echo 'FAIL: wrong tree accepted' >&2; exit 6
+          fi
+          echo 'PASS: rejected wrong-tree'
           printf 'staged\n' > "$root/data.txt"
           git -C "$root" add data.txt
           reject index-drift
           git -C "$root" reset -q --hard HEAD
           run_gate || { echo 'FAIL: restored checkout rejected' >&2; exit 4; }
-          echo '6/6 adversarial negative controls passed; genuine compiler execution not tested'
+          echo '10/10 adversarial negative controls passed; genuine compiler execution not tested'
