@@ -41,7 +41,9 @@ jq -e --arg sha "$expected_sha" --arg attempt "$expected_attempt" '
   and ($attempt=="" or (.run_attempt|tostring)==$attempt)
   and (.id|type=="number") and (.id>0)
 ' "$run" >/dev/null || { echo 'REJECT run head/status/attempt/ID mismatch' >&2; exit 68; }
-jq -e --arg required "$required_step" '
+run_id=$(jq -er '.id | select(type=="number" and .>0)' "$run") || exit 68
+run_attempt=$(jq -er '.run_attempt | select(type=="number" and .>=1)' "$run") || exit 68
+jq -e --arg required "$required_step" --arg sha "$expected_sha" --argjson run_id "$run_id" --argjson attempt "$run_attempt" '
   (. as $doc
     | (.total_count|type=="number") and (.total_count>=1) and (.total_count<=100)
       and (.jobs|type=="array") and ((.jobs|length)==$doc.total_count)
@@ -49,6 +51,9 @@ jq -e --arg required "$required_step" '
       and ((.jobs|map(.name)|unique|length)==$doc.total_count)
       and all(.jobs[];
         (.id|type=="number") and (.id>0)
+        and (.run_id==$run_id)
+        and (.run_attempt==$attempt)
+        and (.head_sha==$sha)
         and (.name|type=="string") and (.name|length>0)
         and (.status=="completed") and (.conclusion=="success")
         and (.runner_id|type=="number") and (.runner_id>0)
