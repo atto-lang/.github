@@ -8,10 +8,9 @@ printf '{"id":42,"head_sha":"%s","status":"completed","conclusion":"success","ru
 cat > "$t/jobs.json" <<'JSON'
 {"total_count":1,"jobs":[{"id":7,"name":"test","status":"completed","conclusion":"success","runner_id":33,"runner_name":"hosted","steps":[{"name":"Set up job","status":"completed","conclusion":"success"},{"name":"Run actual test","status":"completed","conclusion":"success"},{"name":"Complete job","status":"completed","conclusion":"success"}]}]}
 JSON
-verifier=./scripts/ci-evidence/verify-actions-admission.sh
-# Run from repository root; the verifier uses only local fixture JSON.
+# Run from repository root; synthetic JSON contains no private source.
 cd ../..
-[[ -x "$verifier" ]] || verifier="bash $verifier"
+export ORES_CI_REQUIRED_STEP='Run actual test'
 if ! bash scripts/ci-evidence/verify-actions-admission.sh fixture "$t/run.json" "$t/jobs.json" "$sha" 2 >/dev/null; then
   echo 'FAIL pristine executed receipt' >&2; exit 1
 fi
@@ -46,5 +45,11 @@ rejectcase skipped-job '.jobs[0].conclusion="skipped"' jobs
 rejectcase duplicate-job-id '.jobs += [.jobs[0]] | .total_count=2 | .jobs[1].name="second"' jobs
 rejectcase negative-runner '.jobs[0].runner_id=-1' jobs
 rejectcase missing-job-id '.jobs[0] |= del(.id)' jobs
-[[ "$reject" -eq 19 ]] || { echo "Expected 19 rejections; observed $reject" >&2; exit 4; }
-echo 'PASS 20/20 synthetic admission controls; no compiler execution'
+rejectcase missing-required-step '.jobs[0].steps[1].name="Unrelated cleanup"' jobs
+if env -u ORES_CI_REQUIRED_STEP bash scripts/ci-evidence/verify-actions-admission.sh fixture "$t/run.json" "$t/jobs.json" "$sha" 2 >/dev/null 2>&1; then
+  echo 'ACCEPTED unbound required step' >&2; exit 5
+fi
+reject=$((reject+1))
+echo 'REJECT unbound-required-step'
+[[ "$reject" -eq 21 ]] || { echo "Expected 21 rejections; observed $reject" >&2; exit 4; }
+echo 'PASS 22/22 synthetic admission controls; no compiler execution'
