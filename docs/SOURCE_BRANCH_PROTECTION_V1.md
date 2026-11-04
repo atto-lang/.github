@@ -10,6 +10,11 @@ This is the organization-level release gate for the five private compiler backen
 
 It is a policy target for repository administrators. It does not claim the settings are currently enabled.
 
+**Current unresolved runner-admission incident:** [source-local smoke, post-merge
+verification debt, and administrator remediation runbook](ACTIONS_RUNNER_ADMISSION_RECOVERY_20261026.md).
+Do not require zero-step failing checks, count unexecuted jobs as passes, or
+export private source to an unapproved alternate organization.
+
 ## Required `main` protections
 
 Each repository's default `main` branch MUST:
