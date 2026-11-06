@@ -42,3 +42,24 @@ blocked('invalid calendar date',x=>x.merge.merged_at='2026-02-30T20:02:00Z','MER
 blocked('duplicate same reviewer not distinct',x=>{x.protection.required_approvals=2;x.reviews.push({...x.reviews[0]});},'INDEPENDENT_APPROVAL_MISSING');
 test('CLI with no path cannot succeed',()=>{let out;assert.equal(main([],s=>out=s),2);assert.equal(JSON.parse(out).status,'BLOCKED');});
 test('untrusted input denied',()=>assert.equal(verifyMergeReceipt(null).status,'BLOCKED'));
+
+
+// GitHub login identity is case-insensitive; a snapshot cannot mint approvals
+// by changing capitalization or by using invalid login names.
+blocked('case-variant self approval cannot count as independent', x => {
+  x.pr.author='Author'; x.reviews[0].author='author';
+}, 'INDEPENDENT_APPROVAL_MISSING');
+blocked('case-variant same reviewer cannot satisfy two-person quorum', x => {
+  x.protection.required_approvals=2;
+  x.reviews.push({...x.reviews[0], author:'INDEPENDENT'});
+}, 'INDEPENDENT_APPROVAL_MISSING');
+blocked('invalid GitHub author login is rejected', x => {
+  x.pr.author='author with spaces';
+}, 'PR_INVALID');
+blocked('invalid GitHub reviewer login cannot count', x => {
+  x.reviews[0].author='reviewer with spaces';
+}, 'INDEPENDENT_APPROVAL_MISSING');
+test('case-mixed but genuinely different GitHub logins remain independent', () => {
+  const x=good(); x.pr.author='Author'; x.reviews[0].author='INDEPENDENT';
+  assert.equal(verifyMergeReceipt(x).status,'SNAPSHOT_VALID_RECHECK_LIVE');
+});
