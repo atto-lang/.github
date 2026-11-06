@@ -73,6 +73,11 @@ fn validate_csv(input: &str) -> Result<String, String> {
         if fields.len() != 15 {
             return Err(format!("line {lineno}: expected 15 fields, got {}", fields.len()));
         }
+        // Prevent CSV/spreadsheet formula injection when an operator opens this file.
+        if fields.iter().filter_map(|v| v.trim_start().chars().next())
+            .any(|first| matches!(first, '=' | '+' | '-' | '@')) {
+            return Err(format!("line {lineno}: formula-like spreadsheet cell rejected"));
+        }
         let field = |i: usize| fields[i].as_str();
         let source = field(0);
         let name = source.strip_prefix("ores-truffle-oreslang/")
@@ -251,5 +256,31 @@ mod tests {
         lines.pop();
         let missing = format!("{}\n", lines.join("\n"));
         assert!(validate_csv(&missing).is_err());
+    }
+
+    #[test]
+    fn rejects_spreadsheet_formula_injection() {
+        let tampered = BASE.replacen("\"standard\"", "\"=HYPERLINK(unsafe)\"", 1);
+        assert!(validate_csv(&tampered).is_err());
+    }
+
+    #[test]
+    fn rejects_promoting_a_legacy_hold_without_adjudication() {
+        let tampered = BASE.replacen(
+            "\"H-hold\",\"hold\",\"not_started\"",
+            "\"H-hold\",\"hold\",\"verified\"",
+            1);
+        assert!(validate_csv(&tampered).is_err());
+    }
+
+    #[test]
+    fn rejects_approved_transfer_with_unknown_dependency() {
+        let head = "0123456789abcdef0123456789abcdef01234567";
+        let tampered = BASE
+            .replacen("capture_at_transfer_preflight", head, 1)
+            .replacen("\"propose_transfer\",\"not_started\"",
+                       "\"propose_transfer\",\"approved\"", 1)
+            .replacen("\"pending\"", "\"signed-review-record\"", 1);
+        assert!(validate_csv(&tampered).is_err());
     }
 }
