@@ -43,7 +43,6 @@ blocked('duplicate same reviewer not distinct',x=>{x.protection.required_approva
 test('CLI with no path cannot succeed',()=>{let out;assert.equal(main([],s=>out=s),2);assert.equal(JSON.parse(out).status,'BLOCKED');});
 test('untrusted input denied',()=>assert.equal(verifyMergeReceipt(null).status,'BLOCKED'));
 
-
 // GitHub login identity is case-insensitive; a snapshot cannot mint approvals
 // by changing capitalization or by using invalid login names.
 blocked('case-variant self approval cannot count as independent', x => {
