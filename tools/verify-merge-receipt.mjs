@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // An offline untrusted snapshot checker, NOT GitHub authentication or release approval.
-import { readFileSync } from 'node:fs';
+import { openSync, fstatSync, readSync, closeSync, constants as FS } from 'node:fs';
+import { TextDecoder } from 'node:util';
 import { pathToFileURL } from 'node:url';
 
 const SHA = /^[a-f0-9]{40}$/;
@@ -51,10 +52,39 @@ export function verifyMergeReceipt(receipt) {
   return {status:problems.length ? 'BLOCKED' : 'SNAPSHOT_VALID_RECHECK_LIVE',reasons:[...new Set(problems)]};
 }
 
+// Treat the CLI input path as untrusted. This is source-free, offline snapshot
+// validation, not an authenticated merge or release receipt.
+const MAX_SNAPSHOT_BYTES = 256 * 1024;
+function readSnapshot(path) {
+  if (typeof path !== 'string' || path.length === 0 ||
+      typeof FS.O_NOFOLLOW !== 'number' || typeof FS.O_NONBLOCK !== 'number')
+    throw Error('UNSAFE_SNAPSHOT_PATH');
+  const fd = openSync(path, FS.O_RDONLY | FS.O_NOFOLLOW | FS.O_NONBLOCK);
+  try {
+    const before = fstatSync(fd, {bigint:true});
+    if (!before.isFile() || before.nlink !== 1n ||
+        before.size < 1n || before.size > BigInt(MAX_SNAPSHOT_BYTES))
+      throw Error('UNSAFE_SNAPSHOT_FILE');
+    const bytes = Buffer.alloc(Number(before.size));
+    let offset = 0;
+    while (offset < bytes.length) {
+      const n = readSync(fd, bytes, offset, bytes.length - offset, offset);
+      if (n <= 0) throw Error('INCOMPLETE_SNAPSHOT_READ');
+      offset += n;
+    }
+    const after = fstatSync(fd, {bigint:true});
+    if (after.dev !== before.dev || after.ino !== before.ino ||
+        after.size !== before.size || after.nlink !== 1n ||
+        after.mtimeNs !== before.mtimeNs || after.ctimeNs !== before.ctimeNs)
+      throw Error('CHANGED_SNAPSHOT_FILE');
+    return new TextDecoder('utf-8', {fatal:true}).decode(bytes);
+  } finally { closeSync(fd); }
+}
+
 export function main(argv=process.argv.slice(2),write=console.log) {
   if(argv.length!==1){write(JSON.stringify({status:'BLOCKED',reasons:['USAGE']}));return 2;}
   try {
-    const result=verifyMergeReceipt(JSON.parse(readFileSync(argv[0],'utf8')));
+    const result=verifyMergeReceipt(JSON.parse(readSnapshot(argv[0])));
     write(JSON.stringify(result));
     return result.status==='BLOCKED'?1:3; // NEVER 0: live revalidation is mandatory.
   } catch {
