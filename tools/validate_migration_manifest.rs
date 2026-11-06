@@ -115,10 +115,11 @@ fn validate_csv(input: &str) -> Result<String, String> {
         let wave = field(7);
         let expected_slot = if matches!(wave,
             "A-language-spec" | "B-developer-tooling" | "B-docs-examples" |
-            "C-compilers" | "D-runtime-targets" | "E-conformance") {
+            "C-compilers" | "D-runtime-targets" | "E-conformance")
+            || wave.starts_with("F-") {
+            // Old language-org repositories migrate to atto-lang; product org
+            // extraction is a separate reviewed operation, never a direct diversion.
             0
-        } else if wave.starts_with("F-") {
-            1
         } else if wave == "H-hold" {
             2
         } else {
@@ -174,7 +175,7 @@ fn validate_csv(input: &str) -> Result<String, String> {
         counts[slot] += 1;
         total += 1;
     }
-    if total != REQUIRED_ROWS || counts != [41, 33, 6] {
+    if total != REQUIRED_ROWS || counts != [74, 0, 6] {
         return Err(format!("baseline mismatch: total={total}, destinations={counts:?}; update invariant only with reviewed inventory delta"));
     }
     for essential in [".github", "ores-truffle-oreslang.github.io", "oreslang-source.java",
@@ -283,4 +284,13 @@ mod tests {
             .replacen("\"pending\"", "\"signed-review-record\"", 1);
         assert!(validate_csv(&tampered).is_err());
     }
+    #[test]
+    fn rejects_direct_transfer_from_legacy_org_into_atto_co() {
+        let tampered = BASE.replacen(
+            "\"atto-lang\",\"oreslang-spin\"",
+            "\"atto-co\",\"oreslang-spin\"",
+            1);
+        assert!(validate_csv(&tampered).is_err());
+    }
+
 }
