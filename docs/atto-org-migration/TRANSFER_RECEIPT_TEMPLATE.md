@@ -1,6 +1,6 @@
 # Transfer acceptance receipt template (one per repository)
 
-Every repository transfer must have a **separate** signed/reviewed receipt (e.g. \`receipts/<repo-id>.md\`). Copy this template before preflight. No field may be silently inferred from a green check icon.
+Every repository transfer must have a **separate** signed/reviewed receipt (e.g. `receipts/<repo-id>.md`). Copy this template before preflight. No field may be silently inferred from a green check icon.
 
 ## Identity (before transfer)
 - Source full name:
@@ -56,6 +56,6 @@ Every repository transfer must have a **separate** signed/reviewed receipt (e.g.
 - [ ] Branch protection is **enforced**, not just listed in a proposed document.
 - [ ] No zero-step or host-only result was credited as compiled-guest evidence.
 - [ ] Old namespace cleanup or explicit compatibility exception is recorded.
-- [ ] Manifest row updated to \`verified\` only after this receipt is complete.
+- [ ] Manifest row updated to `verified` only after this receipt is complete.
 
 **Rollback:** Stop dependent cutovers on any mismatch. Restoring repo ownership, external package identities, or GitHub Pages behavior is *not* guaranteed to be atomic or automatically reversible. Escalate with the destination owner and restore integrations according to the reviewed plan rather than attempting an unapproved reverse transfer.
