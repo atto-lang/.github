@@ -1,7 +1,7 @@
 # Transfer runbook (human-approved, fail closed)
 
 ## Non-negotiable scope
-A transfer is **one repository at a time** from `ores-truffle-oreslang` to its reviewed final owner in the manifest. `atto-lang` is the canonical language successor. Proposed AttoCo destinations are subject to owner/security signoff, not a mandate to perform two successive transfers. If the owner instead wants every repository to land first in `atto-lang`, revise the manifest and review access/URL impacts before execution. Existing branded sibling organizations remain unchanged.
+A transfer is **one repository at a time** from `ores-truffle-oreslang` into the canonical successor **`atto-lang`**. No legacy repository is authorized to transfer directly to `atto-co` in this wave. Existing branded sibling organizations remain unchanged. Future product carve-outs from `atto-lang` into `atto-co` are separate operations needing explicit owner/security review, dependency mapping, billing/permission parity and a new transfer receipt.
 
 **No destination organization, transfer API, private-source security approval, destination plan parity, or successful hosted CI has been verified by this planning PR.** The [audit](AUDIT_FINDINGS_20261106.md) records branch protection and runner-admission blockers. Never treat a 403, a zero-step job, a source-only test, or an unexecuted checklist as evidence of a passing gate.
 
