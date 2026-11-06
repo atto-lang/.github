@@ -8,6 +8,11 @@ const ISO = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/;
 const CTX = /^[\w./ :()-]{1,180}$/;
 const obj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const str = x => typeof x === 'string' && x.trim().length > 0;
+// GitHub user logins are ASCII and case-insensitive. Reject aliases or
+// malformed identities before counting an independent review.
+const LOGIN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+const login = x => typeof x === 'string' && LOGIN.test(x);
+const loginKey = x => x.toLowerCase();
 const sha = x => typeof x === 'string' && SHA.test(x);
 const positive = x => Number.isSafeInteger(x) && x > 0;
 const when = x => typeof x === 'string' && ISO.test(x) && !Number.isNaN(Date.parse(x)) && new Date(x).toISOString().slice(0,19) === x.slice(0,19);
@@ -18,7 +23,7 @@ export function verifyMergeReceipt(receipt) {
   if (!obj(receipt)) return {status:'BLOCKED',reasons:['RECEIPT_INVALID']};
   const {pr,checkout,workflow,reviews,protection,merge} = receipt;
   deny('SCHEMA_INVALID',receipt.schema === 'atto.merge-receipt/v1');
-  deny('PR_INVALID',obj(pr) && str(pr.repository) && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(pr.repository) && positive(pr.number) && str(pr.author) && sha(pr.head_sha) && sha(pr.head_tree_sha) && sha(pr.base_sha));
+  deny('PR_INVALID',obj(pr) && str(pr.repository) && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(pr.repository) && positive(pr.number) && login(pr.author) && sha(pr.head_sha) && sha(pr.head_tree_sha) && sha(pr.base_sha));
   deny('CHECKOUT_INVALID',obj(checkout) && sha(checkout.sha) && sha(checkout.tree_sha) && checkout.mode === 'physical-original-head' && checkout.dirty === false && checkout.synthetic_merge === false && checkout.sha === pr?.head_sha && checkout.tree_sha === pr?.head_tree_sha);
   deny('PROTECTION_UNENFORCED',obj(protection) && protection.main_protected === true && protection.requires_pr === true && Number.isSafeInteger(protection.required_approvals) && protection.required_approvals >= 1 && protection.codeowners_required === true && protection.dismiss_stale === true && protection.include_admins === true && protection.bypass_actors === 0);
   deny('WORKFLOW_INVALID',obj(workflow) && sha(workflow.head_sha) && sha(workflow.head_tree_sha) && workflow.head_sha === pr?.head_sha && workflow.head_tree_sha === pr?.head_tree_sha && positive(workflow.run_id) && positive(workflow.attempt) && workflow.event === 'pull_request' && workflow.status === 'completed' && workflow.conclusion === 'success' && Array.isArray(workflow.jobs) && workflow.jobs.length > 0);
@@ -36,8 +41,8 @@ export function verifyMergeReceipt(receipt) {
   }
   deny('NO_EXECUTED_TEST',tested);
   deny('REVIEWS_INVALID',Array.isArray(reviews) && reviews.length > 0);
-  const valid = (Array.isArray(reviews) ? reviews : []).filter(r => obj(r) && r.state === 'APPROVED' && str(r.author) && r.author !== pr?.author && r.commit_sha === pr?.head_sha && when(r.submitted_at) && r.dismissed !== true && r.superseded !== true);
-  deny('INDEPENDENT_APPROVAL_MISSING',new Set(valid.map(r=>r.author)).size >= (protection?.required_approvals ?? Infinity));
+  const valid = (Array.isArray(reviews) ? reviews : []).filter(r => obj(r) && r.state === 'APPROVED' && login(r.author) && login(pr?.author) && loginKey(r.author) !== loginKey(pr.author) && r.commit_sha === pr?.head_sha && when(r.submitted_at) && r.dismissed !== true && r.superseded !== true);
+  deny('INDEPENDENT_APPROVAL_MISSING',new Set(valid.map(r=>loginKey(r.author))).size >= (protection?.required_approvals ?? Infinity));
   deny('CONFLICTING_REVIEW',Array.isArray(reviews) && !reviews.some(r => obj(r) && r.state === 'CHANGES_REQUESTED' && r.dismissed !== true && r.superseded !== true));
   deny('MERGE_INVALID',obj(merge) && merge.method === 'squash' && sha(merge.commit_sha) && sha(merge.main_sha) && sha(merge.main_tree_sha) && merge.pr_head_sha === pr?.head_sha && merge.github_merged === true && merge.on_main_ancestry === true && merge.main_protected_at_merge === true && when(merge.merged_at));
   deny('REVIEW_AFTER_MERGE',!when(merge?.merged_at) || valid.every(r => Date.parse(r.submitted_at) <= Date.parse(merge.merged_at)));
