@@ -2,9 +2,9 @@
 
 ## Target end state
 
-`atto-lang` is the canonical GitHub organization for the AttoLang language and runtime. Every repository currently owned by `ores-truffle-oreslang` must receive a **repo-by-repo outcome**: transferred to its reviewed final destination, archived with retained history and an explicit exception, or retained temporarily only for an owned compatibility obligation.
+`atto-lang` is the canonical GitHub organization for the AttoLang language and runtime. Every repository currently owned by `ores-truffle-oreslang` must receive a **repo-by-repo outcome**: transferred to `atto-lang`, archived with retained history and an explicit exception, or retained temporarily only for an owned compatibility obligation.
 
-The proposed 33 direct `atto-co` transfers are product/library carve-outs, **not** an automatic license to move code to a new account. The original owner must approve every target. Avoid redundant two-hop transfers unless the user explicitly changes the destination policy, with a new reviewed migration manifest.
+The 33 userland/product-oriented repositories in the old org are also mapped **to `atto-lang`**, not `atto-co`, for this migration. A later AttoCo product carve-out must be a separate approved project with a new dependency/security review; no transfer from the old organization directly to AttoCo is authorized by this plan.
 
 ## Exit milestones
 
@@ -12,7 +12,7 @@ The proposed 33 direct `atto-co` transfers are product/library carve-outs, **not
 2. **Public, low-dependency pilot:** `oreslang-demos` after hardening, verified receipt, exact source/destination Git identity, protections and non-zero executed CI steps.
 3. **Developer tooling and specs:** move one repo at a time, with active PR owner coordination; preserve package/editor IDs and public executable aliases.
 4. **Compilers and runtime:** treat six mandatory backend/compiler repos, shared source, target profiles and parity as a coordinated critical path with guest execution and exact-head receipts.
-5. **AttoCo product carve-outs:** after destination owners confirm, transfer userland libraries/services directly to the product organization in dependency order. Version and pin cross-org API contracts.
+5. **Userland and infrastructure-oriented repositories:** transfer them to `atto-lang` in dependency order and retain public compatibility; a later optional AttoCo carve-out is outside this phase and needs separate reviewed authorization.
 6. **Legacy exceptions:** every hold needs an accountable owner and disposition. Historical `ores-truffle-oreslang.github.io` and `.github` may remain temporarily to preserve public website and notices. Record date and retirement criteria; they are not active language ownership.
 7. **Decommission review:** after no unresolved code, releases, package identities, live Pages, Actions, registry, secrets or inbound links remain, conduct an independent final inventory of the old organization and every new destination. Retire old organization **only by a separately authorized owner action**.
 
