@@ -35,7 +35,7 @@ The **recommended first transfer pilot is `oreslang-demos`** because it is publi
 
 ## Scope / successor interpretation
 
-The user directed a **repository-by-repository migration out of `ores-truffle-oreslang` into the Atto ecosystem**, with `atto-lang` the canonical language successor. The initial mapping has 41 direct language transfers to `atto-lang`, 33 proposed direct product/library transfers to `atto-co`, and six temporary holds. **The target for a product row is still only a proposal.** Do not silently perform a double transfer or assume every repository must physically land in both organizations. Any owner change or reassignment of the 33 product rows must go through a reviewed manifest PR. All 80 entries need explicit retirement/exit accounting for the old namespace.
+The user clarified that the migration is **repository-by-repository from `ores-truffle-oreslang` to `atto-lang`**. The corrected mapping now has **74 proposed direct transfers to `atto-lang` (41 language/core and 33 userland/product-oriented)**, **zero direct old-org transfers to `atto-co`**, and six temporary legacy holds. The 33 product-oriented repositories are **flagged for a possible future AttoCo separation**, not authorized to move during this migration. Every original repository must have a retirement/exit disposition before the old namespace is retired.
 
 ## Open audit limitations
 
