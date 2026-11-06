@@ -9,7 +9,7 @@
 - **Releases:** immutable tags, signed/pinned artifacts where supported; backward-compatible command `oreslang` may coexist with `atto`. Renaming organization must not silently change package/import semantics.
 
 ## atto-co (infrastructure/products)
-- **Scope:** hosted products, deploy/orchestration tooling, networking/observability services, userland libraries, paid/cloud infrastructure.
+- **Scope:** hosted products, deploy/orchestration tooling, networking/observability services, separately owned userland libraries, paid/cloud infrastructure. **The current `ores-truffle-oreslang` migration sends its repositories to `atto-lang` only**; any later AttoCo product carve-out requires a separate approved transfer.
 - **Owners:** infrastructure/platform security, product maintainers, release engineers; per-product repositories or sibling GitHub organizations with explicit integration contracts.
 - **Protections:** independently reviewed application/IaC PRs, environment approvals for production, secret/credential separation, deploy rollback, tenant-isolation/fail-closed tests.
 - **Cross-org dependencies:** consume versioned AttoLang interfaces rather than importing unstable private compiler branches directly. Pin compiler revision and guest test receipts for generated/runtime code.
