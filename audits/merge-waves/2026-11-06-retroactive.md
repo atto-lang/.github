@@ -21,6 +21,22 @@ All ten PRs return `merged=true` and their squash commits are ancestors of curre
 
 The successful Sublime runs are **landed-commit** push events: [#130 run 42297029167](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/42297029167) and [#131 run 42297059629](https://github.com/ores-truffle-oreslang/sublime-text-plugins/actions/runs/42297059629), each with three completed successful jobs and nonempty steps. For the remaining eight commits, at least one completed failed post-merge job was independently inspected and had `steps=[]`. Those are runner-admission/unexecuted observations, **not failed compiler tests**; no passing source-owned execution has been established for those eight landed commits.
 
+## Fail-closed historical audit integrity (not a release gate)
+
+The historical snapshot remains immutable: JSON Git blob `8ba3658779c6a836d24f2321451be5474ecbbc5e`. The Node validator independently verifies the file's Git blob identity (Git object header and file bytes) **and** checks the exact ten PR numbers, head/squash SHA pairs and sampled Actions run/job identities against separately pinned code constants. Replacing it with a plausible 10-PR/9-repository synthetic snapshot is rejected. This is a static archive, not a live API authorization or new test evidence.
+
+From the **exact audited PR HEAD**, execute:
+
+```sh
+node --test tests/check-merge-wave-hold.test.mjs
+node tools/check-merge-wave-hold.mjs
+node tools/check-merge-wave-hold.mjs --release
+```
+
+The first command runs adversarial source-free host tests. The second may exit **0** *only* to confirm the historical snapshot is byte-for-byte intact and remains `BLOCKED`. The third must exit **1**, even when the intact archive passes every integrity check. Invalid input or corrupted evidence must exit **2**. No automation may interpret the ordinary integrity exit as permission to merge or release.
+
+The CI workflow separately attempts a checkout-free, no-secrets **two-step** private runner admission canary and the Node audit tests. GitHub [PR run 42313133028](https://github.com/ores-truffle-oreslang/.github/actions/runs/42313133028) and [push run 42313127141](https://github.com/ores-truffle-oreslang/.github/actions/runs/42313127141) both failed before executing **any** steps. An independent in-process V8 audit exercised 43 structural/JSON cases against the exact committed code and snapshot, but **no exact-head Node filesystem/cryptography or hosted CI test execution is established**. Treat Node and GitHub Actions as `NOT_EXECUTED` until runner admission and substantive stepful receipts are independently observed.
+
 ## Required remediation, in order
 
 1. **Administrative policy:** Enable and read back protected `main` or equivalent enforceable rulesets for all nine repos and priority compiler/platform repos. Require independently approved PRs, CODEOWNERS approval from a genuinely distinct reviewer, stale-approval dismissal, no unintended bypass, force-push/deletion denial, and trusted app-ID-bound required checks. Do not interpret `mergeable=true` or a checked-in CODEOWNERS file as enforceable protection. Org admin tracker: [org .github #2](https://github.com/ores-truffle-oreslang/.github/issues/2) and [conformance #69](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/69).
