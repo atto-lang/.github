@@ -16,6 +16,10 @@ pub struct Options {
     pub repo: Option<String>,
     pub apply: bool,
     pub all: bool,
+    /// Independent operator inventory cardinality confirmation for bulk writes.
+    pub expected_repos: Option<usize>,
+    /// Numeric review count alone cannot enforce either named account.
+    pub acknowledge_numeric_only: bool,
 }
 
 pub fn valid_repo_name(s: &str) -> bool {
@@ -28,7 +32,7 @@ pub fn valid_repo_name(s: &str) -> bool {
 }
 
 pub fn parse_options<I: IntoIterator<Item = String>>(args: I) -> Result<Options, String> {
-    let mut opts = Options { repo: None, apply: false, all: false };
+    let mut opts = Options { repo: None, apply: false, all: false, expected_repos: None, acknowledge_numeric_only: false };
     let mut confirmed = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
@@ -39,6 +43,13 @@ pub fn parse_options<I: IntoIterator<Item = String>>(args: I) -> Result<Options,
                 opts.repo = Some(name);
             }
             "--all" if !opts.all => opts.all = true,
+            "--ack-numeric-only" if !opts.acknowledge_numeric_only => opts.acknowledge_numeric_only = true,
+            "--expect-repos" if opts.expected_repos.is_none() => {
+                let n = args.next().ok_or("--expect-repos requires a positive integer")?;
+                let count = n.parse::<usize>().map_err(|_| "invalid --expect-repos count")?;
+                if count == 0 { return Err("--expect-repos cannot be zero".into()); }
+                opts.expected_repos = Some(count);
+            },
             "--apply" if !opts.apply => opts.apply = true,
             "--confirm-org" if !confirmed => {
                 if args.next().as_deref() != Some(ORG) {
@@ -58,6 +69,18 @@ pub fn parse_options<I: IntoIterator<Item = String>>(args: I) -> Result<Options,
     if opts.apply && !confirmed {
         return Err(format!("write requires --confirm-org {ORG}"));
     }
+    if opts.apply && !opts.acknowledge_numeric_only {
+        return Err("numeric-only changes need explicit --ack-numeric-only acknowledgement; this does not restrict reviewer identity".into());
+    }
+    if !opts.apply && opts.acknowledge_numeric_only {
+        return Err("--ack-numeric-only only makes sense with --apply".into());
+    }
+    if opts.all && opts.expected_repos.is_none() {
+        return Err("--all writes require --expect-repos COUNT from an independently verified inventory".into());
+    }
+    if !opts.all && opts.expected_repos.is_some() {
+        return Err("--expect-repos is only valid with --all".into());
+    }
     if !opts.apply && confirmed {
         return Err("--confirm-org is only permitted during a write".into());
     }
@@ -65,7 +88,7 @@ pub fn parse_options<I: IntoIterator<Item = String>>(args: I) -> Result<Options,
 }
 
 pub fn usage() -> &'static str {
-    "Usage: cargo run -- [--repo NAME] [--apply --confirm-org ores-truffle-oreslang [--all|--repo NAME]]\nRead-only organization audit is the default. Writes only existing numeric PR review counts, never creates or deletes protection."
+    "Usage: cargo run -- [--repo NAME] [--apply --confirm-org ores-truffle-oreslang --ack-numeric-only [--all --expect-repos COUNT|--repo NAME]]\nRead-only by default. --ack-numeric-only explicitly acknowledges that count=1 does NOT enforce either named reviewer. Bulk writes require independently verified complete inventory cardinality."
 }
 
 /// Encode every unsafe byte of one GitHub REST URL path component, including '/'.
@@ -421,7 +444,7 @@ mod tests {
 
     #[test]
     fn audit_is_default_and_accepts_a_single_repo() {
-        assert_eq!(opts(&[]).unwrap(), Options { repo: None, apply: false, all: false });
+        assert_eq!(opts(&[]).unwrap(), Options { repo: None, apply: false, all: false, expected_repos: None, acknowledge_numeric_only: false });
         assert_eq!(opts(&["--repo","java"]).unwrap().repo.as_deref(), Some("java"));
     }
 
@@ -432,8 +455,38 @@ mod tests {
         assert!(opts(&["--apply","--repo","a"]).is_err());
         assert!(opts(&["--confirm-org",ORG]).is_err());
         assert!(opts(&["--apply","--all","--confirm-org","other"]).is_err());
-        assert!(opts(&["--apply","--all","--confirm-org",ORG]).is_ok());
-        assert!(opts(&["--apply","--repo","a","--confirm-org",ORG]).is_ok());
+        assert!(opts(&["--apply","--all","--expect-repos","80","--confirm-org",ORG,"--ack-numeric-only"]).is_ok());
+        assert!(opts(&["--apply","--repo","a","--confirm-org",ORG,"--ack-numeric-only"]).is_ok());
+    }
+
+    #[test]
+    fn numeric_approval_write_requires_explicit_identity_warning() {
+        assert!(opts(&["--apply","--repo","java","--confirm-org",ORG]).is_err());
+        assert!(opts(&["--ack-numeric-only"]).is_err());
+        assert!(opts(&["--apply","--repo","java","--confirm-org",ORG,"--ack-numeric-only"]).is_ok());
+    }
+
+    #[test]
+    fn bulk_write_requires_independently_expected_inventory_count() {
+        assert!(opts(&["--all","--apply","--confirm-org",ORG,"--ack-numeric-only"]).is_err());
+        assert!(opts(&["--all","--apply","--confirm-org",ORG,"--ack-numeric-only","--expect-repos","0"]).is_err());
+        assert!(opts(&["--all","--apply","--confirm-org",ORG,"--ack-numeric-only","--expect-repos","-1"]).is_err());
+        assert!(opts(&["--all","--apply","--confirm-org",ORG,"--ack-numeric-only","--expect-repos","80"]).is_ok());
+    }
+
+    #[test]
+    fn count_confirmation_cannot_be_used_for_single_repository() {
+        assert!(opts(&["--repo","java","--expect-repos","80"]).is_err());
+        assert!(opts(&["--expect-repos","80"]).is_err());
+    }
+
+    #[test]
+    fn write_confirmation_rejects_duplicates() {
+        let args = ["--apply","--repo","a","--confirm-org",ORG,"--ack-numeric-only","--ack-numeric-only"];
+        assert!(opts(&args).is_err());
+        let args = ["--all","--apply","--confirm-org",ORG,"--ack-numeric-only",
+            "--expect-repos","80","--expect-repos","80"];
+        assert!(opts(&args).is_err());
     }
 
     #[test]
