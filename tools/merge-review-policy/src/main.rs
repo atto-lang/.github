@@ -113,6 +113,17 @@ fn run() -> Result<(), String> {
     let mut manual = 0usize;
     let mut errors = 0usize;
     for (index, (name, branch)) in repos.into_iter().enumerate() {
+        if opts.apply {
+            // The organization may change a repo's default branch while a
+            // bulk policy rollout is running. Never mutate the old default
+            // just because it appeared in an earlier inventory snapshot.
+            let live = repository(&mut api, &name)?;
+            if live != (name.clone(), branch.clone()) {
+                return Err(format!(
+                    "ABORTED: default branch or repository metadata changed for {name}; no further writes issued"
+                ));
+            }
+        }
         let outcome = if let Some(planned) = &plans {
             apply_planned_repo(&mut api, &planned[index])
         } else {
