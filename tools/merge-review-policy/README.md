@@ -137,11 +137,32 @@ These checks deliberately fail closed if inputs are absent, malformed, non-pinne
 **Administrator evidence capture:** Run `gh auth status` from a trusted admin workstation, then read the exact `main` commit SHA and retrieve `.github/CODEOWNERS` at **that SHA** via `GET /repos/ores-truffle-oreslang/.github/contents/.github/CODEOWNERS?ref=SHA`; verify the returned file path, blob and decoded text. Separately use `GET /repos/ores-truffle-oreslang/.github/codeowners/errors`, `GET /repos/ores-truffle-oreslang/.github/collaborators/oresoftware/permission`, the same for `the1mills`, `GET /repos/ores-truffle-oreslang/.github/branches/main/protection`, and `GET /repos/ores-truffle-oreslang/.github/rulesets?includes_parents=true`. Each call is read-only; 403/404 or changed base HEAD is a **failed witness**, not proof of absence. Recheck the base HEAD afterward. Redact access metadata and do not publish raw private admin responses.
 
 **Release sequence:** First recover the source-free private runner, verify the named-reviewer candidate readback, run positive/negative live merge tests, and independently approve the code. Only then create and review a **separate deliberate change** to enable writing under the verified mechanism.
+## Connected read-only administrator evidence collector
+
+The separate binary `named-owner-evidence` now **collects actual GitHub GET responses** and runs the `named_owner_preflight::assess_pilot` candidate checker against them. It is hard-scoped to `ores-truffle-oreslang/.github` at a pinned `main` commit; it cannot select another repo or perform POST/PATCH/PUT/DELETE. Unknown arguments and GitHub endpoints are rejected. It never prints raw account access, protection, or annotation responses.
+
+From a trusted organization-administrator workstation after installing Rust and authenticating a reviewed `gh` binary:
+
+```sh
+export ATTO_GH_BIN=/opt/homebrew/bin/gh  # use your verified absolute gh location
+"$ATTO_GH_BIN" auth status
+cargo test --manifest-path tools/merge-review-policy/Cargo.toml --all-targets
+cargo fmt --manifest-path tools/merge-review-policy/Cargo.toml --all -- --check
+cargo clippy --manifest-path tools/merge-review-policy/Cargo.toml --all-targets -- -D warnings
+cargo run --manifest-path tools/merge-review-policy/Cargo.toml \
+  --bin named-owner-evidence -- --read-only
+```
+
+The collector reads repository identity, branch-head SHA/protected metadata, CODEOWNERS at the pinned SHA (with bounded and strictly validated base64 decoding), GitHub CODEOWNERS error reports, each designated collaborator's permission, full branch protection, and paginated inherited/local rulesets. **It then rereads the branch head** and aborts if the SHA changed or if any GET failed. Missing base-branch CODEOWNERS is an expected blocker while this file exists only on PR #36's draft branch. Private ruleset and protection permission/plan errors are also blockers, never successful empty results.
+
+A passing command prints only `READ_ONLY_CANDIDATE` with the base SHA and `NOT_ENFORCEMENT_PROOF`; failures print a sanitized `MANUAL_NO_WRITE`. The candidate is **not** a policy authorization and not a live GitHub merge-eligibility proof: confirm CODEOWNERS error endpoint semantics at the base commit, expected trusted CI publishers, all current security path rules, no permission-based bypasses, stale review behavior, and real positive/negative merge scenarios. The separate governance CLI's `--apply` remains disabled.
+
+Collector tests include rejecting wrong owner, unprotected or moving branch, missing CODEOWNERS or protection permissions, active/paginated rulesets, and malformed base64. The collector adds 15 source tests plus 4 strictly read-only CLI tests; neither hosted nor local execution is evidenced until an actual Rust runner executes them.
 ## Required CI evidence
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer history tests, 25 named-owner pilot preflight tests, 18 exact-inventory tests, 7 CLI path/write-hold tests, and 74 integration tests (209 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer history tests, 25 named-owner pilot preflight tests, 15 GitHub evidence collector tests, 18 exact-inventory tests, 11 combined CLI path/write-hold and read-only interface tests, and 74 integration tests (228 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
