@@ -9,21 +9,38 @@ use serde_json::Value;
 use std::fs;
 use std::env;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Component, Path};
 use std::process::{Command, Stdio};
 
 struct CliApi {
     gh_bin: String,
 }
 
+/// Reject relative or ambiguous executable names before making privileged
+/// GitHub organization API calls. Never use shell/PATH resolution for writes.
+/// The administrator must independently trust the selected absolute binary.
+fn valid_gh_bin(value: &str) -> bool {
+    let path = Path::new(value);
+    path.is_absolute()
+        && path.file_name().and_then(|name| name.to_str()) == Some("gh")
+        && !value.chars().any(char::is_control)
+        && !value.split('/').any(|part| part == "." || part == "..")
+        && !path.components().any(|part| matches!(part, Component::ParentDir | Component::CurDir))
+}
+
 impl CliApi {
     fn new() -> Result<Self, String> {
         // Never search PATH or invoke a shell while performing org-admin writes.
-        // Support explicit full path on Homebrew/macOS or elsewhere.
-        let gh_bin = env::var("ATTO_GH_BIN").unwrap_or_else(|_| "/usr/bin/gh".into());
-        let path = Path::new(&gh_bin);
-        if !path.is_absolute() || path.file_name().and_then(|s| s.to_str()) != Some("gh") {
-            return Err("ATTO_GH_BIN must be an absolute path to an executable named gh".into());
+        // Support an explicitly trusted absolute Homebrew/macOS path.
+        let gh_bin = match env::var("ATTO_GH_BIN") {
+            Ok(value) => value,
+            Err(env::VarError::NotPresent) => "/usr/bin/gh".into(),
+            Err(env::VarError::NotUnicode(_)) => {
+                return Err("ATTO_GH_BIN must be valid UTF-8".into());
+            }
+        };
+        if !valid_gh_bin(&gh_bin) {
+            return Err("ATTO_GH_BIN must be a trusted absolute path ending /gh without control characters or dot traversal".into());
         }
         Ok(Self { gh_bin })
     }
@@ -187,5 +204,33 @@ fn main() {
     if let Err(message) = run() {
         eprintln!("{message}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::valid_gh_bin;
+
+    #[test]
+    fn accepts_absolute_linux_and_macos_cli() {
+        for value in ["/usr/bin/gh", "/usr/local/bin/gh", "/opt/homebrew/bin/gh"] {
+            assert!(valid_gh_bin(value), "rejected {value}");
+        }
+    }
+
+    #[test]
+    fn rejects_path_lookup_and_shell_commands() {
+        for value in ["", "gh", "./gh", "../gh", "gh --version", "/bin/sh",
+                      "/usr/bin/gh\n--method PATCH", "/usr/bin/gh\0payload"] {
+            assert!(!valid_gh_bin(value), "accepted {value:?}");
+        }
+    }
+
+    #[test]
+    fn rejects_ambiguous_dot_components_and_bad_final_names() {
+        for value in ["/usr/./bin/gh", "/tmp/../usr/bin/gh", "/usr/bin/gh/../gh",
+                      "/usr/bin/gh?method=PATCH", "/usr/bin/gh "] {
+            assert!(!valid_gh_bin(value), "accepted {value:?}");
+        }
     }
 }
