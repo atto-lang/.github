@@ -102,7 +102,9 @@ pub fn repositories<A: Api>(api: &mut A) -> Result<Vec<(String, String)>, String
     if raw.is_empty() { return Err("no accessible repositories; refusing to claim complete audit".into()); }
     let mut result = Vec::new();
     for item in raw {
-        if item["archived"].as_bool() == Some(true) { continue; }
+        let archived = item["archived"].as_bool()
+            .ok_or("repository archive status is missing or malformed")?;
+        if archived { continue; }
         let name = item["name"].as_str().ok_or("repository missing name")?;
         let expected = format!("{ORG}/{name}");
         if !valid_repo_name(name) || item["full_name"].as_str() != Some(expected.as_str()) {
@@ -114,7 +116,9 @@ pub fn repositories<A: Api>(api: &mut A) -> Result<Vec<(String, String)>, String
     }
     if result.is_empty() { return Err("all visible repositories archived; nothing to audit".into()); }
     result.sort();
-    result.dedup();
+    if result.windows(2).any(|rows| rows[0].0 == rows[1].0) {
+        return Err("duplicate repository in paginated inventory; refusing ambiguous targets".into());
+    }
     Ok(result)
 }
 
@@ -124,7 +128,11 @@ pub fn repository<A: Api>(api: &mut A, repo: &str) -> Result<(String, String), S
     if meta["full_name"].as_str() != Some(format!("{ORG}/{repo}").as_str()) {
         return Err("wrong repository owner or name returned by GitHub".into());
     }
-    if meta["archived"].as_bool() == Some(true) { return Err("repository is archived".into()); }
+    match meta["archived"].as_bool() {
+        Some(false) => {},
+        Some(true) => return Err("repository is archived".into()),
+        None => return Err("repository archive status is missing or malformed".into()),
+    }
     let branch = meta["default_branch"].as_str().filter(|s| !s.is_empty())
         .ok_or("missing default branch")?;
     Ok((repo.to_owned(), branch.to_owned()))
@@ -313,6 +321,35 @@ fn audit_repo_impl<A: Api>(
 }
 
 /// Read-only audit, or explicit one-repository apply (with fresh rechecks).
+/// Complete, read-only preflight for an organization-wide write.
+/// This is deliberately not a transactional update: GitHub has no bulk
+/// branch-protection transaction. Any manual/failed target aborts the *entire*
+/// bulk apply before its first write; later races still fail closed per repo.
+pub fn preflight_all<A: Api>(
+    api: &mut A,
+    repos: &[(String, String)],
+) -> Result<Vec<(String, String, Outcome)>, Vec<(String, String, Outcome)>> {
+    let mut rows = Vec::new();
+    if repos.is_empty() {
+        return Err(vec![("<inventory>".into(), "".into(),
+            Outcome::Manual("refusing an empty organization inventory".into()))]);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for (name, branch) in repos {
+        if !seen.insert(name) {
+            rows.push((name.clone(), branch.clone(),
+                Outcome::Manual("duplicate repository in inventory".into())));
+        } else {
+            rows.push((name.clone(), branch.clone(), audit_repo(api, name, branch, false)));
+        }
+    }
+    if rows.iter().any(|(_, _, outcome)| matches!(outcome, Outcome::Manual(_) | Outcome::Error(_))) {
+        Err(rows)
+    } else {
+        Ok(rows)
+    }
+}
+
 pub fn audit_repo<A: Api>(
     api: &mut A, repo: &str, branch: &str, apply: bool,
 ) -> Outcome {
@@ -698,6 +735,75 @@ mod tests {
         api.finished();
     }
 
+
+    #[test]
+    fn bulk_preflight_rejects_empty_inventory_without_api_calls() {
+        let mut api = MockApi::new();
+        assert!(preflight_all(&mut api, &[]).is_err());
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn bulk_preflight_collects_compliant_and_would_change_without_writes() {
+        let list = vec![("example".into(), "main".into()), ("example-alt".into(), "main".into())];
+        // Duplicate protection path fixture is sufficient for unit testing
+        // the in-order two target preflight behavior; repository names differ.
+        // MockApi checks full paths, so use distinct endpoints.
+        let mut api = MockApi::new()
+            .step("GET", &rules_path(), json!([]))
+            .step("GET", &protect_path(), protection(1))
+            .step("GET", &format!("repos/{ORG}/example-alt/rulesets?includes_parents=true&per_page=100&page=1"), json!([]))
+            .step("GET", &protection_endpoint("example-alt","main"), protection(3));
+        let rows = preflight_all(&mut api, &list).unwrap();
+        assert!(matches!(rows[0].2, Outcome::Compliant));
+        assert!(matches!(rows[1].2, Outcome::WouldChange(3)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn bulk_preflight_stops_rollout_when_later_target_is_manual() {
+        let mut api = base_mock(3)
+            .step("GET", &format!("repos/{ORG}/blocked/rulesets?includes_parents=true&per_page=100&page=1"),
+                json!([{"id":9,"enforcement":"active"}]));
+        let list = vec![("example".into(),"main".into()),("blocked".into(),"main".into())];
+        let rows = preflight_all(&mut api,&list).unwrap_err();
+        assert!(matches!(rows[0].2,Outcome::WouldChange(3)));
+        assert!(matches!(rows[1].2,Outcome::Manual(_)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn duplicate_inventory_fails_preflight_without_replaying_a_repo() {
+        let mut api = base_mock(1);
+        let list = vec![("example".into(),"main".into()),("example".into(),"dev".into())];
+        let rows = preflight_all(&mut api,&list).unwrap_err();
+        assert!(matches!(rows[1].2,Outcome::Manual(_)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn repo_inventory_rejects_missing_archive_flag() {
+        let mut api = MockApi::new()
+            .step("GET",&format!("orgs/{ORG}/repos?type=all&per_page=100&page=1"),
+                json!([{"name":"one","full_name":format!("{ORG}/one"),"default_branch":"main"}]));
+        assert!(repositories(&mut api).is_err());
+        api.finished();
+    }
+
+    #[test]
+    fn repo_inventory_rejects_duplicate_entry_in_same_page() {
+        let item = json!({"name":"one","full_name":format!("{ORG}/one"),
+            "default_branch":"main","archived":false});
+        let mut api = MockApi::new()
+            .step("GET",&format!("orgs/{ORG}/repos?type=all&per_page=100&page=1"),
+                json!([item.clone(),item]));
+        assert!(repositories(&mut api).is_err());
+        api.finished();
+    }
     #[test]
     fn rejects_wrong_fullname_even_for_single_repo() {
         let mut api = MockApi::new().step("GET",&format!("repos/{ORG}/example"),
