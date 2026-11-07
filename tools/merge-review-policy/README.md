@@ -100,11 +100,16 @@ GitHub does not provide an atomic transaction across repositories. If a write fa
 
 Repository list pagination, per-repository ruleset pagination, active-ruleset detection, protected-branch availability, and a permission/plan denial are explicit fail-closed stages. Avoid blanket claims that one approval is enforced until each repository's effective GitHub rules have been verified.
 
+## Privileged GitHub CLI binary selection
+
+`--apply` can change repository settings. The policy auditor calls an executable directly (not through a shell or PATH search), using `/usr/bin/gh` by default. When an administrator uses Homebrew on macOS, they may explicitly select a trusted absolute binary path such as `ATTO_GH_BIN=/opt/homebrew/bin/gh`. Paths with relative lookup, dot traversal, control characters, or a final executable name other than `gh` are rejected. A valid path is **not** proof that the selected binary is trustworthy: verify the installation independently before running any write.
+
+Three new Rust source tests check accepted Linux/macOS paths and negative traversal/shell-like inputs. These tests are **not** hosted execution evidence until admitted exact-head CI runs them.
 ## Required CI evidence
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, and 70 integration tests (173 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, 3 privileged CLI binary-path tests, and 70 integration tests (176 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
