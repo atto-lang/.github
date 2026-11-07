@@ -75,6 +75,34 @@ The following same-organization, GitHub-hosted workflow results help rule out a 
 These facts narrow the cause to **private-repository billing/spending/entitlements, repository Actions policy, or private-job scheduling**, but do not establish which. Only the real check-run annotation or authorized billing/runners settings can distinguish them. Inspect GitHub organization **Settings → Billing and licensing** and **Settings → Actions**, then privately obtain the annotation using this read-only diagnostic. Never assume the runner failure was caused by the Rust source.
 
 **Evidence classification:** PR #22's historical 18/18 executed source-free tests cover only its earlier exact diagnostic blob (`2891937bf...`). The expanded `.github` allowlist and four new tests must execute at the **new** head before any new passed-test claim. No private compiler source may be mirrored to public repositories to evade the missing runner.
+## Direct administrator-only GitHub CLI readback (no Rust installation needed)
+
+When the administrator has `gh` but no Rust toolchain, collect the failure reason using *read-only* requests from an authenticated workstation. These commands make **no branch-protection or billing changes**:
+
+```sh
+gh auth status
+gh api --hostname github.com --method GET \
+  repos/ores-truffle-oreslang/.github/actions/runs/42402642383 \
+  --jq '{id,run_attempt,head_sha,status,conclusion}'
+gh api --hostname github.com --method GET \
+  repos/ores-truffle-oreslang/.github/actions/jobs/128493550909 \
+  --jq '{id,run_id,head_sha,status,conclusion,runner_id,steps,check_run_url}'
+```
+
+Confirm the job belongs to run `42402642383`, both heads match, the job is completed/failed, and `steps` is an empty array. **Do not guess a check-run ID from the job ID**. Copy the exact numeric ID from the job's `check_run_url` under the *same repository* into the next commands (replace `CHECK_RUN_ID` with that number):
+
+```sh
+gh api --hostname github.com --method GET \
+  repos/ores-truffle-oreslang/.github/check-runs/CHECK_RUN_ID \
+  --jq '{id,head_sha,status,conclusion,app_slug:.app.slug,output}'
+gh api --hostname github.com --method GET \
+  'repos/ores-truffle-oreslang/.github/check-runs/CHECK_RUN_ID/annotations?per_page=100' \
+  --jq '[.[] | {annotation_level,title,message}]'
+```
+
+Before relying on annotations, confirm the check-run head equals the workflow head, `app_slug` is `github-actions`, status is `completed`, and conclusion is `failure`. Output may contain sensitive administrative details; **review it locally, redact secrets, and share only the factual blocker**. If these GET requests return 403/404, use the original failed [Actions job](https://github.com/ores-truffle-oreslang/.github/actions/runs/42402642383/job/128493550909) in the browser as an authorized organization administrator. A GitHub App exposing `permissions.admin=true` in repository metadata **does not** prove it has the required branch-protection or check-run annotation permissions.
+
+Public same-organization workflows have executed steps while the private `.github` source-free canary has not. That supports a private-repository admission investigation, **not** a confirmed billing diagnosis.
 ## What to inspect in GitHub administration
 
 1. Original [LLVM CI issue #159](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/159)
