@@ -77,6 +77,19 @@ impl Api for CliApi {
     }
 }
 
+/// A numeric approval threshold is not an allowlist of eligible reviewers.
+/// Our current `audit_repo`/`patch` logic explicitly refuses CODEOWNERS-required
+/// branches; allowing --apply here would therefore reduce approval counts on
+/// branches where the intended named-reviewer restriction is NOT enforced.
+/// Until a verified effective CODEOWNERS/ruleset admission path is implemented,
+/// do not permit the CLI to make ANY branch-protection PATCH.
+fn require_verified_named_reviewers_before_apply(apply: bool) -> Result<(), &'static str> {
+    if apply {
+        return Err("ABORTED WITHOUT WRITES: --apply is disabled until verified GitHub-enforced named-reviewer approvals exist; a numeric-only change or proposed CODEOWNERS file is not sufficient");
+    }
+    Ok(())
+}
+
 fn run() -> Result<(), String> {
     let raw: Vec<String> = env::args().skip(1).collect();
     if raw.len() == 1 && matches!(raw[0].as_str(), "--help" | "-h") {
@@ -84,6 +97,8 @@ fn run() -> Result<(), String> {
         return Ok(());
     }
     let opts = parse_options(raw)?;
+    // Guard before GitHub discovery, environment reads, or any possible write.
+    require_verified_named_reviewers_before_apply(opts.apply)?;
     let mut api = CliApi::new()?;
     let repos = if let Some(name) = &opts.repo {
         vec![repository(&mut api, name)?]
@@ -209,7 +224,41 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::valid_gh_bin;
+    use super::{require_verified_named_reviewers_before_apply, valid_gh_bin};
+
+    #[test]
+    fn dry_run_remains_available_without_named_reviewer_attestation() {
+        assert!(require_verified_named_reviewers_before_apply(false).is_ok());
+    }
+
+    #[test]
+    fn single_repo_apply_cannot_lower_review_count_without_enforcement() {
+        let reason = require_verified_named_reviewers_before_apply(true).unwrap_err();
+        assert!(reason.contains("ABORTED WITHOUT WRITES"));
+        assert!(reason.contains("named-reviewer"));
+    }
+
+    #[test]
+    fn bulk_apply_is_blocked_before_any_api_request() {
+        let parsed = atto_merge_review_policy::parse_options(
+            ["--all", "--apply", "--confirm-org", "ores-truffle-oreslang",
+             "--expect-repos", "80", "--ack-numeric-only"]
+                .into_iter().map(str::to_owned),
+        ).unwrap();
+        assert!(parsed.apply);
+        assert!(require_verified_named_reviewers_before_apply(parsed.apply).is_err());
+    }
+
+    #[test]
+    fn explicit_numeric_only_ack_is_not_named_reviewer_enforcement() {
+        let parsed = atto_merge_review_policy::parse_options(
+            ["--repo", ".github", "--apply", "--confirm-org", "ores-truffle-oreslang",
+             "--ack-numeric-only"]
+                .into_iter().map(str::to_owned),
+        ).unwrap();
+        assert!(parsed.acknowledge_numeric_only);
+        assert!(require_verified_named_reviewers_before_apply(parsed.apply).is_err());
+    }
 
     #[test]
     fn accepts_absolute_linux_and_macos_cli() {
