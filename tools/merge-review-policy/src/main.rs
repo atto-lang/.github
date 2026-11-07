@@ -4,7 +4,9 @@ use atto_merge_review_policy::{
     apply_planned_repo, audit_repo, parse_options, preflight_all, repositories, repository, usage,
     Api, Outcome, ORG,
 };
+use atto_merge_review_policy::inventory::verify_manifest;
 use serde_json::Value;
+use std::fs;
 use std::env;
 use std::io::Write;
 use std::path::Path;
@@ -77,6 +79,27 @@ fn run() -> Result<(), String> {
     if opts.all && opts.expected_repos != Some(repos.len()) {
         return Err(format!("ABORTED WITHOUT WRITES: discovered {} repos, but operator confirmed {:?}",
             repos.len(), opts.expected_repos));
+    }
+    if opts.apply && opts.all {
+        // Cardinality alone cannot detect same-count substitutions. Require a
+        // separately reviewed file enumerating every exact repo/default branch.
+        // A missing, symlinked, malformed, or stale inventory is never a write.
+        let inventory_path = env::var("ATTO_APPROVED_REPO_INVENTORY")
+            .map_err(|_| "ABORTED WITHOUT WRITES: ATTO_APPROVED_REPO_INVENTORY is required for --all --apply")?;
+        let inventory_path = Path::new(&inventory_path);
+        if !inventory_path.is_absolute() {
+            return Err("ABORTED WITHOUT WRITES: approved inventory path must be absolute".into());
+        }
+        let metadata = fs::symlink_metadata(inventory_path)
+            .map_err(|_| "ABORTED WITHOUT WRITES: approved inventory file unavailable")?;
+        if !metadata.file_type().is_file() {
+            return Err("ABORTED WITHOUT WRITES: approved inventory must be a regular, non-symlinked file".into());
+        }
+        let manifest = fs::read_to_string(inventory_path)
+            .map_err(|_| "ABORTED WITHOUT WRITES: cannot read approved inventory file")?;
+        verify_manifest(&manifest, &repos)
+            .map_err(|reason| format!("ABORTED WITHOUT WRITES: {reason}"))?;
+        println!("APPROVED_INVENTORY_MATCH repos={} exact repository and branch identities", repos.len());
     }
     println!("org={ORG} mode={} accessible_nonarchived_repos={}", if opts.apply {
         "APPLY"
