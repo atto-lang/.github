@@ -7,32 +7,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkSnapshot, parseCanonicalSnapshot, readSnapshot } from '../tools/check-merge-wave-hold.mjs';
 
-const repos=['oreslang-source.forge','oreslang-source.js','oreslang-source.hdl',
-  'oreslang-source.rs','oreslang-source.net','sublime-text-plugins',
-  'sublime-text-plugins','oreslang-common-source','oreslang-ssr','oreslang-linked-queue'];
-const gates=['live_required_main_protection','independent_review_for_release',
-  'exact_landed_commit_source_owned_ci','source_guest_tests_where_applicable',
-  'admin_runner_admission_resolution','no_unapproved_private_source_export'];
-function valid() {
-  return {
-    schema:'atto.merge-wave-retroactive-snapshot.v1', snapshot_date_utc:'2026-11-06',
-    source:'authenticated read-only GitHub PR/review/branch/compare/Actions API observations',
-    classification:'historical_snapshot_not_live_release_authorization', state:'BLOCKED',
-    merge_count:10, repository_count:9, approved_merge_count:0,
-    protected_main_repository_count:0, sampled_success_stepful_merge_count:2,
-    sampled_zero_step_failure_merge_count:8,
-    merges:repos.map((r,i)=>({repo:`ores-truffle-oreslang/${r}`,pr:100+i,
-      pr_head:'a'.repeat(39)+(i+1).toString(16),landed_sha:'f'.repeat(38)+(i+11).toString(16).padStart(2,'0'),
-      main_contains_land_sha:true,main_compare_behind_by:0,
-      submitted_review_count:0,main_protected:false,
-      post_merge_ci_sample:{run_id:1000+i,job_id:2000+i,
-        executed_steps:i===5||i===6?15:0,status:i===5||i===6?'success_stepful':'not_executed_sample'},
-      release_certification:'BLOCKED'})),
-    release_gates:[...gates], notes:['premerge approval cannot be recreated',
-      'zero steps is not executed','host tests do not prove guest execution',
-      'this is never an authorization to release'],
-  };
-}
+// Tests derive a fresh baseline from the checked-in historical evidence, not
+// from fabricated PR identities. Production pins those identities separately.
+const HISTORICAL_FILE=fileURLToPath(new URL('../audits/merge-waves/2026-11-06-retroactive.json',import.meta.url));
+function valid(){ return JSON.parse(readFileSync(HISTORICAL_FILE,'utf8')); }
 const canonical=x=>JSON.stringify(x,null,2)+'\n';
 
 test('baseline: exactly ten merges, nine repos and eight unexecuted samples remain blocked',()=>{
@@ -43,6 +21,11 @@ test('baseline: exactly ten merges, nine repos and eight unexecuted samples rema
 });
 const negatives=[
   ['forged approved state', x=>{x.state='CERTIFIED'}],
+  ['substitute another legitimate PR', x=>{x.merges[0].pr=999}],
+  ['substitute another plausible head SHA', x=>{x.merges[0].pr_head='b'.repeat(40)}],
+  ['substitute another plausible landed SHA', x=>{x.merges[0].landed_sha='c'.repeat(40)}],
+  ['substitute plausible Actions run ID', x=>{x.merges[0].post_merge_ci_sample.run_id=99999}],
+  ['substitute plausible Actions job ID', x=>{x.merges[0].post_merge_ci_sample.job_id=99999}],
   ['forged authority classification',x=>{x.classification='trusted_release'}],
   ['version downgrade',x=>{x.schema='v0'}],
   ['extra release_ready field',x=>{x.release_ready=true}],
@@ -96,9 +79,12 @@ test('accept regular immutable local file, deny symlink and hardlink',()=>{
   const dir=mkdtempSync(join(tmpdir(),'atto-release-hold-'));
   try{
     const p=join(dir,'snap.json');writeFileSync(p,canonical(valid()));
-    // A plausible *synthetic* JSON snapshot must never pass the anchored
-    // historical filesystem read, regardless of its structural validity.
+    // Exact byte-for-byte copies are still the same immutable historical
+    // evidence; a distinct file path alone is not a reason to reject.
+    assert.equal(readSnapshot(p).releaseAuthorized,false);
+    writeFileSync(p,canonical({...valid(),snapshot_date_utc:'2026-11-07'}));
     assert.throws(()=>readSnapshot(p),/pinned historical Git blob/);
+    writeFileSync(p,canonical(valid()));
     const alias=join(dir,'alias.json');symlinkSync(p,alias);
     assert.throws(()=>readSnapshot(alias),/unsafe/);
     const hard=join(dir,'hard.json');linkSync(p,hard);
