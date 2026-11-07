@@ -71,6 +71,13 @@ fn run() -> Result<(), String> {
     } else {
         repositories(&mut api)?
     };
+    // The connected repository inventory may omit inaccessible private repos.
+    // The expected count is an independent operator-supplied upper-level guard,
+    // never inferred from the same incomplete API response.
+    if opts.all && opts.expected_repos != Some(repos.len()) {
+        return Err(format!("ABORTED WITHOUT WRITES: discovered {} repos, but operator confirmed {:?}",
+            repos.len(), opts.expected_repos));
+    }
     println!("org={ORG} mode={} accessible_nonarchived_repos={}", if opts.apply {
         "APPLY"
     } else {
