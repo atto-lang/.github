@@ -39,6 +39,8 @@ jobs:
           printf 'EXACT_HEAD_SHA=%s\n' "${HEAD}"
           printf 'EXACT_HEAD_TREE=%s\n' "$(git rev-parse 'HEAD^{tree}')"
           printf 'RUN_ID=%s ATTEMPT=%s\n' "${GITHUB_RUN_ID}" "${GITHUB_RUN_ATTEMPT}"
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path tools/merge-review-policy/Cargo.toml --all -- --check
       - name: Execute Rust policy unit tests
         run: cargo test --manifest-path tools/merge-review-policy/Cargo.toml --all-targets
       - name: Check Rust policy with clippy
