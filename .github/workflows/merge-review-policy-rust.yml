@@ -24,11 +24,21 @@ jobs:
       - name: Checkout exact PR tree
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          # pull_request defaults to refs/pull/<N>/merge; never use that synthetic
+          # merge commit as a substitute for the PR's exact submitted head.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Identify exact checkout tree
+      - name: Assert exact submitted head and identify immutable tree
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          git rev-parse HEAD
-          git rev-parse 'HEAD^{tree}'
+          set -euo pipefail
+          HEAD="$(git rev-parse HEAD)"
+          test "${HEAD}" = "${EXPECTED_HEAD}"
+          printf 'EXACT_HEAD_SHA=%s\n' "${HEAD}"
+          printf 'EXACT_HEAD_TREE=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          printf 'RUN_ID=%s ATTEMPT=%s\n' "${GITHUB_RUN_ID}" "${GITHUB_RUN_ATTEMPT}"
       - name: Execute Rust policy unit tests
         run: cargo test --manifest-path tools/merge-review-policy/Cargo.toml --all-targets
       - name: Check Rust policy with clippy
