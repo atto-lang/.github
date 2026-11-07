@@ -86,7 +86,7 @@ The example count **80** was one observed snapshot, not a guaranteed current siz
 2. Paginates the repository list and inherited/local ruleset list, treating incomplete or malformed results as errors.
 3. Treats **any active ruleset** as requiring manual inspection rather than assuming a numeric branch protection threshold controls the actual merge.
 4. Treats missing protections, missing review counts, unexpected counts, CODEOWNERS approval requirements, existing bypass allowances, inaccessible endpoints, archived repos and changed snapshots as `MANUAL`.
-5. On explicit `--apply` only, re-fetches effective ruleset listings and the complete branch protection snapshot immediately before a single `PATCH` to `required_approving_review_count: 1`.
+5. A future, separately reviewed writer would re-fetch effective rulesets and the full protection snapshot immediately before any PATCH. **This write path is currently unreachable from the CLI while named-reviewer enforcement is unverified.**
 6. Re-reads the **complete** protection snapshot after the write; any change beyond the single count fails verification. Re-reads active rulesets again before reporting a successful receipt.
 7. Gives **non-zero exit** for any incomplete organization run, manual review or API failure. Never reports a partial rollout as total success.
 8. Preserves existing status checks, stale-review dismissal, last-push review, CODEOWNERS, bypass/dismissal settings, and administrator protection. No `PUT` overwriting full protection.
@@ -127,7 +127,7 @@ Four source tests pin the exact two-owner, single-rule coverage and prevent acci
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, 3 privileged CLI binary-path tests, and 70 integration tests (184 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, 7 CLI path/write-hold tests, and 74 integration tests (184 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
