@@ -111,6 +111,7 @@ fn valid_gh_executable(value: &str) -> bool {
     path.is_absolute()
         && path.file_name().and_then(|name| name.to_str()) == Some("gh")
         && !value.chars().any(char::is_control)
+        && !value.split('/').any(|part| part == "." || part == "..")
         && !path.components().any(|part| matches!(part, Component::ParentDir | Component::CurDir))
 }
 
