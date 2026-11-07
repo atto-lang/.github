@@ -176,6 +176,50 @@ mod tests {
         assert!(classify_job(&job("completed","success",77,
             json!([{"conclusion":"magic"}])),SHA).is_err());
     }
+
+    // Source-contract tests guard workflow provenance even while runner
+    // admission is unavailable. They do not constitute executed CI evidence.
+    fn exact_head_workflow_contract(workflow: &str) -> bool {
+        workflow.contains("ref: ${{ github.event.pull_request.head.sha || github.sha }}")
+            && workflow.contains("EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}")
+            && workflow.contains("test \"${HEAD}\" = \"${EXPECTED_HEAD}\"")
+            && workflow.contains("git rev-parse 'HEAD^{tree}'")
+            && workflow.contains("persist-credentials: false")
+    }
+
+    #[test]
+    fn rust_workflow_checks_out_actual_pr_head_not_synthetic_merge() {
+        let workflow = include_str!("../../../.github/workflows/merge-review-policy-rust.yml");
+        assert!(exact_head_workflow_contract(workflow));
+    }
+
+    #[test]
+    fn mutation_removing_explicit_pr_head_checkout_is_rejected() {
+        let workflow = include_str!("../../../.github/workflows/merge-review-policy-rust.yml");
+        let mutation = workflow.replace(
+            "ref: ${{ github.event.pull_request.head.sha || github.sha }}",
+            "ref: ${{ github.sha }}",
+        );
+        assert_ne!(mutation, workflow);
+        assert!(!exact_head_workflow_contract(&mutation));
+    }
+
+    #[test]
+    fn mutation_removing_exact_head_comparison_is_rejected() {
+        let workflow = include_str!("../../../.github/workflows/merge-review-policy-rust.yml");
+        let mutation = workflow.replace("test \"${HEAD}\" = \"${EXPECTED_HEAD}\"", "true");
+        assert_ne!(mutation, workflow);
+        assert!(!exact_head_workflow_contract(&mutation));
+    }
+
+    #[test]
+    fn mutation_removing_tree_receipt_is_rejected() {
+        let workflow = include_str!("../../../.github/workflows/merge-review-policy-rust.yml");
+        let mutation = workflow.replace("git rev-parse 'HEAD^{tree}'", "git status --porcelain");
+        assert_ne!(mutation, workflow);
+        assert!(!exact_head_workflow_contract(&mutation));
+    }
+
     #[test]
     fn queued_with_steps_is_invalid() {
         assert!(classify_job(&job("queued","",0,json!([{"conclusion":"success"}])),SHA).is_err());
