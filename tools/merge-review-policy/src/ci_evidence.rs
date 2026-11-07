@@ -188,6 +188,27 @@ mod tests {
     }
 
     #[test]
+    fn rust_workflow_runs_all_checks_even_if_earlier_check_fails() {
+        let workflow = include_str!("../../../.github/workflows/merge-review-policy-rust.yml");
+        let test = workflow.find("- name: Execute Rust policy unit tests").unwrap();
+        let clippy = workflow.find("- name: Check Rust policy with clippy").unwrap();
+        let fmt = workflow.find("- name: Check Rust formatting").unwrap();
+        assert!(test < clippy && clippy < fmt, "Cargo tests must execute before formatting");
+        assert_eq!(workflow.matches("if: success() || failure()").count(), 2);
+        assert!(!workflow.contains("continue-on-error: true"), "all gates must remain required");
+    }
+
+    #[test]
+    fn mutation_that_skips_clippy_on_test_failure_is_rejected() {
+        let workflow = include_str!("../../../.github/workflows/merge-review-policy-rust.yml");
+        let mutation = workflow.replacen(
+            "if: success() || failure()", "if: success()", 1
+        );
+        assert_ne!(mutation, workflow);
+        assert_ne!(mutation.matches("if: success() || failure()").count(), 2);
+    }
+
+    #[test]
     fn rust_workflow_checks_out_actual_pr_head_not_synthetic_merge() {
         let workflow = include_str!("../../../.github/workflows/merge-review-policy-rust.yml");
         assert!(exact_head_workflow_contract(workflow));
