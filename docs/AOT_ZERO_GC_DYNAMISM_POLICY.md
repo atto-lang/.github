@@ -1,0 +1,14 @@
+# AttoLang organization policy: AOT and controlled dynamism
+
+**Target / review directive, not a declaration of compiler support.** Follow the canonical [AttoLang language-spec amendment PR #18](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/18) and [Oreslang compiler contributor policy PR #38](https://github.com/ores-truffle-oreslang/.github/pull/38) across AttoLang website, docs, playground, examples, compiler and runtime work.
+
+## Mandatory author/reviewer checklist
+
+1. Name the code profile: interpreter/JIT, hybrid, host-only AOT, **sealed full guest AOT**, or separately governed precompiled-module AOT. Sealed AOT cannot evaluate/compile new guest code at runtime; forbid eval, dynamic method/class injection, unbounded reflection, monkey-patching, unknown proxy types, and implicit interpreter/JIT fallback. Fail before executable IR/code if the profile cannot implement a feature.
+2. Preserve expressive features via compiler-known finite metadata: virtual methods, interfaces, typeclasses, generics, hygienic macros, statically lowered closures/async continuations, and generated proxy forwarders for a known class/interface. Static class-level methods are not magically instance methods; no privacy/effect/capability escalation.
+3. Name the memory claim: managed-host, **zero guest tracing-GC**, or independently demonstrated **process zero-GC**. Java/.NET/JavaScript hosts may remain GC-managed despite AOT/trampolines/off-heap actor arenas. Wasm guest linear memory does not remove browser JS GC.
+4. Check ownership transfers (`rt take`/`rt copy`/`rt share`/`rt borrow`), actor heaps, continuations, closure captures, reference cycles, long-lived actor reclamation, bounded quotas/OOM, cancellation and generation-fenced exactly-once cleanup. Channels/pub-sub carry Sendable data, never arbitrary functions/closures/foreign pointers.
+5. Preserve language semantics: no implicit conversions, no operator overloading, no `%`/`^`/`^^`, and no implicit nested `Future`/`Option` flattening. Use canonical `.atto` for new guest code, with `.ores` for explicit legacy migration only.
+6. Provide positive and **negative-before-IR** compiler tests for dynamic feature boundaries (eval, unknown proxy, reflection escalation, borrow escape across await, closure transport, cycles, hidden fallback), plus real runtime cancellation/allocator stress. For AOT/zero-GC claims, capture exact source/compiler/fixture SHAs, generated artifact hash and actual stepful guest execution and GC instrumentation. `steps=[]` or `steps=null` is NOT_EXECUTED.
+
+This document does not grant permission to mirror private source or bypass reviews, required checks, existing Rust-only tooling, sandbox capabilities or deployment approvals. Brand and repository migration do not establish backend parity.

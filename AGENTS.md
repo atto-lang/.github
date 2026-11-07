@@ -1,0 +1,3 @@
+# AttoLang agent directives
+
+For all AttoLang language/compiler/runtime/docs contributions, follow [the org AOT/zero-GC controlled-dynamism policy](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md). In sealed guest AOT, reject runtime code compilation, arbitrary class/method injection, unrestricted reflection and interpreter/JIT fallback. Generate known-class proxies, virtual dispatch and continuation code statically. Apply explicit ownership, deterministic actor/task/closure cleanup and bounded quotas; distinguish zero guest tracing-GC from whole-process GC. Require negative `.atto` tests and exact-head stepful guest execution before claiming support. Do not bypass security, private-source governance, independent review or Rust-only tooling.
