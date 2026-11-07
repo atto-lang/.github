@@ -1,7 +1,8 @@
 //! Single-organization, dry-run-first, independently verified review-policy CLI.
 //! The JSON/API policy engine and its adversarial tests are in lib.rs.
 use atto_merge_review_policy::{
-    audit_repo, parse_options, repositories, repository, usage, Api, Outcome, ORG,
+    apply_planned_repo, audit_repo, parse_options, preflight_all, repositories, repository, usage,
+    Api, Outcome, ORG,
 };
 use serde_json::Value;
 use std::env;
@@ -76,13 +77,35 @@ fn run() -> Result<(), String> {
         "DRY_RUN"
     }, repos.len());
     println!("CAUTION: numeric approval thresholds do not restrict reviewer identities; check CODEOWNERS or team policy separately.");
+    // A bulk apply is an all-or-nothing *preflight*. No writes are allowed
+    // until every repository is fully inspectable and policy-eligible.
+    // Actual GitHub writes cannot be transactionally rolled back; stop on
+    // the first failed apply and reconcile the partial batch explicitly.
+    let plans = if opts.apply && opts.all {
+        match preflight_all(&mut api, &repos) {
+            Ok(plans) => {
+                println!("PREFLIGHT_OK repos={} all complete protection snapshots captured", plans.len());
+                Some(plans)
+            }
+            Err(reasons) => {
+                for reason in &reasons { eprintln!("PREFLIGHT_BLOCKED {reason}"); }
+                return Err(format!("ABORTED WITHOUT WRITES: {} repository preflight failures", reasons.len()));
+            }
+        }
+    } else { None };
     let mut compliant = 0usize;
     let mut proposed = 0usize;
     let mut changed = 0usize;
     let mut manual = 0usize;
     let mut errors = 0usize;
-    for (name, branch) in repos {
-        match audit_repo(&mut api, &name, &branch, opts.apply) {
+    for (index, (name, branch)) in repos.into_iter().enumerate() {
+        let outcome = if let Some(planned) = &plans {
+            apply_planned_repo(&mut api, &planned[index])
+        } else {
+            audit_repo(&mut api, &name, &branch, opts.apply)
+        };
+        let bulk_failure = matches!(outcome, Outcome::Manual(_) | Outcome::Error(_));
+        match outcome {
             Outcome::Compliant => { compliant += 1; println!("COMPLIANT {name}:{branch} numeric_reviews=1"); }
             Outcome::WouldChange(old) => {
                 proposed += 1;
@@ -100,6 +123,9 @@ fn run() -> Result<(), String> {
                 errors += 1;
                 eprintln!("ERROR {name}:{branch} {reason}");
             }
+        }
+        if opts.apply && opts.all && bulk_failure {
+            return Err(format!("BULK APPLY HALTED after {changed} verified writes; reconcile any partial batch before resuming"));
         }
     }
     println!("SUMMARY compliant={compliant} proposed={proposed} verified_changes={changed} manual={manual} errors={errors}");
