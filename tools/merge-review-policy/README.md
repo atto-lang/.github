@@ -104,9 +104,14 @@ Repository list pagination, per-repository ruleset pagination, active-ruleset de
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 18 CI receipt tests, 20 named-reviewer witness tests, 18 exact-inventory tests, and 70 integration tests (167 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 22 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, and 70 integration tests (171 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
+
+
+### Exact PR head versus GitHub's synthetic merge commit
+
+For `pull_request` events, Actions normally checks out a synthetic `refs/pull/N/merge` commit. This is **not** the PR's exact submitted head. The Rust policy workflow now explicitly checks out `${{ github.event.pull_request.head.sha || github.sha }}`, asserts `git rev-parse HEAD == EXPECTED_HEAD`, and prints immutable tree identity and run/attempt. Four negative/source tests detect missing head checkout, missing SHA equality, and missing tree receipts. Historic pre-fix runs must not be promoted as *exact-head* compiler or tool execution, even if they eventually had executed steps.
 
 ## Evidence and promotion
 
