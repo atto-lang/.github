@@ -28,6 +28,21 @@ const GATES = Object.freeze([
   'exact_landed_commit_source_owned_ci', 'source_guest_tests_where_applicable',
   'admin_runner_admission_resolution', 'no_unapproved_private_source_export',
 ]);
+// Independent defense in depth: immutable historical identities. A caller may
+// use checkSnapshot() directly without passing through readSnapshot()'s pinned
+// blob digest; a plausible replacement batch must still be refused.
+const PINNED_ROWS = Object.freeze([
+  Object.freeze(["ores-truffle-oreslang/oreslang-source.forge",198,"51e2369d5e3d9f9fc9368c20a982e54e7e6c2ff1","7902eb2e3610babe1004a3e752b12079737992e6",42294518377,128156170772,0,"not_executed_sample"]),
+  Object.freeze(["ores-truffle-oreslang/oreslang-source.js",215,"5a580d7ed69c6c6c02afdd6683a199246b7cf421","b437edff0ab136d83f9aedae652a5f368b4cc5ee",42294569932,128156348036,0,"not_executed_sample"]),
+  Object.freeze(["ores-truffle-oreslang/oreslang-source.hdl",27,"a12245f3f1ce16bfe354b33f8ef806c5f43e733e","05b2a5899ca2b4f38ee27827a509dbfd1d19a3ef",42294592084,128156423214,0,"not_executed_sample"]),
+  Object.freeze(["ores-truffle-oreslang/oreslang-source.rs",26,"6968d620957a6eb069df71440463beb43b9321c2","e516b09622f6d1b9d61330aff88e6c86bb6d97f1",42294604675,128156465081,0,"not_executed_sample"]),
+  Object.freeze(["ores-truffle-oreslang/oreslang-source.net",374,"d570052ed6ec2a5f3ce54483733dcb7664a01181","5d8246bca843309ee3f66538f1385fefb5690858",42294558773,128156310276,0,"not_executed_sample"]),
+  Object.freeze(["ores-truffle-oreslang/sublime-text-plugins",130,"83980c85999f3c1631d7629cf9069d96c907fa02","6c54e1042596b3274c0d921fcc41636da5f82f76",42297029167,128164835552,15,"success_stepful"]),
+  Object.freeze(["ores-truffle-oreslang/sublime-text-plugins",131,"82bd6bb6376e84739d17e49324e422abc68ebf04","8320a29a2fbaccc5d5f296a1a1712000c0a6d229",42297059629,128164940257,15,"success_stepful"]),
+  Object.freeze(["ores-truffle-oreslang/oreslang-common-source",243,"dab5f37f1e49ebf3efd2ab2793f8d2a15d1ef2a4","3c39e798f2b6d4f8d4f0760821329321c4433355",42297083612,128165025185,0,"not_executed_sample"]),
+  Object.freeze(["ores-truffle-oreslang/oreslang-ssr",36,"d8c0dceeb9ce1a80d3bb17864914793e2fd0f5c4","eeb0535f34af15b0773585d42259595b67eec996",42300219068,128175746624,0,"not_executed_sample"]),
+  Object.freeze(["ores-truffle-oreslang/oreslang-linked-queue",23,"6c4e7b713d22da20a69ba157983dca7ec991f96e","09ea6364794cc050639b669a783a169875c5f50a",42297102590,128165095940,0,"not_executed_sample"]),
+]);
 const sha = s => typeof s === 'string' && /^[0-9a-f]{40}$/.test(s) && /[1-9a-f]/.test(s);
 const natural = n => Number.isSafeInteger(n) && n > 0;
 const nonnegative = n => Number.isSafeInteger(n) && n >= 0;
@@ -65,6 +80,13 @@ export function checkSnapshot(snapshot) {
     keys(pr, EXACT_KEYS.pr, 'PR');
     const {repo, post_merge_ci_sample: ci} = pr;
     keys(ci, EXACT_KEYS.ci, 'CI');
+    const pinned = PINNED_ROWS[i];
+    if (!pinned || repo !== pinned[0] || pr.pr !== pinned[1] ||
+        pr.pr_head !== pinned[2] || pr.landed_sha !== pinned[3] ||
+        ci.run_id !== pinned[4] || ci.job_id !== pinned[5] ||
+        ci.executed_steps !== pinned[6] || ci.status !== pinned[7]) {
+      fail('historical PR/commit/run/job identity differs from pinned evidence');
+    }
     if (typeof repo !== 'string' || !/^ores-truffle-oreslang\/[A-Za-z0-9._-]{1,100}$/.test(repo) ||
         !natural(pr.pr) || !sha(pr.pr_head) || !sha(pr.landed_sha) ||
         pr.pr_head === pr.landed_sha || pr.main_contains_land_sha !== true ||
