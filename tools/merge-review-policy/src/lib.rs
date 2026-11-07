@@ -5,6 +5,7 @@ pub mod inventory;
 pub mod ci_evidence;
 pub mod review_evidence;
 pub mod named_owner_preflight;
+pub mod named_owner_collector;
 
 use serde_json::{json, Value};
 use std::fmt::Write as _;
