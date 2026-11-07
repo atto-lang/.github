@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 
 pub fn parse_manifest(text: &str) -> Result<Vec<(String, String)>, String> {
     if text.is_empty() { return Err("approved inventory file is empty".into()); }
+    if text.contains('\r') { return Err("inventory must use LF, not CRLF, line endings".into()); }
     let mut found = Vec::new();
     let mut seen = BTreeSet::new();
     for (index, line) in text.lines().enumerate() {
