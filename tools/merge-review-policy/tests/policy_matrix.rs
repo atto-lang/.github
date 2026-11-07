@@ -212,13 +212,13 @@ fn accept_read_only_single_repo() {
 
 #[test]
 fn accept_confirmed_one_repo_apply() {
-    let o = parse_options(["--repo", "r", "--apply", "--confirm-org", ORG].into_iter().map(String::from)).unwrap();
+    let o = parse_options(["--repo", "r", "--apply", "--confirm-org", ORG, "--ack-numeric-only"].into_iter().map(String::from)).unwrap();
     assert!(o.apply && !o.all && o.repo.as_deref() == Some("r"));
 }
 
 #[test]
 fn accept_confirmed_full_org_apply() {
-    let o = parse_options(["--apply", "--all", "--confirm-org", ORG].into_iter().map(String::from)).unwrap();
+    let o = parse_options(["--apply", "--all", "--confirm-org", ORG, "--expect-repos", "80", "--ack-numeric-only"].into_iter().map(String::from)).unwrap();
     assert!(o.apply && o.all && o.repo.is_none());
 }
 
