@@ -89,7 +89,7 @@ pub fn parse_options<I: IntoIterator<Item = String>>(args: I) -> Result<Options,
 }
 
 pub fn usage() -> &'static str {
-    "Usage: cargo run -- [--repo NAME] [--apply --confirm-org ores-truffle-oreslang --ack-numeric-only [--all --expect-repos COUNT|--repo NAME]]\nRead-only by default. --ack-numeric-only explicitly acknowledges that count=1 does NOT enforce either named reviewer. Bulk writes require independently verified complete inventory cardinality."
+    "Usage: cargo run -- [--repo NAME] [--apply --confirm-org ores-truffle-oreslang --ack-numeric-only [--all --expect-repos COUNT|--repo NAME]]\nRead-only by default. --ack-numeric-only explicitly acknowledges that count=1 does NOT enforce either named reviewer. All --apply commands currently fail closed: GitHub-effective named-reviewer enforcement has not been verified. Audit is read-only; future writes additionally require independently verified complete inventory cardinality."
 }
 
 /// Encode every unsafe byte of one GitHub REST URL path component, including '/'.
