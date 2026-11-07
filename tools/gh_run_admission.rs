@@ -4,6 +4,7 @@
 //! Annotation text is potentially sensitive: review locally before sharing.
 //! Usage: gh-run-admission OWNER/REPO RUN_ID JOB_ID
 use std::env;
+use std::path::{Component, Path};
 use std::process::{Command, ExitCode};
 
 const GITHUB_API_HOST: &str = "github.com";
@@ -103,9 +104,34 @@ fn projection(part: &str) -> &'static str {
     }
 }
 
+/// Permit a trusted, explicitly selected GitHub CLI binary on macOS/Homebrew
+/// while refusing PATH resolution, shell fragments, and parent traversal.
+fn valid_gh_executable(value: &str) -> bool {
+    let path = Path::new(value);
+    path.is_absolute()
+        && path.file_name().and_then(|name| name.to_str()) == Some("gh")
+        && !value.chars().any(char::is_control)
+        && !path.components().any(|part| matches!(part, Component::ParentDir | Component::CurDir))
+}
+
+fn gh_executable() -> Result<String, String> {
+    let value = match env::var("ATTO_GH_BIN") {
+        Ok(value) => value,
+        Err(env::VarError::NotPresent) => GH_CLI_PATH.to_owned(),
+        Err(env::VarError::NotUnicode(_)) => {
+            return Err("ATTO_GH_BIN must be valid UTF-8".into());
+        }
+    };
+    if !valid_gh_executable(&value) {
+        return Err("ATTO_GH_BIN must be an absolute trusted path ending in /gh, without traversal".into());
+    }
+    Ok(value)
+}
+
 fn gh_read(parts: &Args, part: &str, check_run_id: Option<&str>) -> Result<String, String> {
     let path = endpoint(parts, part, check_run_id);
-    let result = Command::new(GH_CLI_PATH)
+    let binary = gh_executable()?;
+    let result = Command::new(binary)
         // Preserve the administrator's chosen credentials, but never allow
         // ambient GH_HOST to redirect a privileged API request elsewhere.
         .env_remove("GH_HOST")
@@ -518,6 +544,28 @@ mod tests {
         assert_eq!(GH_CLI_PATH, "/usr/bin/gh");
         assert!(GH_CLI_PATH.starts_with('/'));
         assert!(!GH_CLI_PATH.contains(".."));
+    }
+
+    #[test]
+    fn supports_explicit_absolute_linux_and_macos_gh_binary() {
+        for value in ["/usr/bin/gh", "/usr/local/bin/gh", "/opt/homebrew/bin/gh"] {
+            assert!(valid_gh_executable(value), "rejected {value}");
+        }
+    }
+
+    #[test]
+    fn rejects_relative_path_lookup_and_shell_like_gh_paths() {
+        for value in ["gh", "./gh", "../gh", "gh --version", "/bin/sh", "/tmp/../bin/gh",
+                      "/usr/bin/gh\n--method PATCH", "/usr/bin/gh\0junk", ""] {
+            assert!(!valid_gh_executable(value), "accepted {value:?}");
+        }
+    }
+
+    #[test]
+    fn rejects_directory_and_traversal_aliases_for_gh_binary() {
+        for value in ["/opt/homebrew/../bin/gh", "/usr/./bin/gh", "/usr/bin/gh/../gh"] {
+            assert!(!valid_gh_executable(value), "accepted {value:?}");
+        }
     }
 
     #[test]
