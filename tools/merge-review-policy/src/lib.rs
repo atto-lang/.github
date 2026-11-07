@@ -173,16 +173,33 @@ pub fn count(protection: &Value) -> Option<u64> {
 }
 
 fn unsafe_review_configuration(protection: &Value) -> Option<&'static str> {
-    let reviews = protection.get("required_pull_request_reviews")?;
-    if !reviews.is_object() { return Some("no required PR-review configuration"); }
-    if reviews["require_code_owner_reviews"].as_bool() == Some(true) {
-        return Some("code-owner approvals must be reviewed separately");
+    let Some(reviews) = protection.get("required_pull_request_reviews") else {
+        return Some("no required PR-review configuration");
+    };
+    if !reviews.is_object() { return Some("invalid required PR-review configuration"); }
+    match reviews.get("require_code_owner_reviews").and_then(Value::as_bool) {
+        Some(false) => {}
+        Some(true) => return Some("code-owner approvals must be reviewed separately"),
+        None => return Some("missing or malformed code-owner review boolean"),
+    }
+    for field in ["dismiss_stale_reviews", "require_last_push_approval"] {
+        if let Some(value) = reviews.get(field) {
+            if !value.is_boolean() { return Some("malformed required PR-review boolean"); }
+        }
     }
     let bypass = &reviews["bypass_pull_request_allowances"];
-    if ["users", "teams", "apps"].iter().any(|key| {
-        bypass[*key].as_array().is_some_and(|array| !array.is_empty())
-    }) {
-        return Some("PR review bypass allowances require manual review");
+    if !bypass.is_null() {
+        if !bypass.is_object() { return Some("malformed review bypass allowance"); }
+        for field in ["users", "teams", "apps"] {
+            if let Some(value) = bypass.get(field) {
+                let Some(entries) = value.as_array() else {
+                    return Some("malformed review bypass allowance list");
+                };
+                if !entries.is_empty() {
+                    return Some("PR review bypass allowances require manual review");
+                }
+            }
+        }
     }
     None
 }
