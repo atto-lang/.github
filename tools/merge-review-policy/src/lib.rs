@@ -1,6 +1,8 @@
 //! Fail-closed, narrow GitHub PR approval-threshold auditor.
 //! This code cannot enforce an allowlist of individual GitHub reviewers.
 //! Do not interpret a numeric threshold as proof of designated-reviewer enforcement.
+pub mod ci_evidence;
+
 use serde_json::{json, Value};
 use std::fmt::Write as _;
 
