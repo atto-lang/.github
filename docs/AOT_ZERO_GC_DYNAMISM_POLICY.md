@@ -1,6 +1,6 @@
 # Organization policy: controlled dynamism for AOT and zero guest-GC
 
-**Effective review directive; semantic details are TARGET / DRAFT pending specification review and backend execution.** Applies to AttoLang/Oreslang compiler backends, shared core/alloc/std, examples, documentation and agent-generated changes. Do not silently change supported JVM/JIT/hybrid modes. Canonical language amendment: [AOT/zero-GC chapter 22](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/blob/docs/strict-aot-zero-gc-dynamism-policy-20261107/spec/22-aot-zero-gc-controlled-dynamism.md). Chapter is proposed until merged; keep behavior changes independently reviewed.
+**Effective review directive; semantic details are TARGET / DRAFT pending specification review and backend execution.** Applies to AttoLang/Oreslang compiler backends, shared core/alloc/std, examples, documentation and agent-generated changes. Do not silently change supported JVM/JIT/hybrid modes. Canonical language amendment: [AOT/zero-GC chapter 22](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/18). Chapter is proposed until merged; keep behavior changes independently reviewed.
 
 ## First: declare the execution and memory profile
 
