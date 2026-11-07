@@ -61,7 +61,9 @@ fn no_bypass(value: &Value) -> bool {
 
 fn has_required_status_checks(protection: &Value) -> bool {
     let checks = &protection["required_status_checks"];
-    if !checks.is_object() { return false; }
+    if !checks.is_object() || checks["strict"].as_bool() != Some(true) {
+        return false;
+    }
     // This verifies only that some status checks are required. The pilot must
     // separately verify exact check names, trusted publishers and behavior.
     let contexts = checks["contexts"].as_array().is_some_and(|items| {
@@ -281,6 +283,14 @@ mod tests {
     #[test]
     fn no_required_status_checks_rejected() {
         let mut f=Fixture::new();f.protection["required_status_checks"]=Value::Null;
+        assert!(f.check().is_err());
+    }
+    #[test]
+    fn status_checks_without_strict_base_freshness_rejected() {
+        let mut f=Fixture::new();
+        f.protection["required_status_checks"]["strict"]=json!(false);
+        assert!(f.check().is_err());
+        f.protection["required_status_checks"]["strict"]=Value::Null;
         assert!(f.check().is_err());
     }
     #[test]
