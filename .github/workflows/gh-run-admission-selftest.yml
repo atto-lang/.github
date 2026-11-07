@@ -32,7 +32,7 @@ jobs:
           rustc --edition=2021 -D warnings --test tools/gh_run_admission.rs -o /tmp/ores-gh-admission-test
           output=$(/tmp/ores-gh-admission-test)
           printf '%s\n' "$output"
-          printf '%s\n' "$output" | grep -q 'test result: ok. 22 passed; 0 failed'
+          printf '%s\n' "$output" | grep -q 'test result: ok. 25 passed; 0 failed'
           test -x /usr/bin/gh
           rustc --edition=2021 -D warnings tools/gh_run_admission.rs -o /tmp/ores-gh-admission
           if /tmp/ores-gh-admission ores-truffle-oreslang/oreslang-source.llvm 0 1; then
