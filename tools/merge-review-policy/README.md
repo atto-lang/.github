@@ -125,12 +125,12 @@ Four source tests pin the exact two-owner, single-rule coverage and prevent acci
 **Important release hold:** the policy auditor's numeric PATCH by itself cannot enforce this designated owner set. Do not run `--apply` to decrease any threshold unless the target repository's *effective GitHub* code-owner/required-reviewer enforcement has been independently verified and existing CI/security restrictions preserved. No administrator enforcement or global rollout is implied by this PR.
 ## Read-only named-reviewer pilot evidence (source-level candidate checker)
 
-`src/named_owner_preflight.rs` adds `assess_pilot(PilotEvidence)` and **24 adversarial/source tests**. Its result is deliberately called `ReadOnlyCandidate`, not `Enforced`, `ReadyToMerge`, or authorization to PATCH. It is scoped to this `.github` repository's **pinned `main`** only and requires all of:
+`src/named_owner_preflight.rs` adds `assess_pilot(PilotEvidence)` and **25 adversarial/source tests**. Its result is deliberately called `ReadOnlyCandidate`, not `Enforced`, `ReadyToMerge`, or authorization to PATCH. It is scoped to this `.github` repository's **pinned `main`** only and requires all of:
 
 - A matching full 40-hex base-branch SHA and CODEOWNERS content ref; the exact, sole effective `* @oresoftware @the1mills` ownership rule; and an empty GitHub CODEOWNERS error list.
 - Explicit write/maintain/admin access for **both** named accounts, from administrative collaborator-permission readbacks.
 - A complete, inspectable ruleset inventory with **no active local or inherited rulesets**. An active ruleset is `MANUAL`, not ignored or automatically accepted.
-- Effective branch protection requiring **exactly one code-owner approval**, stale-review dismissal, independent approval of the last push, enforced admin protection, no ambiguous review bypass allowances, and at least one required CI status context/check.
+- Effective branch protection requiring **exactly one code-owner approval**, stale-review dismissal, independent approval of the last push, enforced admin protection, no ambiguous review bypass allowances, and at least one required CI status context/check with `strict=true`.
 
 These checks deliberately fail closed if inputs are absent, malformed, non-pinned, or externally inaccessible. A candidate still needs verified check-run publisher identity, independently reviewed source/test receipts, exact-head PR review behavior, and a **live GitHub merge-eligibility pilot**. Tests using constructed JSON fixtures are not live GitHub evidence. The checker is intentionally not a way to lift the executable's `--apply` hold, and no production automation calls this checker as a decision authorizing writes.
 
@@ -141,7 +141,7 @@ These checks deliberately fail closed if inputs are absent, malformed, non-pinne
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer history tests, 24 named-owner pilot preflight tests, 18 exact-inventory tests, 7 CLI path/write-hold tests, and 74 integration tests (208 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer history tests, 25 named-owner pilot preflight tests, 18 exact-inventory tests, 7 CLI path/write-hold tests, and 74 integration tests (209 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
