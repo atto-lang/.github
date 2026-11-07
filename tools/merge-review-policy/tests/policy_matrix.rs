@@ -446,3 +446,45 @@ fn apply_plan_noop_when_already_compliant() {
 fn single_repo_dry_run_never_writes() {
     let mut api=base("r",3); assert_eq!(audit_repo(&mut api,"r","main",false),Outcome::WouldChange(3)); assert!(api.writes.is_empty()); api.done();
 }
+
+
+/// This is only a proposed review-ownership fixture. GitHub will not enforce it
+/// until an administrator enables required code-owner review on the base branch.
+const GOVERNANCE_CODEOWNERS: &str = include_str!("../../../.github/CODEOWNERS");
+
+fn effective_governance_owners(text: &str) -> Vec<&str> {
+    text.lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect()
+}
+
+#[test]
+fn governance_codeowners_has_one_unambiguous_wildcard_owner_rule() {
+    assert_eq!(
+        effective_governance_owners(GOVERNANCE_CODEOWNERS),
+        vec!["* @oresoftware @the1mills"]
+    );
+}
+
+#[test]
+fn governance_codeowners_proposal_has_both_and_only_designated_accounts() {
+    let line = effective_governance_owners(GOVERNANCE_CODEOWNERS)[0];
+    let tokens: Vec<_> = line.split_ascii_whitespace().collect();
+    assert_eq!(tokens, vec!["*", "@oresoftware", "@the1mills"]);
+}
+
+#[test]
+fn governance_codeowners_file_is_lf_and_ascii() {
+    assert!(!GOVERNANCE_CODEOWNERS.contains('\r'));
+    assert!(GOVERNANCE_CODEOWNERS.is_ascii());
+    assert!(GOVERNANCE_CODEOWNERS.ends_with('\n'));
+}
+
+#[test]
+fn other_source_repo_codeowners_must_not_be_inferred_from_governance_fixture() {
+    // The org's special .github repository is not a CODEOWNERS inheritance
+    // mechanism for all repos; this file alone proves no other repo's policy.
+    assert!(GOVERNANCE_CODEOWNERS.contains("Governance repository"));
+    assert_eq!(effective_governance_owners(GOVERNANCE_CODEOWNERS).len(), 1);
+}
