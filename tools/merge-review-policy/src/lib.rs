@@ -195,6 +195,44 @@ pub fn expected_after(mut protection: Value) -> Option<Value> {
     Some(protection)
 }
 
+/// A complete branch-protection snapshot obtained before *any* bulk mutation.
+/// An admin must audit this plan; it never authorizes bypassing another rule.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RepoPlan {
+    pub repo: String,
+    pub branch: String,
+    pub before: Value,
+    pub count: u64,
+}
+
+/// Inventory every targeted repository before writing any of them. If *any*
+/// repository cannot be fully read, return all failures and prohibit bulk writes.
+pub fn preflight_all<A: Api>(
+    api: &mut A, repos: &[(String, String)],
+) -> Result<Vec<RepoPlan>, Vec<String>> {
+    if repos.is_empty() { return Err(vec!["empty repository inventory".into()]); }
+    let mut plan = Vec::new();
+    let mut errors = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for (repo, branch) in repos {
+        if !valid_repo_name(repo) || branch.is_empty() {
+            errors.push(format!("{repo}: invalid repo or default branch"));
+            continue;
+        }
+        if !seen.insert(repo.clone()) {
+            errors.push(format!("{repo}: duplicate repository in inventory"));
+            continue;
+        }
+        match initial_decision(api, repo, branch) {
+            Ok((before, count)) => plan.push(RepoPlan {
+                repo: repo.clone(), branch: branch.clone(), before, count,
+            }),
+            Err(err) => errors.push(format!("{repo}:{branch}: {err}")),
+        }
+    }
+    if errors.is_empty() { Ok(plan) } else { Err(errors) }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Outcome {
     Compliant,
@@ -224,8 +262,8 @@ fn initial_decision<A: Api>(
     Ok((current, n))
 }
 
-pub fn audit_repo<A: Api>(
-    api: &mut A, repo: &str, branch: &str, apply: bool,
+fn audit_repo_impl<A: Api>(
+    api: &mut A, repo: &str, branch: &str, apply: bool, expected: Option<&Value>,
 ) -> Outcome {
     if !valid_repo_name(repo) || branch.is_empty() {
         return Outcome::Manual("unsafe repo/branch name".into());
@@ -234,6 +272,9 @@ pub fn audit_repo<A: Api>(
         Ok(v) => v,
         Err(e) => return Outcome::Manual(e),
     };
+    if expected.is_some_and(|original| original != &before) {
+        return Outcome::Manual("protection changed since bulk preflight; refusing stale plan".into());
+    }
     if n == 1 { return Outcome::Compliant; }
     if !apply { return Outcome::WouldChange(n); }
 
@@ -269,6 +310,19 @@ pub fn audit_repo<A: Api>(
         Ok(ids) => Outcome::Error(format!("rulesets appeared during write: {ids:?}; effective policy unverified")),
         Err(e) => Outcome::Error(format!("post-write ruleset readback failed: {e}")),
     }
+}
+
+/// Read-only audit, or explicit one-repository apply (with fresh rechecks).
+pub fn audit_repo<A: Api>(
+    api: &mut A, repo: &str, branch: &str, apply: bool,
+) -> Outcome {
+    audit_repo_impl(api, repo, branch, apply, None)
+}
+
+/// Apply only a repository whose *complete* protection snapshot still matches
+/// the all-repository preflight; also re-check it immediately before PATCH.
+pub fn apply_planned_repo<A: Api>(api: &mut A, plan: &RepoPlan) -> Outcome {
+    audit_repo_impl(api, &plan.repo, &plan.branch, true, Some(&plan.before))
 }
 
 #[cfg(test)]
