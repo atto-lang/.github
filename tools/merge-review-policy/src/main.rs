@@ -84,7 +84,14 @@ fn run() -> Result<(), String> {
     let plans = if opts.apply && opts.all {
         match preflight_all(&mut api, &repos) {
             Ok(plans) => {
-                println!("PREFLIGHT_OK repos={} all complete protection snapshots captured", plans.len());
+                // Ensure the org inventory did not change during the potentially
+                // long all-repository read-only preflight. Do not begin a partial
+                // rollout to a stale list of default branches.
+                let fresh_inventory = repositories(&mut api)?;
+                if fresh_inventory != repos {
+                    return Err("ABORTED WITHOUT WRITES: repository list or default branches changed during preflight".into());
+                }
+                println!("PREFLIGHT_OK repos={} snapshots and inventory revalidated", plans.len());
                 Some(plans)
             }
             Err(reasons) => {
