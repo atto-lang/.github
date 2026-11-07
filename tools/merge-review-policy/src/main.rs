@@ -104,7 +104,7 @@ fn run() -> Result<(), String> {
         } else {
             audit_repo(&mut api, &name, &branch, opts.apply)
         };
-        let bulk_failure = matches!(outcome, Outcome::Manual(_) | Outcome::Error(_));
+        let bulk_failure = matches!(&outcome, Outcome::Manual(_) | Outcome::Error(_));
         match outcome {
             Outcome::Compliant => { compliant += 1; println!("COMPLIANT {name}:{branch} numeric_reviews=1"); }
             Outcome::WouldChange(old) => {
