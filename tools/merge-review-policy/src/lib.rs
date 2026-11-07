@@ -632,7 +632,7 @@ mod tests {
                 json!([
                     {"name":"z","full_name":format!("{ORG}/z"),"default_branch":"main","archived":false},
                     {"name":"archived","full_name":format!("{ORG}/archived"),"default_branch":"main","archived":true},
-                    {"name":"a","full_name":format!("{ORG}/a"),"default_branch":"dev"}
+                    {"name":"a","full_name":format!("{ORG}/a"),"default_branch":"dev","archived":false}
                 ]));
         assert_eq!(repositories(&mut api).unwrap(),vec![
             ("a".into(),"dev".into()),("z".into(),"main".into())]);
