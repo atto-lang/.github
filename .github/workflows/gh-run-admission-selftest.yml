@@ -11,7 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          # PR events default to synthetic merge trees; pin the submitted head.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Bind diagnostic execution to exact submitted head and tree
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_HEAD="$(git rev-parse HEAD)"
+          test "${ACTUAL_HEAD}" = "${EXPECTED_HEAD}"
+          printf 'EXACT_HEAD=%s\n' "${ACTUAL_HEAD}"
+          printf 'EXACT_TREE=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          printf 'RUN_ID=%s RUN_ATTEMPT=%s\n' "${GITHUB_RUN_ID}" "${GITHUB_RUN_ATTEMPT}"
       - name: Compile Rust diagnostic and run source-free tests
         shell: bash
         run: |
