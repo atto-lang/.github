@@ -10,12 +10,23 @@ with an explicit allowlist for the two private compiler source repositories **an
 It reads only run metadata, the selected job, GitHub check annotations,
 the default branch's protected flag, ruleset list, and Actions policy.
 It never accesses repository contents, Git objects, artifacts, secrets,
-or write endpoints. Every GitHub API request pins the host to `github.com`, ignores any ambient `GH_HOST` setting, and invokes the reviewed `/usr/bin/gh` binary directly rather than resolving `gh` through `PATH`. It cannot inspect private Actions billing settings.
+or write endpoints. Every GitHub API request pins the host to `github.com`, ignores any ambient `GH_HOST` setting, and invokes the reviewed `/usr/bin/gh` binary by default rather than resolving `gh` through `PATH`. On macOS, an administrator may explicitly set `ATTO_GH_BIN=/opt/homebrew/bin/gh` (or the trusted absolute executable path ending in `/gh`); parent traversals, shell strings and relative paths are rejected. It cannot inspect private Actions billing settings.
 
 ## Independent administrator action
 
 From a trusted administrator workstation with the correct GitHub organization
-permissions and authenticated GitHub CLI (`gh auth status`), build the
+permissions and authenticated GitHub CLI (`gh auth status`), select the executable
+explicitly when it is not at `/usr/bin/gh`. On Apple Silicon macOS with
+Homebrew this is commonly `/opt/homebrew/bin/gh`, but verify the path first.
+The diagnostic does not search PATH; it rejects nonabsolute paths and dot
+traversal. Example for a trusted macOS installation:
+
+```sh
+export ATTO_GH_BIN=/opt/homebrew/bin/gh
+"$ATTO_GH_BIN" auth status
+```
+
+Then build the
 tool from a reviewed Oreslang organization checkout and run:
 
 ```sh
@@ -49,6 +60,10 @@ explicitly authorized independent administrator account; it is **not** a
 license to broaden the GitHub App installation or bypass source governance.
 
 ## Differential evidence and next administrator receipt (2026-11-07)
+
+**Latest source:** the tool now contains **25 Rust tests**, including three path-validation tests for absolute trusted Linux/macOS GitHub CLI binaries, and the workflow checks for all 25. The 25 tests are not yet verified as executed on the current private-repository head.
+
+
 
 The following same-organization, GitHub-hosted workflow results help rule out a **total** runner outage:
 
