@@ -105,11 +105,24 @@ Repository list pagination, per-repository ruleset pagination, active-ruleset de
 `--apply` can change repository settings. The policy auditor calls an executable directly (not through a shell or PATH search), using `/usr/bin/gh` by default. When an administrator uses Homebrew on macOS, they may explicitly select a trusted absolute binary path such as `ATTO_GH_BIN=/opt/homebrew/bin/gh`. Paths with relative lookup, dot traversal, control characters, or a final executable name other than `gh` are rejected. A valid path is **not** proof that the selected binary is trustworthy: verify the installation independently before running any write.
 
 Three new Rust source tests check accepted Linux/macOS paths and negative traversal/shell-like inputs. These tests are **not** hosted execution evidence until admitted exact-head CI runs them.
+## Proposed `.github` repository CODEOWNERS pilot
+
+This PR adds `.github/CODEOWNERS` to the **organization's `.github` repository only**, with one full-coverage rule:
+
+```text
+* @oresoftware @the1mills
+```
+
+Four source tests pin the exact two-owner, single-rule coverage and prevent accidental overrides. **This file is not automatically inherited by other repositories, and merely adding it does not enforce approvals.** It takes effect for review requests after it lands on the protected base branch; blocking merges on code-owner approval additionally requires an administrator-enabled effective `require_code_owner_reviews` rule or equivalent ruleset on an eligible GitHub plan. The two accounts must have write permission. Neither author can independently approve their own PR under normal GitHub review rules. <https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners>
+
+**Do not replace other repositories' CODEOWNERS wholesale.** For example, the private Java compiler's `.github/CODEOWNERS` includes security-sensitive CI/source-export paths owned exclusively by `ORESoftware`. A blanket ownership line inserted after those path-specific rules could override that stricter policy because GitHub uses the last matching entry. Preserve all existing security-specific patterns and their precedence. Each repository needs an independently audited ownership proposal, plan/access verification, and live merge-eligibility pilot.
+
+**Important release hold:** the policy auditor's numeric PATCH by itself cannot enforce this designated owner set. Do not run `--apply` to decrease any threshold unless the target repository's *effective GitHub* code-owner/required-reviewer enforcement has been independently verified and existing CI/security restrictions preserved. No administrator enforcement or global rollout is implied by this PR.
 ## Required CI evidence
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, 3 privileged CLI binary-path tests, and 70 integration tests (176 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, 3 privileged CLI binary-path tests, and 70 integration tests (180 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
