@@ -9,9 +9,10 @@ use std::process::{Command, ExitCode};
 const GITHUB_API_HOST: &str = "github.com";
 const GH_CLI_PATH: &str = "/usr/bin/gh";
 
-const ALLOWED_REPOS: [&str; 2] = [
+const ALLOWED_REPOS: [&str; 3] = [
     "ores-truffle-oreslang/oreslang-source.llvm",
     "ores-truffle-oreslang/oreslang-source.net",
+    "ores-truffle-oreslang/.github",
 ];
 
 #[derive(Debug, PartialEq, Eq)]
@@ -43,7 +44,7 @@ fn parse(args: &[String]) -> Result<Args, &'static str> {
     }
     let repo = &args[1];
     if !ALLOWED_REPOS.contains(&repo.as_str()) {
-        return Err("repository is not one of the two audited Oreslang source backends");
+        return Err("repository is not an explicitly authorized Oreslang source or governance repository");
     }
     if !canonical_id(&args[2]) || !canonical_id(&args[3]) {
         return Err("run_id and job_id must be canonical positive decimal u64 values");
@@ -315,9 +316,64 @@ mod tests {
             "ores-truffle-oreslang/../admin",
             "ores-truffle-oreslang/oreslang-source.llvm?ref=main",
             "ores-truffle-oreslang/oreslang-source.net\n--method DELETE",
-            "ores-truffle-oreslang/.github",
         ] {
             assert!(parse(&argv(bad, "12", "34")).is_err(), "{bad:?}");
+        }
+    }
+
+
+    #[test]
+    fn accepts_exact_governance_source_free_admission_job() {
+        let args = parse(&argv("ores-truffle-oreslang/.github",
+            "42398019612", "128479490053")).unwrap();
+        assert_eq!(
+            endpoint(&args, "job_identity", None),
+            "repos/ores-truffle-oreslang/.github/actions/jobs/128479490053"
+        );
+        assert_eq!(
+            endpoint(&args, "run_head", None),
+            "repos/ores-truffle-oreslang/.github/actions/runs/42398019612"
+        );
+        assert_eq!(
+            endpoint(&args, "annotations", Some("128479490053")),
+            "repos/ores-truffle-oreslang/.github/check-runs/128479490053/annotations?per_page=100"
+        );
+    }
+
+    #[test]
+    fn governance_job_must_not_trust_check_run_url_in_another_repo() {
+        let args = parse(&argv("ores-truffle-oreslang/.github",
+            "42398019612", "128479490053")).unwrap();
+        let attack = concat!(
+            "42398019612\t",
+            "https://api.github.com/repos/ores-truffle-oreslang/",
+            "oreslang-source.llvm/check-runs/128479490053\tcompleted\tfailure\t0\n"
+        );
+        assert!(parse_job_identity(&args, attack).is_err());
+    }
+
+    #[test]
+    fn governance_job_identity_requires_zero_steps_and_failed_state() {
+        let args = parse(&argv("ores-truffle-oreslang/.github",
+            "42398019612", "128479490053")).unwrap();
+        for bad in [
+            "42398019612\thttps://api.github.com/repos/ores-truffle-oreslang/.github/check-runs/128479490053\tcompleted\tsuccess\t0\n",
+            "42398019612\thttps://api.github.com/repos/ores-truffle-oreslang/.github/check-runs/128479490053\tcompleted\tfailure\t1\n",
+            "42398019612\thttps://api.github.com/repos/ores-truffle-oreslang/.github/check-runs/128479490053\tin_progress\tfailure\t0\n",
+        ] {
+            assert!(parse_job_identity(&args, bad).is_err());
+        }
+    }
+
+    #[test]
+    fn cannot_add_unrelated_repo_by_using_github_prefix() {
+        for bad in [
+            "ores-truffle-oreslang/.github/../oreslang-source.java",
+            "ores-truffle-oreslang/.github?ref=main",
+            "ores-truffle-oreslang/.github\n--method PATCH",
+            "other/.github",
+        ] {
+            assert!(parse(&argv(bad, "42398019612", "128479490053")).is_err());
         }
     }
 
