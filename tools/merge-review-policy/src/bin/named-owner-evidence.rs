@@ -25,11 +25,33 @@ fn validated_binary(value: &str) -> bool {
 }
 
 fn valid_endpoint(value: &str) -> bool {
-    (value == PREFIX || value.starts_with(&format!("{PREFIX}/")))
-        && !value.bytes().any(|c| c.is_ascii_control() || c == b' ')
-        && !value.contains("..")
-        && !value.contains('#')
-        && !value.contains('%')
+    if value == PREFIX {
+        return true;
+    }
+    if [
+        "branches/main",
+        "branches/main/protection",
+        "collaborators/oresoftware/permission",
+        "collaborators/the1mills/permission",
+    ].iter().any(|suffix| value == format!("{PREFIX}/{suffix}")) {
+        return true;
+    }
+    for suffix in [
+        "contents/.github/CODEOWNERS?ref=",
+        "codeowners/errors?ref=",
+    ] {
+        if let Some(sha) = value.strip_prefix(&format!("{PREFIX}/{suffix}")) {
+            return sha.len() == 40 && sha.bytes().all(|c| c.is_ascii_hexdigit());
+        }
+    }
+    if let Some(page) = value.strip_prefix(
+        &format!("{PREFIX}/rulesets?includes_parents=true&per_page=100&page=")
+    ) {
+        return page.parse::<usize>().is_ok_and(|n| (1..=100).contains(&n))
+            && page.bytes().all(|c| c.is_ascii_digit())
+            && !page.starts_with('0');
+    }
+    false
 }
 
 impl ReadOnlyGh {
@@ -136,6 +158,45 @@ mod tests {
         assert!(valid_endpoint(PREFIX));
         assert!(valid_endpoint(&format!("{PREFIX}/branches/main")));
     }
+    #[test]
+    fn evidence_endpoints_are_exactly_allowlisted() {
+        let sha = "0123456789abcdef0123456789abcdef01234567";
+        for endpoint in [
+            PREFIX.to_owned(),
+            format!("{PREFIX}/branches/main"),
+            format!("{PREFIX}/branches/main/protection"),
+            format!("{PREFIX}/collaborators/oresoftware/permission"),
+            format!("{PREFIX}/collaborators/the1mills/permission"),
+            format!("{PREFIX}/contents/.github/CODEOWNERS?ref={sha}"),
+            format!("{PREFIX}/codeowners/errors?ref={sha}"),
+            format!("{PREFIX}/rulesets?includes_parents=true&per_page=100&page=1"),
+            format!("{PREFIX}/rulesets?includes_parents=true&per_page=100&page=100"),
+        ] {
+            assert!(valid_endpoint(&endpoint), "rejected allowed GET: {endpoint}");
+        }
+    }
+
+    #[test]
+    fn unrelated_get_endpoints_are_refused_before_gh_execution() {
+        for endpoint in [
+            format!("{PREFIX}/actions/secrets"),
+            format!("{PREFIX}/collaborators"),
+            format!("{PREFIX}/collaborators/unrelated/permission"),
+            format!("{PREFIX}/contents/.github/CODEOWNERS?ref=main"),
+            format!("{PREFIX}/codeowners/errors?ref=HEAD"),
+            format!("{PREFIX}/rulesets?includes_parents=true&per_page=100&page=0"),
+            format!("{PREFIX}/rulesets?includes_parents=true&per_page=100&page=101"),
+            format!("{PREFIX}/rulesets?includes_parents=true&per_page=100&page=01"),
+            format!("{PREFIX}/rulesets?includes_parents=false&per_page=100&page=1"),
+            format!("{PREFIX}/rulesets/123"),
+            format!("{PREFIX}/branches/main?extra=1"),
+            format!("{PREFIX}/branches/main#fragment"),
+            format!("{PREFIX}/codeowners/errors?ref=0123456789abcdef0123456789abcdef01234567&extra=1"),
+        ] {
+            assert!(!valid_endpoint(&endpoint), "accepted unrelated GET: {endpoint}");
+        }
+    }
+
     #[test]
     fn hard_rejects_all_mutations_before_subprocess_execution() {
         let mut api = ReadOnlyGh { executable: "/nonexistent/gh".into() };
