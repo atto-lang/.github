@@ -59,6 +59,22 @@ GitHub's native numeric approval count permits any qualified reviewer, **not onl
 
 The tool does **not** dismiss any `CHANGES_REQUESTED` reviews, remove draft status, bypass required checks, or suppress existing protections.
 
+## Two-phase bulk rollout protocol
+
+The organization-wide `--all --apply` path performs an initial **read-only preflight of every eligible repository**. Each preflight captures the complete branch-protection JSON snapshot and confirms there are no active inherited/local rulesets. If **one** repository is inaccessible, unsupported, ambiguous, or missing review protection, **no write begins**; it reports a failed preflight and requires manual handling. The bulk application then verifies each repository against its original snapshot and checks again immediately before PATCH.
+
+GitHub does not provide an atomic transaction across repositories. If a write fails or the post-write readback differs, the command **halts the bulk rollout at the first failure**. Some earlier repositories may already have changed. Reconcile using captured before/after policy receipts and administrator review; do not assume automatic rollback or blindly rerun all repositories. A rollback must restore exactly the previous numeric count using an authorized administrator, subject to the same live protection/ruleset checks, and verify that other settings remain unchanged.
+
+Repository list pagination, per-repository ruleset pagination, active-ruleset detection, protected-branch availability, and a permission/plan denial are explicit fail-closed stages. Avoid blanket claims that one approval is enforced until each repository's effective GitHub rules have been verified.
+
+## Required CI evidence
+
+`merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
+
+The pull request's current source contains 31 library tests plus 70 integration tests (101 tests in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+
+A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
+
 ## Evidence and promotion
 
 - Source and negative-path unit tests are checked into this PR; they are **not an executed test receipt**.
