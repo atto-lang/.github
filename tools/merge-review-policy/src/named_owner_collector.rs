@@ -69,9 +69,9 @@ fn decode_base64(text: &str) -> Result<Vec<u8>, String> {
         let mut padding = 0usize;
         for (i, ch) in c.iter().enumerate() {
             vals[i] = match *ch {
-                b'A'..=b'Z' => ch - b'A',
-                b'a'..=b'z' => ch - b'a' + 26,
-                b'0'..=b'9' => ch - b'0' + 52,
+                b'A'..=b'Z' => *ch - b'A',
+                b'a'..=b'z' => *ch - b'a' + 26,
+                b'0'..=b'9' => *ch - b'0' + 52,
                 b'+' => 62,
                 b'/' => 63,
                 b'=' if last && i >= 2 => { padding += 1; 0 },
