@@ -6,7 +6,7 @@ authorization.
 
 The repository policy [requires Rust rather than Python](RUST_ONLY_POLICY.md).
 `tools/gh_run_admission.rs` is a std-only Rust, read-only GitHub CLI wrapper
-with an explicit allowlist for the two private compiler source repositories.
+with an explicit allowlist for the two private compiler source repositories **and the `.github` governance repository**.
 It reads only run metadata, the selected job, GitHub check annotations,
 the default branch's protected flag, ruleset list, and Actions policy.
 It never accesses repository contents, Git objects, artifacts, secrets,
@@ -27,6 +27,11 @@ rustc --edition=2021 -D warnings tools/gh_run_admission.rs -o /tmp/ores-gh-diagn
 umask 077
 /tmp/ores-gh-diagnostic ores-truffle-oreslang/oreslang-source.llvm 41236569150 124641494087 > llvm-admission-local.txt
 /tmp/ores-gh-diagnostic ores-truffle-oreslang/oreslang-source.net 41250696587 124683413992 > net-admission-local.txt
+
+# PR #36: exact-head Rust conformance job and source-free runner canary.
+# These reads are source-free diagnostics, NOT running Rust tests.
+/tmp/ores-gh-diagnostic ores-truffle-oreslang/.github 42398019612 128479490053 > governance-rust-admission-local.txt
+/tmp/ores-gh-diagnostic ores-truffle-oreslang/.github 42398019416 128479489595 > governance-canary-admission-local.txt
 ```
 
 The sample run/job IDs refer to real matching jobs. Replace both IDs with
@@ -43,6 +48,18 @@ printing stderr from `gh` or the selected token. A check-run annotations
 explicitly authorized independent administrator account; it is **not** a
 license to broaden the GitHub App installation or bypass source governance.
 
+## Differential evidence and next administrator receipt (2026-11-07)
+
+The following same-organization, GitHub-hosted workflow results help rule out a **total** runner outage:
+
+- Public `oreslang-cli` [CI run 42338255919](https://github.com/ores-truffle-oreslang/oreslang-cli/actions/runs/42338255919) passed with **11 recorded job steps**.
+- Public `ores-truffle-oreslang.github.io` [site-validation run 42387087806](https://github.com/ores-truffle-oreslang/ores-truffle-oreslang.github.io/actions/runs/42387087806) passed with **31 recorded job steps**.
+- Private `.github` [review-policy Rust run 42398019612](https://github.com/ores-truffle-oreslang/.github/actions/runs/42398019612) had `runner_id=0`, `steps=[]` (job `128479490053`) and failed.
+- Private `.github` [source-free canary 42398019416](https://github.com/ores-truffle-oreslang/.github/actions/runs/42398019416) also had `runner_id=0`, `steps=[]` (job `128479489595`) and failed.
+
+These facts narrow the cause to **private-repository billing/spending/entitlements, repository Actions policy, or private-job scheduling**, but do not establish which. Only the real check-run annotation or authorized billing/runners settings can distinguish them. Inspect GitHub organization **Settings → Billing and licensing** and **Settings → Actions**, then privately obtain the annotation using this read-only diagnostic. Never assume the runner failure was caused by the Rust source.
+
+**Evidence classification:** PR #22's historical 18/18 executed source-free tests cover only its earlier exact diagnostic blob (`2891937bf...`). The expanded `.github` allowlist and four new tests must execute at the **new** head before any new passed-test claim. No private compiler source may be mirrored to public repositories to evade the missing runner.
 ## What to inspect in GitHub administration
 
 1. Original [LLVM CI issue #159](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/159)
