@@ -84,13 +84,13 @@ impl Api for ReadOnlyGh {
 
 fn run() -> Result<(), String> {
     let args: Vec<String> = env::args().skip(1).collect();
-    if args == ["--help"] {
+    if args.len() == 1 && args[0] == "--help" {
         println!("Usage: named-owner-evidence --read-only\n");
         println!("Queries only ores-truffle-oreslang/.github/main with GET.");
         println!("A candidate is NOT merge-enforcement proof and NEVER authorizes --apply.");
         return Ok(());
     }
-    if args != ["--read-only"] {
+    if args.len() != 1 || args[0] != "--read-only" {
         return Err("invalid arguments: only --read-only is accepted; no apply or write mode exists".into());
     }
     let mut api = ReadOnlyGh::new()?;
