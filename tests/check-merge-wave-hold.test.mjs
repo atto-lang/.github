@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, symlinkSync, linkSync, rmSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { mkdtempSync, writeFileSync, symlinkSync, linkSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkSnapshot, parseCanonicalSnapshot, readSnapshot } from '../tools/check-merge-wave-hold.mjs';
@@ -46,6 +48,7 @@ const negatives=[
   ['extra release_ready field',x=>{x.release_ready=true}],
   ['wrong date',x=>{x.snapshot_date_utc='2026-11-07'}],
   ['missing source provenance',x=>{x.source='unknown'}],
+  ['source prefix spoofing',x=>{x.source+=' fabricated by untrusted source'}],
   ['count mismatch',x=>{x.merge_count=9}],
   ['nine-PR short wave',x=>{x.merges.pop()}],
   ['incorrect repository count',x=>{x.repository_count=10}],
@@ -93,10 +96,47 @@ test('accept regular immutable local file, deny symlink and hardlink',()=>{
   const dir=mkdtempSync(join(tmpdir(),'atto-release-hold-'));
   try{
     const p=join(dir,'snap.json');writeFileSync(p,canonical(valid()));
-    assert.equal(readSnapshot(p).releaseAuthorized,false);
+    // A plausible *synthetic* JSON snapshot must never pass the anchored
+    // historical filesystem read, regardless of its structural validity.
+    assert.throws(()=>readSnapshot(p),/pinned historical Git blob/);
     const alias=join(dir,'alias.json');symlinkSync(p,alias);
     assert.throws(()=>readSnapshot(alias),/unsafe/);
     const hard=join(dir,'hard.json');linkSync(p,hard);
     assert.throws(()=>readSnapshot(p),/unsafe/);
   }finally{rmSync(dir,{recursive:true,force:true})}
+});
+
+test('exact committed historical file is accepted only as release-BLOCKED',()=>{
+  const original=fileURLToPath(new URL('../audits/merge-waves/2026-11-06-retroactive.json',import.meta.url));
+  const r=readSnapshot(original);
+  assert.equal(r.releaseAuthorized,false);
+  assert.equal(r.state,'BLOCKED');
+});
+test('CLI keeps integrity (exit 0) separate from release permission (exit 1)',()=>{
+  const cli=fileURLToPath(new URL('../tools/check-merge-wave-hold.mjs',import.meta.url));
+  const normal=spawnSync(process.execPath,[cli],{encoding:'utf8',timeout:10000});
+  assert.equal(normal.error,undefined);
+  assert.equal(normal.status,0,normal.stderr);
+  assert.match(normal.stdout,/AUDIT_INTEGRITY_ONLY: HOLD_ACTIVE/);
+  assert.match(normal.stdout,/RELEASE_BLOCKED/);
+  const release=spawnSync(process.execPath,[cli,'--release'],{encoding:'utf8',timeout:10000});
+  assert.equal(release.error,undefined);
+  assert.equal(release.status,1,release.stderr);
+  assert.match(release.stdout,/RELEASE_BLOCKED/);
+  const bad=spawnSync(process.execPath,[cli,'--unsafe-release'],{encoding:'utf8',timeout:10000});
+  assert.equal(bad.error,undefined);
+  assert.equal(bad.status,2);
+  assert.match(bad.stderr,/INVALID_INPUT/);
+});
+test('whitespace-only editing of pinned historical snapshot is rejected',()=>{
+  const dir=mkdtempSync(join(tmpdir(),'atto-release-anchored-'));
+  try {
+    const original=fileURLToPath(new URL('../audits/merge-waves/2026-11-06-retroactive.json',import.meta.url));
+    const source=readFileSync(original,'utf8');
+    const p=join(dir,'modified.json');
+    writeFileSync(p,source.replace('"state": "BLOCKED"','"state": "CERTIFIED"'));
+    assert.throws(()=>readSnapshot(p),/pinned historical Git blob/);
+    writeFileSync(p,source.replace('"merge_count": 10','"merge_count": 10 '));
+    assert.throws(()=>readSnapshot(p),/pinned historical Git blob/);
+  } finally { rmSync(dir,{recursive:true,force:true}); }
 });
