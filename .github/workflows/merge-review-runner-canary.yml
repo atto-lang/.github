@@ -1,0 +1,27 @@
+name: Merge review runner admission canary (source-free)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/merge-review-policy/**'
+      - '.github/workflows/merge-review-policy-rust.yml'
+      - '.github/workflows/merge-review-runner-canary.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  runner-admission:
+    name: source-free-hosted-runner-admission
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Verify runner admitted before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'ADMISSION_RECEIPT_V1'
+          printf 'GITHUB_RUN_ID=%s\n' "${GITHUB_RUN_ID}"
+          printf 'GITHUB_RUN_ATTEMPT=%s\n' "${GITHUB_RUN_ATTEMPT}"
+          printf 'GITHUB_SHA=%s\n' "${GITHUB_SHA}"
+          printf 'RUNNER_OS=%s\n' "${RUNNER_OS}"
