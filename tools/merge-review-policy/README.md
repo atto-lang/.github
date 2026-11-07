@@ -1,4 +1,4 @@
-# GitHub PR review governance — scoped audit and controlled threshold repair
+# GitHub PR review governance — read-only audit with fail-closed write hold
 
 The requested policy for `ores-truffle-oreslang` is that **one valid, independent approval from either `oresoftware` or `the1mills` should be sufficient**. This tool deals ONLY with an existing **numeric** required-approval count. It does not create a GitHub ruleset, allowlist specific reviewers, alter CODEOWNERS, grant bypass permissions, or merge PRs. An author cannot approve their own pull request.
 
@@ -14,6 +14,11 @@ The connected GitHub integration verified metadata access and admin permissions 
 
 Consequently, **organization-wide policy has NOT been applied or verified**. The org's GitHub plan prevents a reliable private-repo ruleset solution until plan/visibility constraints are resolved; a separate admin-authenticated GitHub CLI may read branch protection where the connector cannot, but cannot bypass plan restrictions.
 
+## Critical enforcement hold — all `--apply` calls currently reject
+
+An independent audit found a dangerous mismatch: the historical numeric-only `patch()` path was eligible when `require_code_owner_reviews=false` but rejected `require_code_owner_reviews=true`. Such a patch could lower the number of reviews **without** enforcing the designated `oresoftware`/`the1mills` reviewers. The `.github/CODEOWNERS` entry in this **draft** PR does not supply protection on the base branch, and the organization has not verified required code-owner review on a private repository.
+
+**Therefore the production CLI now rejects every `--apply` invocation before `gh` is initialized, before GitHub API discovery, and before any PATCH, even if `--ack-numeric-only` and an approved manifest are supplied.** Dry-run audits remain supported. The underlying library patch functions are retained as isolated planning/test fixtures, **not** a live implementation authorization. Future work must introduce an independently tested GitHub-effective named-reviewer gate before intentionally lifting this hold. Four source tests ensure the hold covers single-repository and bulk writes. This is not evidence that the tests executed.
 ## Usage — no write on default invocation
 
 With administrator-authenticated GitHub CLI, installed Rust, and `ATTO_GH_BIN` set to an **absolute** path when `gh` is not at `/usr/bin/gh`:
@@ -29,12 +34,12 @@ cargo run --manifest-path tools/merge-review-policy/Cargo.toml --
 # Read-only single repo
 cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- --repo oreslang-source.java
 
-# Deliberate one-repo update after review of all effective rules
+# Currently BLOCKED; preserved only to demonstrate rejected arguments
 cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- \
   --repo oreslang-source.java --apply --confirm-org ores-truffle-oreslang \
   --ack-numeric-only
 
-# ONLY AFTER an audit, review and a successful single-repo pilot:
+# Also BLOCKED until GitHub-enforced named reviewers are verified:
 cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- \
   --all --apply --confirm-org ores-truffle-oreslang \
   --expect-repos 80 --ack-numeric-only
@@ -42,11 +47,11 @@ cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- \
 
 For Homebrew on macOS, pass `ATTO_GH_BIN=/opt/homebrew/bin/gh` (when that is the actual trusted binary path). The CLI does **not** search `PATH` or invoke shell scripts for API operations, and targets `github.com` explicitly.
 
-**No `--apply` invocation should be used until a trusted administrator has reviewed the effective settings and checked repository eligibility.** The program requires the repository scope AND the explicit organization confirmation before any write.
+**Do not attempt `--apply` while this enforcement hold is in place.** It now fails closed even with scope confirmation, and no live write is permitted. A future reviewed change must verify effective named-reviewer rules rather than merely rely on numeric acknowledgement.
 
 ## Two critical safety acknowledgements
 
-**1. Numeric-only is NOT named-reviewer enforcement.** A branch-review API PATCH with `required_approving_review_count: 1` can count approval from any eligible reviewer, not exclusively `oresoftware` or `the1mills`. The tool therefore requires the explicit `--ack-numeric-only` flag before *any* write. It does **not** claim the user's named-reviewer requirement is fully enforced: that requires separate GitHub-side required-reviewer team or CODEOWNERS policy and live merge-eligibility testing.
+**1. Numeric-only is NOT named-reviewer enforcement.** A branch-review API PATCH with `required_approving_review_count: 1` can count approval from any eligible reviewer, not exclusively `oresoftware` or `the1mills`. The argument parser retains `--ack-numeric-only`, but the CLI **currently denies all writes**, including acknowledged ones. It does **not** claim the user's named-reviewer requirement is fully enforced: that requires separate GitHub-side required-reviewer team or CODEOWNERS policy and live merge-eligibility testing.
 
 **2. A connected account may not see all private repositories.** Bulk writes now require `--expect-repos COUNT` from an independently verified organization inventory and stop without writes on a cardinality mismatch. The example count of **80** came from one accessible inventory on 2026-11-07, not a permanent guarantee. Before applying, refresh it using an organization-owner view, check archived repositories and newly created/renamed repositories, and adjust the flag based on a signed-off list. A count alone cannot rule out substitutions; compare names and branch identity too. All operations remain gated by read-only preflight, so inaccessible protections/rulesets produce an abort.
 
@@ -122,7 +127,7 @@ Four source tests pin the exact two-owner, single-rule coverage and prevent acci
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, 3 privileged CLI binary-path tests, and 70 integration tests (180 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 24 CI receipt/workflow-integrity tests, 20 named-reviewer witness tests, 18 exact-inventory tests, 3 privileged CLI binary-path tests, and 70 integration tests (184 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
