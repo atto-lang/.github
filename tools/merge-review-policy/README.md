@@ -31,16 +31,26 @@ cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- --repo oreslan
 
 # Deliberate one-repo update after review of all effective rules
 cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- \
-  --repo oreslang-source.java --apply --confirm-org ores-truffle-oreslang
+  --repo oreslang-source.java --apply --confirm-org ores-truffle-oreslang \
+  --ack-numeric-only
 
 # ONLY AFTER an audit, review and a successful single-repo pilot:
 cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- \
-  --all --apply --confirm-org ores-truffle-oreslang
+  --all --apply --confirm-org ores-truffle-oreslang \
+  --expect-repos 80 --ack-numeric-only
 ```
 
 For Homebrew on macOS, pass `ATTO_GH_BIN=/opt/homebrew/bin/gh` (when that is the actual trusted binary path). The CLI does **not** search `PATH` or invoke shell scripts for API operations, and targets `github.com` explicitly.
 
 **No `--apply` invocation should be used until a trusted administrator has reviewed the effective settings and checked repository eligibility.** The program requires the repository scope AND the explicit organization confirmation before any write.
+
+## Two critical safety acknowledgements
+
+**1. Numeric-only is NOT named-reviewer enforcement.** A branch-review API PATCH with `required_approving_review_count: 1` can count approval from any eligible reviewer, not exclusively `oresoftware` or `the1mills`. The tool therefore requires the explicit `--ack-numeric-only` flag before *any* write. It does **not** claim the user's named-reviewer requirement is fully enforced: that requires separate GitHub-side required-reviewer team or CODEOWNERS policy and live merge-eligibility testing.
+
+**2. A connected account may not see all private repositories.** Bulk writes now require `--expect-repos COUNT` from an independently verified organization inventory and stop without writes on a cardinality mismatch. The example count of **80** came from one accessible inventory on 2026-11-07, not a permanent guarantee. Before applying, refresh it using an organization-owner view, check archived repositories and newly created/renamed repositories, and adjust the flag based on a signed-off list. A count alone cannot rule out substitutions; compare names and branch identity too. All operations remain gated by read-only preflight, so inaccessible protections/rulesets produce an abort.
+
+The `review_evidence` Rust module provides a **read-only review-history witness**, not an enforceable status check. It rejects self-approval, unrelated approvals, stale head, conflicting changes requests, dismissed approval, and malformed histories. An actual GitHub ruleset plus required CI remains essential.
 
 ## What the tool hardens
 
@@ -71,7 +81,7 @@ Repository list pagination, per-repository ruleset pagination, active-ruleset de
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 37 library tests plus 70 integration tests (107 tests in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 18 CI receipt tests, 20 named-reviewer witness tests, and 70 integration tests (149 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
