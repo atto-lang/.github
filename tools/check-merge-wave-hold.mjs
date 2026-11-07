@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 // Historical source-free audit integrity check. NEVER a merge/release authorization.
 import { readFileSync, lstatSync, constants, openSync, closeSync, fstatSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const DEFAULT_FILE = resolve(ROOT, 'audits/merge-waves/2026-11-06-retroactive.json');
+// This hash is the exact Git blob ID independently read back from GitHub for
+// the ten-PR evidence snapshot. The structural parser is *not* an authenticity
+// verifier; only the source-pinned historical file is accepted by the CLI.
+// Do not update the blob anchor when editing history without independent review.
+const PINNED_SNAPSHOT_GIT_BLOB_SHA = '8ba3658779c6a836d24f2321451be5474ecbbc5e';
+
 const EXACT_KEYS = Object.freeze({
   root: ['schema', 'snapshot_date_utc', 'source', 'classification', 'state', 'merge_count',
     'repository_count', 'approved_merge_count', 'protected_main_repository_count',
@@ -35,7 +42,7 @@ export function checkSnapshot(snapshot) {
   keys(snapshot, EXACT_KEYS.root, 'root');
   if (snapshot.schema !== 'atto.merge-wave-retroactive-snapshot.v1' ||
       snapshot.snapshot_date_utc !== '2026-11-06' ||
-      typeof snapshot.source !== 'string' || !snapshot.source.startsWith('authenticated read-only GitHub') ||
+      snapshot.source !== 'authenticated read-only GitHub PR/review/branch/compare/Actions API observations' ||
       snapshot.classification !== 'historical_snapshot_not_live_release_authorization' ||
       snapshot.state !== 'BLOCKED') fail('snapshot cannot certify a release');
   if (snapshot.merge_count !== 10 || snapshot.repository_count !== 9 ||
@@ -107,7 +114,16 @@ export function readSnapshot(path) {
     const opened = fstatSync(fd);
     if (!opened.isFile() || opened.nlink !== 1 || opened.size > 65536 ||
         opened.ino !== stats.ino || opened.dev !== stats.dev) fail('snapshot changed during open');
-    return parseCanonicalSnapshot(readFileSync(fd, {encoding:'utf8'}));
+    const raw = readFileSync(fd, {encoding:'utf8'});
+    const byteCount = Buffer.byteLength(raw, 'utf8');
+    // Authenticity of the historical snapshot is pinned to the original
+    // Git object, not to user-supplied PR fields or self-reported counts.
+    const actualBlob = createHash('sha1').update(`blob ${byteCount}\\0`)
+      .update(raw, 'utf8').digest('hex');
+    if (actualBlob !== PINNED_SNAPSHOT_GIT_BLOB_SHA) {
+      fail('snapshot does not match pinned historical Git blob');
+    }
+    return parseCanonicalSnapshot(raw);
   } finally { closeSync(fd); }
 }
 
