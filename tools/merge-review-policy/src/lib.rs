@@ -338,35 +338,6 @@ fn audit_repo_impl<A: Api>(
 }
 
 /// Read-only audit, or explicit one-repository apply (with fresh rechecks).
-/// Complete, read-only preflight for an organization-wide write.
-/// This is deliberately not a transactional update: GitHub has no bulk
-/// branch-protection transaction. Any manual/failed target aborts the *entire*
-/// bulk apply before its first write; later races still fail closed per repo.
-pub fn preflight_all<A: Api>(
-    api: &mut A,
-    repos: &[(String, String)],
-) -> Result<Vec<(String, String, Outcome)>, Vec<(String, String, Outcome)>> {
-    let mut rows = Vec::new();
-    if repos.is_empty() {
-        return Err(vec![("<inventory>".into(), "".into(),
-            Outcome::Manual("refusing an empty organization inventory".into()))]);
-    }
-    let mut seen = std::collections::BTreeSet::new();
-    for (name, branch) in repos {
-        if !seen.insert(name) {
-            rows.push((name.clone(), branch.clone(),
-                Outcome::Manual("duplicate repository in inventory".into())));
-        } else {
-            rows.push((name.clone(), branch.clone(), audit_repo(api, name, branch, false)));
-        }
-    }
-    if rows.iter().any(|(_, _, outcome)| matches!(outcome, Outcome::Manual(_) | Outcome::Error(_))) {
-        Err(rows)
-    } else {
-        Ok(rows)
-    }
-}
-
 pub fn audit_repo<A: Api>(
     api: &mut A, repo: &str, branch: &str, apply: bool,
 ) -> Outcome {
@@ -773,8 +744,10 @@ mod tests {
             .step("GET", &format!("repos/{ORG}/example-alt/rulesets?includes_parents=true&per_page=100&page=1"), json!([]))
             .step("GET", &protection_endpoint("example-alt","main"), protection(3));
         let rows = preflight_all(&mut api, &list).unwrap();
-        assert!(matches!(rows[0].2, Outcome::Compliant));
-        assert!(matches!(rows[1].2, Outcome::WouldChange(3)));
+        assert_eq!(rows[0].count, 1);
+        assert_eq!(rows[1].count, 3);
+        assert_eq!(rows[1].repo, "example-alt");
+        assert_eq!(rows[1].before, protection(3));
         assert!(api.writes.is_empty());
         api.finished();
     }
@@ -786,8 +759,7 @@ mod tests {
                 json!([{"id":9,"enforcement":"active"}]));
         let list = vec![("example".into(),"main".into()),("blocked".into(),"main".into())];
         let rows = preflight_all(&mut api,&list).unwrap_err();
-        assert!(matches!(rows[0].2,Outcome::WouldChange(3)));
-        assert!(matches!(rows[1].2,Outcome::Manual(_)));
+        assert!(rows.iter().any(|reason| reason.contains("blocked") && reason.contains("rulesets")));
         assert!(api.writes.is_empty());
         api.finished();
     }
@@ -797,7 +769,7 @@ mod tests {
         let mut api = base_mock(1);
         let list = vec![("example".into(),"main".into()),("example".into(),"dev".into())];
         let rows = preflight_all(&mut api,&list).unwrap_err();
-        assert!(matches!(rows[1].2,Outcome::Manual(_)));
+        assert!(rows.iter().any(|reason| reason.contains("duplicate")));
         assert!(api.writes.is_empty());
         api.finished();
     }
