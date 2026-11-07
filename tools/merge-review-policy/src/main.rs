@@ -59,7 +59,7 @@ impl Api for CliApi {
 
 fn run() -> Result<(), String> {
     let raw: Vec<String> = env::args().skip(1).collect();
-    if raw == ["--help"] || raw == ["-h"] {
+    if raw.len() == 1 && matches!(raw[0].as_str(), "--help" | "-h") {
         println!("{}", usage());
         return Ok(());
     }
