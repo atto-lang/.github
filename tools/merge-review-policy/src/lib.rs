@@ -262,7 +262,13 @@ pub fn audit_repo<A: Api>(
     if Some(after) != expected_after(before) {
         return Outcome::Error("readback mismatch: unrelated protection fields changed or approval count != 1".into());
     }
-    Outcome::Changed(n)
+    // A ruleset can be added while the write executes; a complete success
+    // receipt must verify the effective ruleset surface *after* the write too.
+    match active_rule_ids(api, repo) {
+        Ok(ids) if ids.is_empty() => Outcome::Changed(n),
+        Ok(ids) => Outcome::Error(format!("rulesets appeared during write: {ids:?}; effective policy unverified")),
+        Err(e) => Outcome::Error(format!("post-write ruleset readback failed: {e}")),
+    }
 }
 
 #[cfg(test)]
@@ -427,7 +433,8 @@ mod tests {
             .step("GET", &rules_path(), json!([]))
             .step("GET", &protect_path(), initial.clone())
             .step("PATCH", &format!("{}/required_pull_request_reviews",protect_path()), json!({}))
-            .step("GET", &protect_path(), expected_after(initial).unwrap());
+            .step("GET", &protect_path(), expected_after(initial).unwrap())
+            .step("GET", &rules_path(), json!([]));
         assert_eq!(audit_repo(&mut api,"example","main",true),Outcome::Changed(3));
         assert_eq!(api.writes, vec![json!({"required_approving_review_count":1})]);
         api.finished();
@@ -538,6 +545,102 @@ mod tests {
                 ]));
         assert_eq!(repositories(&mut api).unwrap(),vec![
             ("a".into(),"dev".into()),("z".into(),"main".into())]);
+        api.finished();
+    }
+
+
+    #[test]
+    fn active_rulesets_on_second_page_are_not_ignored() {
+        let first_page: Vec<Value> = (0..100).map(|id| {
+            json!({"id":id,"enforcement":"disabled"})
+        }).collect();
+        let second_path = format!("repos/{ORG}/example/rulesets?includes_parents=true&per_page=100&page=2");
+        let mut api = MockApi::new()
+            .step("GET", &rules_path(), json!(first_page))
+            .step("GET", &second_path, json!([{"id":900,"enforcement":"active"}]));
+        assert!(matches!(audit_repo(&mut api,"example","main",false),Outcome::Manual(_)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn new_ruleset_during_patch_invalidates_success_receipt() {
+        let mut api = base_mock(3)
+            .step("GET", &rules_path(), json!([]))
+            .step("GET", &protect_path(), protection(3))
+            .step("PATCH", &format!("{}/required_pull_request_reviews",protect_path()), json!({}))
+            .step("GET", &protect_path(), expected_after(protection(3)).unwrap())
+            .step("GET", &rules_path(), json!([{"id":44,"enforcement":"active"}]));
+        assert!(matches!(audit_repo(&mut api,"example","main",true),Outcome::Error(_)));
+        api.finished();
+    }
+
+    #[test]
+    fn unavailable_postwrite_rulesets_invalidates_success_receipt() {
+        let mut api = base_mock(3)
+            .step("GET", &rules_path(), json!([]))
+            .step("GET", &protect_path(), protection(3))
+            .step("PATCH", &format!("{}/required_pull_request_reviews",protect_path()), json!({}))
+            .step("GET", &protect_path(), expected_after(protection(3)).unwrap())
+            .error("GET", &rules_path());
+        assert!(matches!(audit_repo(&mut api,"example","main",true),Outcome::Error(_)));
+        api.finished();
+    }
+
+    #[test]
+    fn code_owner_requirement_does_not_become_an_automatic_write() {
+        let mut protected = protection(3);
+        protected["required_pull_request_reviews"]["require_code_owner_reviews"] = json!(true);
+        let mut api = MockApi::new()
+            .step("GET", &rules_path(), json!([]))
+            .step("GET", &protect_path(), protected);
+        assert!(matches!(audit_repo(&mut api,"example","main",true),Outcome::Manual(_)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn bypass_allowance_is_not_silently_treated_as_review_satisfaction() {
+        let mut protected = protection(3);
+        protected["required_pull_request_reviews"]["bypass_pull_request_allowances"]["teams"] = json!(["bypass"]);
+        let mut api = MockApi::new()
+            .step("GET", &rules_path(), json!([]))
+            .step("GET", &protect_path(), protected);
+        assert!(matches!(audit_repo(&mut api,"example","main",true),Outcome::Manual(_)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn review_protection_missing_is_never_created_by_this_tool() {
+        let mut protected = protection(3);
+        protected["required_pull_request_reviews"] = Value::Null;
+        let mut api = MockApi::new()
+            .step("GET", &rules_path(), json!([]))
+            .step("GET", &protect_path(), protected);
+        assert!(matches!(audit_repo(&mut api,"example","main",true),Outcome::Manual(_)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn changed_status_checks_between_audit_and_write_block_the_patch() {
+        let mut changed = protection(3);
+        changed["required_status_checks"]["contexts"] = json!(["ci"]);
+        let mut api = base_mock(3)
+            .step("GET", &rules_path(), json!([]))
+            .step("GET", &protect_path(), changed);
+        assert!(matches!(audit_repo(&mut api,"example","main",true),Outcome::Manual(_)));
+        assert!(api.writes.is_empty());
+        api.finished();
+    }
+
+    #[test]
+    fn failed_branch_protection_read_is_not_a_success() {
+        let mut api = MockApi::new()
+            .step("GET", &rules_path(), json!([]))
+            .error("GET", &protect_path());
+        assert!(matches!(audit_repo(&mut api,"example","main",false),Outcome::Manual(_)));
         api.finished();
     }
 
