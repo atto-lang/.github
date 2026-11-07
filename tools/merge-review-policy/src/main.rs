@@ -8,7 +8,6 @@ use atto_merge_review_policy::inventory::verify_manifest;
 use serde_json::Value;
 use std::fs;
 use std::env;
-use std::io::Write;
 use std::path::{Component, Path};
 use std::process::{Command, Stdio};
 
@@ -48,8 +47,11 @@ impl CliApi {
 
 impl Api for CliApi {
     fn request(&mut self, method: &str, endpoint: &str, body: Option<Value>) -> Result<Value, String> {
-        if !matches!((method, body.is_some()), ("GET", false) | ("PATCH", true)) {
-            return Err("unsafe or unsupported GitHub API method/body combination".into());
+        // Second independent write hold: even a future caller bypassing the
+        // command-line --apply guard cannot issue a protection PATCH through
+        // the privileged GH API adapter until a separately reviewed release.
+        if method != "GET" || body.is_some() {
+            return Err("ABORTED WITHOUT WRITES: GitHub API adapter is read-only until effective named-reviewer enforcement is proven".into());
         }
         let mut cmd = Command::new(&self.gh_bin);
         cmd.arg("api").arg("--hostname").arg("github.com")
@@ -58,15 +60,10 @@ impl Api for CliApi {
             .arg("-H").arg("X-GitHub-Api-Version: 2022-11-28")
             .arg(endpoint)
             .env("GH_HOST", "github.com")
-            .stdout(Stdio::piped()).stderr(Stdio::piped());
-        if body.is_some() { cmd.arg("--input").arg("-").stdin(Stdio::piped()); }
-        let mut child = cmd.spawn().map_err(|e| format!("cannot run gh CLI: {e}"))?;
-        if let Some(data) = body {
-            child.stdin.take().ok_or("GitHub CLI stdin unavailable")?
-                .write_all(data.to_string().as_bytes())
-                .map_err(|e| format!("failed to submit JSON body: {e}"))?;
-        }
-        let response = child.wait_with_output()
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        let response = cmd.output()
             .map_err(|e| format!("GitHub CLI process failed: {e}"))?;
         if !response.status.success() {
             // Avoid exposing private API response bodies or credential-bearing stderr.
@@ -224,7 +221,24 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{require_verified_named_reviewers_before_apply, valid_gh_bin};
+    use super::{require_verified_named_reviewers_before_apply, valid_gh_bin, CliApi};
+    use atto_merge_review_policy::Api;
+    use serde_json::json;
+
+    #[test]
+    fn api_adapter_rejects_patch_and_json_body_before_spawning_gh() {
+        let mut api = CliApi { gh_bin: "/nonexistent/gh".into() };
+        for method in ["PATCH", "POST", "PUT", "DELETE"] {
+            let denied = api.request(method,
+                "repos/ores-truffle-oreslang/.github/branches/main/protection",
+                Some(json!({"required_approving_review_count":1})));
+            assert!(denied.unwrap_err().contains("ABORTED WITHOUT WRITES"));
+        }
+        let get_with_body = api.request("GET",
+            "repos/ores-truffle-oreslang/.github/branches/main/protection",
+            Some(json!({})));
+        assert!(get_with_body.unwrap_err().contains("ABORTED WITHOUT WRITES"));
+    }
 
     #[test]
     fn dry_run_remains_available_without_named_reviewer_attestation() {
