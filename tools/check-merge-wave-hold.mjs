@@ -118,7 +118,7 @@ export function readSnapshot(path) {
     const byteCount = Buffer.byteLength(raw, 'utf8');
     // Authenticity of the historical snapshot is pinned to the original
     // Git object, not to user-supplied PR fields or self-reported counts.
-    const actualBlob = createHash('sha1').update(`blob ${byteCount}\\0`)
+    const actualBlob = createHash('sha1').update(`blob ${byteCount}\0`)
       .update(raw, 'utf8').digest('hex');
     if (actualBlob !== PINNED_SNAPSHOT_GIT_BLOB_SHA) {
       fail('snapshot does not match pinned historical Git blob');
