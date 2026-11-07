@@ -52,6 +52,29 @@ For Homebrew on macOS, pass `ATTO_GH_BIN=/opt/homebrew/bin/gh` (when that is the
 
 The `review_evidence` Rust module provides a **read-only review-history witness**, not an enforceable status check. It rejects self-approval, unrelated approvals, stale head, conflicting changes requests, dismissed approval, and malformed histories. An actual GitHub ruleset plus required CI remains essential.
 
+## Mandatory bulk identity manifest
+
+Before any `--all --apply`, supply an **independently approved complete repository/default-branch inventory** in a local UTF-8 TSV file. Set `ATTO_APPROVED_REPO_INVENTORY` to its **absolute path**. The file must be a regular file, not a symlink. Every active repository must have exactly one row of the format `repo<TAB>default_branch`, with LF line endings. Blank/comment lines, duplicate names, unsafe names, or a changed default branch cause an immediate nonzero exit **before any API PATCH**.
+
+Example rows (these are only an illustration, **not** a complete org inventory):
+
+```text
+.github	main
+oreslang-source.java	main
+oreslang-source.llvm	main
+```
+
+Use an owner-reviewed full inventory export, not the example above. One manifest path can be supplied as an environment variable:
+
+```sh
+export ATTO_APPROVED_REPO_INVENTORY=/absolute/path/to/approved-ores-truffle-oreslang.tsv
+cargo run --manifest-path tools/merge-review-policy/Cargo.toml -- \
+  --all --apply --confirm-org ores-truffle-oreslang \
+  --expect-repos 80 --ack-numeric-only
+```
+
+The example count **80** was one observed snapshot, not a guaranteed current size. It must match the reviewed manifest and the live API inventory. An access-limited caller, a same-count repo substitution, or a default-branch change fails closed. The tool rechecks the entire list after preflight and each target immediately before mutation. The file is an operator approval artifact, **not a cryptographic signature**. This tool still cannot enforce named-reviewer identity.
+
 ## What the tool hardens
 
 1. Validates that all repository metadata belongs to exactly `ores-truffle-oreslang`, rejects unsafe API path components, and percent-encodes the default branch.
@@ -81,7 +104,7 @@ Repository list pagination, per-repository ruleset pagination, active-ruleset de
 
 `merge-review-policy-rust.yml`: SHA-pinned source checkout, exact tree metadata, executed Rust tests, and Clippy. `merge-review-runner-canary.yml`: **source-free admission only** (does not check out or run repository code). For any Actions job, `steps=null` or `steps=[]` means runner admission failure, not passing CI, even if the workflow status is completed.
 
-The pull request's current source contains 41 core policy tests, 18 CI receipt tests, 20 named-reviewer witness tests, and 70 integration tests (149 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
+The pull request's current source contains 41 core policy tests, 18 CI receipt tests, 20 named-reviewer witness tests, 18 exact-inventory tests, and 70 integration tests (167 test cases in source). **No passing executed test receipt is claimed** until the exact-head hosted run contains non-zero executed steps and passing Cargo output. The connected runtime lacks a Rust toolchain, so local Cargo execution was not performed during authoring.
 
 A required end-to-end pilot must also exercise the actual GitHub effective PR merge state for: `oresoftware` approving a `the1mills` PR; the reverse; no approval; unrelated user approval; failing required CI; and stale approvals after changes. These are **not** proven by source-only/mocked tests.
 
