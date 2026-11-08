@@ -1,0 +1,35 @@
+name: Source-free governance recovery diagnostics
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions: {}
+jobs:
+  canary:
+    name: source-free runner admission
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: SOURCE_FREE_START
+        run: echo SOURCE_FREE_START
+      - name: SOURCE_FREE_END
+        run: echo SOURCE_FREE_END
+  offline-tests:
+    name: read-only recovery gate negative tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout immutable source head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify source head identity
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Execute offline negative tests
+        run: node --test tests/recovery-gates.test.mjs
