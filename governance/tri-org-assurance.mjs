@@ -106,7 +106,8 @@ export function privateCarrierGate(c) {
     'reviewed immutable numeric private destination ID absent');
   fail(e, c?.source_repo_id === c?.approved_source_repo_id &&
     typeof c?.destination_full_name === 'string' &&
-    /^[-\\w]+\\/[-.\\w]+$/.test(c.destination_full_name) &&
+    c.destination_full_name.split('/').length === 2 &&
+    c.destination_full_name.split('/').every(part => /^[A-Za-z0-9_.-]+$/.test(part)) &&
     c.destination_full_name === c?.approved_destination_full_name,
     'source numeric ID or destination name not bound to an independent approved identity');
   fail(e, sha(c?.source_commit) && sha(c?.source_tree) && c.source_commit === c?.approved_source_commit &&
