@@ -1,0 +1,44 @@
+name: Repository ownership matrix integrity (Rust, source-only)
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'docs/repository-ownership-and-migration.md'
+      - 'tools/validate_repository_ownership_guide.rs'
+      - '.github/workflows/repository-ownership-guide.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'docs/repository-ownership-and-migration.md'
+      - 'tools/validate_repository_ownership_guide.rs'
+      - '.github/workflows/repository-ownership-guide.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Execute Rust validator and negative tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'checkout_commit=%s\n' "$(git rev-parse HEAD)"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          rustc --edition=2021 -D warnings --test tools/validate_repository_ownership_guide.rs -o "$tmp/tests"
+          "$tmp/tests"
+          rustc --edition=2021 -D warnings tools/validate_repository_ownership_guide.rs -o "$tmp/validate"
+          "$tmp/validate" docs/repository-ownership-and-migration.md
+      - name: Evidence classification
+        if: always()
+        run: echo 'SOURCE_ONLY ownership-matrix validation; not a transfer, admin-approval or compiled AttoLang guest receipt.'
