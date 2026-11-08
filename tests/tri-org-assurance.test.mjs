@@ -26,12 +26,14 @@ function run(head=SHA, number=1) {
 function mergeWave() {
   return {all_dependencies_reconciled:true,conflicts_resolved:true,agent_lease_verified:true,
     prs:Array.from({length:5},(_,i)=>({repository:`ores-truffle-oreslang/synthetic-${i%3}`,
-      number:100+i,base:'main',base_sha:TREE,head_sha:SHA,draft:false,merged:false,
+      number:100+i,author:'the1mills',base:'main',base_sha:TREE,head_sha:SHA,draft:false,merged:false,
       review:review(),run:run(SHA,i+1)}))};
 }
 function carrier() {
   return {source_org:'ores-truffle-oreslang',source_private:true,source_repo_id:12,
     destination_private:true,destination_repo_id:34,reviewed_destination_ids:[34],
+    approved_source_repo_id:12,destination_full_name:'synthetic-private/runner',
+    approved_destination_full_name:'synthetic-private/runner',
     source_commit:SHA,source_tree:TREE,approved_source_commit:SHA,approved_source_tree:TREE,
     policy_origin:'reviewed_protected_main',source_branch_protected:true,
     source_codeowner_approval:true,source_preflight_verified:true,
@@ -46,6 +48,7 @@ function retrospect() {
     current_main_protected:true,issuer_bound_checks_required:true,
     security_review:{kind:'POST_MERGE',state:'APPROVED',reviewer:'ORESoftware',reviewed_commit:SHA},
     landed_ci:{commit_sha:SHA,status:'completed',conclusion:'success',runner_id:123,
+      run_id:125,workflow_id:126,attempt:1,
       executed_test_steps:['Execute mandatory tests']},
     current_integration_reviewed:true,blocking_findings_closed:true
   }))};
@@ -55,7 +58,7 @@ function registry() {
   for (const [org,n] of [['ores-truffle-oreslang',80],['atto-lang',68],['atto-co',17]]) {
     for(let i=0;i<n;i++) repositories.push({
       repo_id:next++,full_name:`${org}/synthetic-${i}`,visibility:'private',
-      default_branch:'main',archived:false,codeowner_verified:false,transfer_status:'not_authorized'
+      default_branch:'main',archived:false,codeowner_verified:false,transfer_status:'not_authorized',current_organization:org
     });
   }
   return {schema:'tri-org-identity-v1', observed_at:'2026-11-08T12:00:00Z',
@@ -94,6 +97,8 @@ const tests=[
  ['five PR wave spanning two repos denied',s=>s.merge_wave.prs.forEach((p,i)=>p.repository=`ores-truffle-oreslang/synthetic-${i%2}`),1],
  ['duplicate PR denied',s=>{s.merge_wave.prs[1].repository=s.merge_wave.prs[0].repository;s.merge_wave.prs[1].number=s.merge_wave.prs[0].number;},1],
  ['draft PR denied',s=>s.merge_wave.prs[0].draft=true,1],
+ ['PR approval references a different head',s=>s.merge_wave.prs[0].review.head_sha=TREE,1],
+ ['PR approval author differs from actual PR author',s=>s.merge_wave.prs[0].author='other-author',1],
  ['non-main stacked PR denied',s=>s.merge_wave.prs[0].base='feature-branch',1],
  ['CI run for another head denied',s=>s.merge_wave.prs[0].run.head_sha=TREE,1],
  ['zero-step CI denied',s=>s.merge_wave.prs[0].run.jobs[0].steps=[],1],
@@ -103,6 +108,8 @@ const tests=[
  ['agent lease missing denied',s=>s.merge_wave.agent_lease_verified=false,1],
  ['source private identity absent denied',s=>s.private_carrier.source_private=false,2],
  ['numeric destination swap denied',s=>s.private_carrier.destination_repo_id=35,2],
+ ['source numeric ID swapped denied',s=>s.private_carrier.approved_source_repo_id=99,2],
+ ['destination slug swaps denied',s=>s.private_carrier.destination_full_name='synthetic-private/wrong',2],
  ['source tree differs denied',s=>s.private_carrier.approved_source_tree=SHA,2],
  ['caller-controlled source policy denied',s=>s.private_carrier.policy_origin='untrusted_pr',2],
  ['unprotected source denied',s=>s.private_carrier.source_branch_protected=false,2],
@@ -119,6 +126,8 @@ const tests=[
  ['postmerge self-review denied',s=>s.retrospective.landed_prs[0].security_review.reviewer='the1mills',3],
  ['unprotected landed main denied',s=>s.retrospective.landed_prs[0].current_main_protected=false,3],
  ['zero-runner landed CI denied',s=>s.retrospective.landed_prs[0].landed_ci.runner_id=0,3],
+ ['landed CI attempt missing denied',s=>s.retrospective.landed_prs[0].landed_ci.attempt=0,3],
+ ['landed generic step cannot substitute mandatory test',s=>s.retrospective.landed_prs[0].landed_ci.executed_test_steps=['Set up job'],3],
  ['missing executed landed tests denied',s=>s.retrospective.landed_prs[0].landed_ci.executed_test_steps=[],3],
  ['unresolved postmerge finding denied',s=>s.retrospective.landed_prs[0].blocking_findings_closed=false,3],
  ['incomplete 164 repository roster denied',s=>s.registry.repositories.pop(),4],
@@ -126,6 +135,7 @@ const tests=[
  ['repo name duplicate denied',s=>s.registry.repositories[1].full_name=s.registry.repositories[0].full_name,4],
  ['wrong target org count denied',s=>s.registry.repositories[0].full_name='atto-lang/fake-extra',4],
  ['invented CODEOWNERS verification denied',s=>s.registry.repositories[0].codeowner_verified=true,4],
+ ['cross-org row owner mismatch denied',s=>s.registry.repositories[0].current_organization='atto-lang',4],
  ['inventory cannot authorize transfer',s=>s.registry.private_transfer_authorized=true,4],
  ['migration policy citation absent denied',s=>s.registry.migration_policy_reference='',4],
  ['unknown visibility denied',s=>s.registry.repositories[0].visibility='unknown',4],
