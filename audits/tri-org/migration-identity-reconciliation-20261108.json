@@ -1,0 +1,37 @@
+{
+  "schema": "tri-org-migration-reconciliation-v1",
+  "status": "IDENTITY_RECONCILED_NOT_AUTHORIZED",
+  "observed_date": "2026-11-08",
+  "private_identity_snapshot_blob": "d3fe6c713274620be15d4b50908dd9d9bbfed30c",
+  "source_manifest_repo": "ores-truffle-oreslang/.github",
+  "source_manifest_pr": 25,
+  "source_manifest_head": "0d8856f6eee48d0f7c1a54cca950e788d6ab95f3",
+  "source_manifest_blob": "f955ef0c14ceebd6821d5466e691d1b1c9a701b5",
+  "live_search_counts": {
+    "ores-truffle-oreslang": 80,
+    "atto-lang": 68,
+    "atto-co": 17
+  },
+  "live_search_visibilities": {
+    "private": 153,
+    "public": 12
+  },
+  "matched_source_rows": 80,
+  "source_missing_from_manifest": 0,
+  "manifest_missing_from_source": 0,
+  "repo_id_mismatches": 0,
+  "visibility_mismatches": 0,
+  "branch_mismatches": 0,
+  "target_proposals": {
+    "atto-lang": 74,
+    "atto-co": 0,
+    "ores-truffle-oreslang_holds": 6
+  },
+  "source_manifest_status": "not_started",
+  "direct_private_source_transfer_authorized": false,
+  "approvals_verified": false,
+  "branch_protection_verified": false,
+  "source_ci_verified": false,
+  "manifest_or_snapshot_is_authority": false,
+  "note": "The manifest remains an unmerged draft. The observed registry is not permission to mirror source, transfer repositories, approve releases or infer CODEOWNERS."
+}
