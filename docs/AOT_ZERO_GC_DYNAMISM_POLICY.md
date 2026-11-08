@@ -32,6 +32,8 @@ A compiler/runtime feature PR must identify:
 | Precompiled hot-upgrade in explicitly governed mode | unsigned/unapproved ABI, stale generation, retired frame/handle access |
 | Verified guest binary/module and allocator behavior | host-only mock, parser-only acceptance, source-free canary, `steps=[]` or `steps=null` |
 
+**Classify test oracles by enforcement stage.** Forbidden source constructs and statically provable ownership violations must produce the intended compile-time diagnostic before executable IR. Missing dispatch/cleanup edges and accidental interpreter/JIT dependencies require lowering/artifact evidence, not fabricated source errors. Stale generations, cancellation/restart races and allocation failures require actual guest runtime negative/stress execution. A zero-step runner job never satisfies any of these gates.
+
 **No promotion from TARGET to IMPLEMENTED/PARITY without real backend-specific compiler-backed guest execution and independent review.** Record separate findings for Java/GraalVM, LLVM, .NET, Wasm, Forge/Cranelift, JavaScript, Rust and HDL profiles; do not present experimental scalar code as full language support.
 
 ## Governance preserved
