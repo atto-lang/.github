@@ -85,6 +85,9 @@ export function mergeWaveGate(wave) {
     if (typeof pr?.repository === 'string') repos.add(pr.repository);
     fail(e, pr?.base === 'main' && sha(pr?.base_sha) && sha(pr?.head_sha) && pr?.draft === false && pr?.merged === false,
       `${label}: must be open, non-draft, against pinned main`);
+    fail(e, typeof pr?.author === 'string' && pr.author.length > 0 &&
+      pr?.review?.author === pr.author && pr?.review?.head_sha === pr.head_sha,
+      `${label}: approval author's PR identity or reviewed head diverges from PR`);
     e.push(...reviewGate(pr?.review, label).failures);
     e.push(...runGate(pr?.run, pr?.head_sha, label));
   }
@@ -101,6 +104,11 @@ export function privateCarrierGate(c) {
   fail(e, c?.destination_private === true && id(c?.destination_repo_id) &&
     Array.isArray(c?.reviewed_destination_ids) && c.reviewed_destination_ids.includes(c.destination_repo_id),
     'reviewed immutable numeric private destination ID absent');
+  fail(e, c?.source_repo_id === c?.approved_source_repo_id &&
+    typeof c?.destination_full_name === 'string' &&
+    /^[-\\w]+\\/[-.\\w]+$/.test(c.destination_full_name) &&
+    c.destination_full_name === c?.approved_destination_full_name,
+    'source numeric ID or destination name not bound to an independent approved identity');
   fail(e, sha(c?.source_commit) && sha(c?.source_tree) && c.source_commit === c?.approved_source_commit &&
     c.source_tree === c?.approved_source_tree, 'source immutable commit/tree mismatch');
   fail(e, c?.policy_origin === 'reviewed_protected_main' && c?.source_branch_protected === true &&
@@ -135,7 +143,9 @@ export function retrospectiveGate(batch) {
       APPROVERS.has(s.reviewer.toLowerCase()), `${label}: independent labeled post-merge security review missing`);
     fail(e, r?.landed_ci?.commit_sha === r?.landed_commit && r?.landed_ci?.status === 'completed' &&
       r?.landed_ci?.conclusion === 'success' && id(r?.landed_ci?.runner_id) &&
-      Array.isArray(r?.landed_ci?.executed_test_steps) && r.landed_ci.executed_test_steps.length > 0,
+      id(r?.landed_ci?.run_id) && id(r?.landed_ci?.workflow_id) && id(r?.landed_ci?.attempt) &&
+      Array.isArray(r?.landed_ci?.executed_test_steps) &&
+      r.landed_ci.executed_test_steps.includes('Execute mandatory tests'),
       `${label}: executed exact-landed CI missing`);
     fail(e, r?.current_integration_reviewed === true && r?.blocking_findings_closed === true,
       `${label}: current integration review/findings incomplete`);
@@ -169,6 +179,7 @@ export function ownershipRegistryGate(registry) {
       names.add(r.full_name);
       const org = r.full_name.split('/')[0];
       fail(e, ORGS.includes(org), `${k}: unexpected organization`);
+      fail(e, r?.current_organization === org, `${k}: declared owner organization disagrees with repository identity`);
       if(ORGS.includes(org)) counts[org]++;
     }
   }
