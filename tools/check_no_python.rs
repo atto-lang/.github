@@ -2,7 +2,7 @@
 use std::env;
 use std::{
     fs,
-    io,
+    io::{self, Read},
     path::{Path, PathBuf},
 };
 
@@ -134,6 +134,70 @@ fn is_pip_exec_name(base: &str) -> bool {
     false
 }
 
+// A command may be injected after a shell operator even when the preceding
+// command is benign. Preserve quoted literal text, unless the line invokes a
+// shell -c command (whose quoted argument itself is executable shell code).
+fn chained_python_command(line: &str) -> bool {
+    let all = command_tokens(line);
+    let evaluates_shell_string = all.windows(2).any(|pair| {
+        matches!(
+            executable_basename(&pair[0]),
+            "sh" | "bash" | "zsh" | "dash" | "ksh"
+        ) && pair[1].starts_with('-')
+            && pair[1].chars().skip(1).any(|c| c == 'c')
+    });
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+    for (at, current) in line.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if current == '\\' && quote != Some('\'') {
+            escaped = true;
+            continue;
+        }
+        if matches!(current, '"' | '\'') {
+            if quote == Some(current) {
+                quote = None;
+            } else if quote.is_none() {
+                quote = Some(current);
+            }
+            continue;
+        }
+        if !matches!(current, ';' | '|' | '&') || (quote.is_some() && !evaluates_shell_string) {
+            continue;
+        }
+
+        let suffix = &line[at + current.len_utf8()..];
+        let next_command = suffix
+            .split(|c| matches!(c, ';' | '|' | '&'))
+            .next()
+            .unwrap_or_default();
+        let parts = command_tokens(next_command);
+        let mut at_command = 0;
+        while let Some(part) = parts.get(at_command) {
+            let name = executable_basename(part);
+            if is_python_exec_name(name)
+                || is_pip_exec_name(name)
+                || matches!(name, "pytest" | "poetry")
+            {
+                return true;
+            }
+            if matches!(name, "env" | "sudo" | "time" | "exec" | "command" | "then" | "do") {
+                at_command += 1;
+                continue;
+            }
+            if name == "-s" && at_command > 0 && parts[at_command - 1] == "env" {
+                at_command += 1;
+                continue;
+            }
+            break;
+        }
+    }
+    false
+}
+
 fn python_invocation_reason(line: &str) -> Option<&'static str> {
     let trimmed = line.trim();
     if trimmed.is_empty() {
@@ -186,6 +250,10 @@ fn python_invocation_reason(line: &str) -> Option<&'static str> {
         .any(|needle| lower.contains(needle))
     {
         return Some("host source launches Python tooling");
+    }
+
+    if chained_python_command(trimmed) {
+        return Some("Python command after shell separator");
     }
 
     let tokens = command_tokens(trimmed);
@@ -277,6 +345,30 @@ fn scan_markdown_commands(content: &str) -> Option<String> {
     None
 }
 
+const MAX_SCANNABLE_TEXT_BYTES: u64 = 8 * 1024 * 1024;
+
+// Fail closed on giant, changing or non-UTF8 source/configuration input. Use a
+// bounded descriptor read rather than fs::read(path), which may allocate the
+// entire file even when a prior size check raced with a writer.
+fn read_scannable_text(path: &Path) -> io::Result<String> {
+    let file = fs::File::open(path)?;
+    let metadata = file.metadata()?;
+    if !metadata.is_file() || metadata.len() > MAX_SCANNABLE_TEXT_BYTES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "nonregular or oversized source/configuration file",
+        ));
+    }
+    let mut bytes = Vec::new();
+    file.take(MAX_SCANNABLE_TEXT_BYTES + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > MAX_SCANNABLE_TEXT_BYTES {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "source file grew past scan limit"));
+    }
+    String::from_utf8(bytes).map_err(|_| {
+        io::Error::new(io::ErrorKind::InvalidData, "non-UTF8 source cannot be safely scanned")
+    })
+}
+
 fn scan_file_content(root: &Path, path: &Path, findings: &mut Vec<Finding>) -> io::Result<()> {
     if is_scanner_source(root, path) {
         return Ok(());
@@ -285,10 +377,7 @@ fn scan_file_content(root: &Path, path: &Path, findings: &mut Vec<Finding>) -> i
         return Ok(());
     }
 
-    let bytes = fs::read(path)?;
-    let Ok(content) = String::from_utf8(bytes) else {
-        return Ok(());
-    };
+    let content = read_scannable_text(path)?;
     let rel = path.strip_prefix(root).unwrap_or(path).to_path_buf();
 
     if is_documentation(path) {
@@ -329,6 +418,12 @@ fn scan(root: &Path, path: &Path, findings: &mut Vec<Finding>) -> io::Result<()>
 
     let meta = fs::symlink_metadata(path)?;
     if meta.file_type().is_symlink() {
+        if should_scan_text(path) || is_documentation(path) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("symlinked executable/configuration path cannot be scanned: {}", path.display()),
+            ));
+        }
         return Ok(());
     }
     if meta.is_dir() {
@@ -452,6 +547,72 @@ mod tests {
                 "Rust/host command incorrectly flagged: {line}"
             );
         }
+    }
+
+    #[test]
+    fn rejects_python_after_shell_chains_and_inside_shell_c_strings() {
+        for line in [
+            "echo safe && python3 -m pytest",
+            "echo safe || python3 scripts/build.py",
+            "printf ready; python3 -m unittest",
+            "cat file | python3 -",
+            "bash -lc 'echo safe && python3 -m pytest'",
+            "bash -c 'echo safe; env -S python3 -m unittest'",
+            "if true; then python3 scripts/build.py",
+        ] {
+            assert!(
+                python_invocation_reason(line).is_some(),
+                "Python shell-chain bypass: {line}"
+            );
+        }
+    }
+
+    #[test]
+    fn preserves_nonexecuted_quoted_literals() {
+        for line in [
+            "printf 'literal text && python3 is not executed'",
+            "echo 'this string has a semicolon; python3 is just text'",
+            "echo rustc build",
+            "bash -lc 'cargo test && rustfmt --check src/main.rs'",
+        ] {
+            assert!(
+                python_invocation_reason(line).is_none(),
+                "benign quoted text incorrectly rejected: {line}"
+            );
+        }
+    }
+
+    #[test]
+    fn fails_closed_on_non_utf8_scan_inputs() {
+        let root = std::env::temp_dir().join(format!("no-python-nonutf8-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("attack.sh"), [0xff_u8, 0xfe, 0x00]).unwrap();
+        assert_eq!(run(&root).unwrap_err().kind(), io::ErrorKind::InvalidData);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn fails_closed_on_oversized_scan_inputs() {
+        let root = std::env::temp_dir().join(format!("no-python-oversize-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("attack.sh"), vec![b'x'; (MAX_SCANNABLE_TEXT_BYTES + 1) as usize]).unwrap();
+        assert_eq!(run(&root).unwrap_err().kind(), io::ErrorKind::InvalidData);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn fails_closed_on_symlinked_executable_script() {
+        use std::os::unix::fs::symlink;
+        let root = std::env::temp_dir().join(format!("no-python-symlink-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("target.txt"), b"harmless").unwrap();
+        symlink("target.txt", root.join("run.sh")).unwrap();
+        assert_eq!(run(&root).unwrap_err().kind(), io::ErrorKind::InvalidData);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
