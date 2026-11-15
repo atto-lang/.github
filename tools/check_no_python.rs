@@ -198,10 +198,27 @@ fn python_invocation_reason(line: &str) -> Option<&'static str> {
 
     for (i, token) in tokens.iter().enumerate() {
         let base = executable_basename(token);
+        // Shell command strings and env -S are executable contexts too.
+        // The older guard only recognized the first token or a few named
+        // wrappers, so "bash -lc 'python3 ...'" bypassed the Python ban.
+        let shell_command_argument = i >= 2
+            && matches!(
+                tokens[i - 1].as_str(),
+                "-c" | "-lc" | "-ec" | "-euc" | "-ce" | "-cl"
+            )
+            && matches!(
+                executable_basename(&tokens[i - 2]),
+                "sh" | "bash" | "zsh" | "dash" | "ksh"
+            );
+        let env_split_argument = i >= 2
+            && tokens[i - 1] == "-s"
+            && executable_basename(&tokens[i - 2]) == "env";
         let command_position = i == 0
             || tokens
                 .get(i.wrapping_sub(1))
-                .is_some_and(|prev| wrapper(executable_basename(prev)));
+                .is_some_and(|prev| wrapper(executable_basename(prev)))
+            || shell_command_argument
+            || env_split_argument;
 
         if command_position && is_python_exec_name(base) {
             return Some("Python interpreter invocation/reference");
@@ -403,6 +420,37 @@ mod tests {
             "#!/usr/bin/env python3",
         ] {
             assert!(python_invocation_reason(line).is_some(), "{line}");
+        }
+    }
+
+    #[test]
+    fn rejects_nested_shell_and_env_split_python_invocations() {
+        for line in [
+            "bash -c 'python3 -m pytest'",
+            "sh -lc \"python -m unittest\"",
+            "zsh -ec 'pip3 install something'",
+            "env -S python3 -m pytest",
+            "env bash -lc 'python3 -V'",
+        ] {
+            assert!(
+                python_invocation_reason(line).is_some(),
+                "nested Python command not rejected: {line}"
+            );
+        }
+    }
+
+    #[test]
+    fn permits_rust_commands_in_nested_shell_wrappers() {
+        for line in [
+            "bash -lc 'cargo test --all-targets'",
+            "env -S rustc --test check.rs",
+            "sh -c 'rustfmt --check src/main.rs'",
+            "clang -c python3.c",
+        ] {
+            assert!(
+                python_invocation_reason(line).is_none(),
+                "Rust/host command incorrectly flagged: {line}"
+            );
         }
     }
 
