@@ -59,7 +59,7 @@ The other 20 repositories had zero filename/manifest artifacts at this baseline.
 2. Compile Rust ports with warnings denied and execute their tests before removing the Python source.
 3. Remove Python callers from workflows, build scripts, documentation command examples, and package/runtime dependencies.
 4. Re-enumerate the resulting Git tree and require zero Python artifacts.
-5. Run the repository's normal tests. If the source organization cannot allocate Actions runners, use an authorized private funded carrier without secrets. A carrier result is exact-source evidence only when the source Git tree is reproduced exactly and the source and carrier tree SHAs match.
+5. Run the repository's normal tests on an **authorized source-local runner**. If private Actions jobs fail before runner assignment, record the run/job IDs and classify the tests as **NOT_EXECUTED**. Do **not** use a cross-organization private-source mirror as a fallback: [conformance incident #22](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/issues/22) and source provenance/security gates currently prohibit private-source export. Independently review and resolve those restrictions before considering any future alternate-runner design.
 6. Do not claim an isolated Rust-port smoke test as exact full-tree validation.
 
 ## Work in progress
