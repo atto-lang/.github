@@ -139,12 +139,14 @@ fn is_pip_exec_name(base: &str) -> bool {
 // shell -c command (whose quoted argument itself is executable shell code).
 fn chained_python_command(line: &str) -> bool {
     let all = command_tokens(line);
-    let evaluates_shell_string = all.windows(2).any(|pair| {
+    // A shell can take configuration switches before its -c argument.
+    let evaluates_shell_string = all.iter().enumerate().any(|(index, word)| {
         matches!(
-            executable_basename(&pair[0]),
+            executable_basename(word),
             "sh" | "bash" | "zsh" | "dash" | "ksh"
-        ) && pair[1].starts_with('-')
-            && pair[1].chars().skip(1).any(|c| c == 'c')
+        ) && all.iter().skip(index + 1).take(5).any(|next| {
+            matches!(next.as_str(), "-c" | "-lc" | "-ec" | "-euc" | "-ce" | "-cl")
+        })
     });
     let mut quote: Option<char> = None;
     let mut escaped = false;
@@ -274,10 +276,12 @@ fn python_invocation_reason(line: &str) -> Option<&'static str> {
                 tokens[i - 1].as_str(),
                 "-c" | "-lc" | "-ec" | "-euc" | "-ce" | "-cl"
             )
-            && matches!(
-                executable_basename(&tokens[i - 2]),
-                "sh" | "bash" | "zsh" | "dash" | "ksh"
-            );
+            && tokens[i.saturating_sub(6)..i - 1].iter().any(|prior| {
+                matches!(
+                    executable_basename(prior),
+                    "sh" | "bash" | "zsh" | "dash" | "ksh"
+                )
+            });
         let env_split_argument = i >= 2
             && tokens[i - 1] == "-s"
             && executable_basename(&tokens[i - 2]) == "env";
@@ -526,6 +530,7 @@ mod tests {
             "zsh -ec 'pip3 install something'",
             "env -S python3 -m pytest",
             "env bash -lc 'python3 -V'",
+            "bash --noprofile --norc -c 'python3 -m unittest'",
         ] {
             assert!(
                 python_invocation_reason(line).is_some(),
@@ -557,6 +562,7 @@ mod tests {
             "printf ready; python3 -m unittest",
             "cat file | python3 -",
             "bash -lc 'echo safe && python3 -m pytest'",
+            "bash --noprofile --norc -c 'echo safe && python3 -m pytest'",
             "bash -c 'echo safe; env -S python3 -m unittest'",
             "if true; then python3 scripts/build.py",
         ] {
@@ -574,6 +580,7 @@ mod tests {
             "echo 'this string has a semicolon; python3 is just text'",
             "echo rustc build",
             "bash -lc 'cargo test && rustfmt --check src/main.rs'",
+            "bash --noprofile --norc -c 'cargo test && rustfmt --check src/main.rs'",
         ] {
             assert!(
                 python_invocation_reason(line).is_none(),
