@@ -1,6 +1,10 @@
 # .github
 Canonical atto-lang organization repository for the org profile, default community health files, and shared GitHub configuration.
 
+## Canonical naming and documentation migration
+
+[AttoLang](https://github.com/atto-lang) is the sole canonical project name; configure repository remotes as `https://github.com/atto-lang/.github.git` and refer to `.atto` in new examples. [atto-spec](https://github.com/atto-lang/atto-spec) owns normative grammar, ownership, lifetime, effects and actor contracts; [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance) tracks executed verification. Distinguish design proposals from tested compiler support and do not advertise zero-step CI as guest conformance.
+
 ## Repository ownership and contribution routing
 
 **Belongs in this repository:** Organization profile, repository-routing policy, shared community health defaults, CODEOWNERS/review standards, and security/CI evidence guidance.
