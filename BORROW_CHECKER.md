@@ -243,7 +243,202 @@ A clone must not rerun constructors, arbitrary initializers, I/O, or unknown des
 | Class with repeated mutable child/cycle | Reject unsafe shared child | New graph preserving internal aliases/cycles if copier verified |
 | Actor, mutex, channel, file/socket, foreign resource | Reject unless specially proven | Reject unless specially proven |
 
-## 8. Other explicit lifecycle operations
+## 8. Pass by value versus pass by reference — and how Atto compares
+
+**"Pass by value" is not the same as "deep copy." "Pass by reference" is not the same as "shared ownership."** Before comparing languages, separate the **parameter binding**, **object identity**, **permission to mutate**, and **responsibility for lifetime/reclamation**.
+
+When a function is called, there are several possible semantics:
+
+| Concept | What it means | Does the caller still own the original? | Does the callee reach the same object? |
+| --- | --- | --- | --- |
+| Pass a scalar **by value** | Initialize an independent parameter with the scalar value | Yes | Not applicable |
+| Pass a **copy of a reference/pointer value** | Callee has its own handle whose target may be shared | Yes, in ordinary Go/Java usage | Yes |
+| Pass an object **by reference/borrow** | Give a time-limited view/alias with specified read/write rights | Yes, provided it remains alive | Yes |
+| **Move ownership** | Transfer the resource's ownership right; former owner is invalid | No | Yes, unless a cross-domain relocation is required |
+| **Shallow copy** | New root/outer storage, child references copied only when legal | Yes | New root, possibly shared children |
+| **Deep copy** | New mutable reachable graph preserving internal cycles/repeated aliases | Yes | No mutable reachable source-object alias |
+| **Share frozen ownership** | Additional lasting owner of the same immutable allocation | No exclusive writable owner; shared owners remain | Yes |
+
+An ABI may implement value parameters with pointers to hidden storage. Conversely, copying a pointer into a parameter is still **pass by value of the pointer**. What matters to the programmer is the **source-level observable contract**, not whether one register contains a machine address.
+
+### The AttoLang default
+
+Primitive/value-copy scalars (`int`, `bool`, `float`) are passed as values. **Ordinary nonprimitive object arguments are implicitly borrowed** in the intended language profile: `fnc read(Counter c)` is a non-owning parameter; `read(counter)` is a read loan. Mutating code must request an exclusive loan. An ordinary borrow does not copy the graph, allocate a new owner, change ownership, or necessarily expose a raw address.
+
+~~~atto
+// TARGET semantics: implementation varies by backend and migration profile.
+define class Counter as
+  pub let int value = 1;
+end
+
+fnc inspect(Counter x): int {
+  return x.value;                     // read-only borrowed parameter
+}
+
+fnc increment(mut Counter x): void {
+  x.value += 1;                       // exclusive borrowed parameter
+}
+
+pub fnc example(): int {
+  val mut Counter original = new Counter();
+  val before = inspect(original);     // implicit shared loan, original remains owner
+  increment(mut original);            // explicit exclusive call loan
+
+  val independent = copy!! original;  // independent clone if DeepCopyable is proven
+  val transferred = take! original;   // move unique ownership
+  // inspect(original);              // REJECT: use after take!
+  return before + inspect(transferred) + inspect(independent);
+}
+~~~
+
+A **consuming** function needs an explicit owned-formal contract (candidate syntax `take! Counter x`) and the caller writes `take! original`. The compiler cannot quietly treat `inspect(original)` as a move. The exact borrowed-default signature lowering is staged; historical compiler profiles may still consume a plain class formal and must undergo a versioned migration.
+
+### Comparison matrix
+
+| Language | Ordinary function argument | How a caller-visible mutation happens | Explicit pointer/reference syntax | Memory and isolation model |
+| --- | --- | --- | --- | --- |
+| **AttoLang (target)** | Scalars copy; nonprimitive objects **borrow by default** | `f(mut obj)` / `borrow! mut obj` demands exclusive access; not a new owner | No unary `&x` or `*p`; explicit ownership verbs and proposed checked `Pointer<T>` | Static ownership/loan rules, domain-aware actors, explicit `take!`/`copy!!`/frozen `share!` |
+| **Go** | **Always by value**, including pointer, slice, map and interface values | Copy a pointer or reference-bearing descriptor to the same storage | `&x`, `*p`, `*T`; safe Go has no pointer arithmetic | GC, separate synchronization, no general borrow checker |
+| **Erlang** | Immutable **term/value** is passed; no mutable caller-variable alias | Produce a new term and return it; mutate process-local *state* by receiving messages | No C-style raw pointer syntax; Erlang `reference()` is an opaque unique ID, **not an address** | Single-assignment terms, process isolation, copying messages with runtime sharing optimizations |
+| **Rust** | `T` argument is copied if `Copy` or generally **moved** otherwise; `&T`/`&mut T` borrow | `&mut x` gives exclusive mutable borrow | `&x`, `&mut x`, `*r`, `Box<T>`, raw `*const T` | Compile-time ownership, lifetimes, `Send`/`Sync`, explicit safe-vs-unsafe boundaries |
+| **Java** | **Always by value**, including copies of object-reference values | Callee and caller reference the same mutable object | No ordinary C-style `T*` or unary `&x`/`*p` | GC-managed object references, runtime/thread synchronization; no static unique-ownership checker |
+| **C++** | `T` value copied/moved, `T&` reference aliases, `T*` passes pointer value | `T&` or `T*` reaches caller object | `&x`, `*p`, `T*`, `T&`, `->`, pointer arithmetic | RAII, explicit moves, smart pointers; unchecked raw pointers and data races remain dangerous |
+
+### Go: pass by value even when the value points elsewhere
+
+Go **always passes an argument value**. A `*T` parameter receives a *copy of a pointer*; both copies can point to the same object. A `[]T` slice parameter receives a *copy of a slice descriptor*; both descriptors can refer to the same backing array. Maps similarly share underlying map storage.
+
+~~~go
+type Counter struct { N int }
+
+func byValue(c Counter) { c.N++ }      // modifies a copy
+func byPointer(c *Counter) { c.N++ }   // modifies the original pointee
+func changeFirst(xs []int) { xs[0] = 42 } // can mutate shared backing array
+
+func example() {
+    c := Counter{N: 1}
+    byValue(c)                       // c.N still 1
+    byPointer(&c)                    // c.N now 2
+}
+~~~
+
+A Go struct copy can still be **shallow** if its fields contain pointers, slices, maps or other reference-bearing values. A copied slice header's length/capacity are local, but its elements may be shared; `append` may or may not allocate a new backing array. Go can automatically dereference pointers for field selection (`p.Field`), so it is inaccurate to say Go always requires `*` at an object use. Safe Go forbids ordinary pointer arithmetic, while `unsafe` permits special low-level operations. There is no general compiler-enforced shared-read/exclusive-write loan model comparable to Atto's target.
+
+**Atto contrast:** `inspect(obj)` expresses a checked temporary readonly loan, `increment(mut obj)` an exclusive loan, and `copy!! obj` the explicit independent mutable graph. None is merely "pass a pointer and hope other aliases behave."
+
+Sources: [Go FAQ](https://go.dev/doc/faq), [language specification](https://go.dev/ref/spec), [Go slices and backing arrays](https://go.dev/blog/slices).
+
+### Erlang: immutability instead of borrowing mutable object references
+
+Erlang variables are **single-assignment**, ordinary terms are immutable, and changing a structure yields a new structure instead of editing the caller's original.
+
+~~~erlang
+increment(Map) ->
+    Map#{count := maps:get(count, Map) + 1}.
+
+example() ->
+    Original = #{count => 1},
+    Changed = increment(Original),
+    {maps:get(count, Original), maps:get(count, Changed)}.
+    %% {1, 2}
+~~~
+
+Erlang processes hold their own changing *process state* (usually by tail-recursively receiving messages and using the returned new state), but **cannot mutate each other's ordinary terms**. Messages generally cross process heaps by copying terms; refcounted large binaries and other immutable runtime data have sharing optimizations. Therefore, "pass by value" in Erlang must not be misconstrued as a mandatory eager **deep physical copy on every function call**. An Erlang `reference()` created by `make_ref()` is a unique opaque *term identifier*, not a dereferenceable memory pointer. ETS and NIFs are separate interoperability/storage mechanisms.
+
+**Atto contrast:** Atto follows the spirit of isolated actor state but also permits **mutable uniquely owned graphs**. Those graphs require tracked temporary borrows, explicit `take!` ownership transfer, and independent `copy!!` when multiple actors need separately mutable messages. Zero-copy same-domain transfer is possible only with the required ownership and domain proof.
+
+Sources: [Erlang expressions and single assignment](https://www.erlang.org/docs/26/reference_manual/expressions.html), [Erlang message-passing efficiency](https://www.erlang.org/docs/26/efficiency_guide/processes.html).
+
+### Rust: `T`, `&T` and `&mut T` have different ownership contracts
+
+~~~rust
+struct Counter { n: i32 }
+
+fn inspect(c: &Counter) -> i32 { c.n }      // shared borrow
+fn increment(c: &mut Counter) { c.n += 1; } // exclusive mutable borrow
+fn consume(c: Counter) { let _owned = c; }  // ownership received
+
+fn example() {
+    let mut c = Counter { n: 1 };
+    inspect(&c);
+    increment(&mut c);
+    consume(c);     // move; Counter is not Copy
+    // inspect(&c); // rejected: moved value
+}
+~~~
+
+In Rust, a non-`Copy` `T` passed to a `T` formal generally **moves ownership**. `Copy` duplicates appropriate value types, while `Clone` is a type-defined explicit operation that **does not guarantee a fully independent graph** (for example, cloning an `Arc<T>` can create another owner of the *same* allocation). Rust references (`&T`, `&mut T`) are values passed to functions, with lifetimes and exclusivity statically checked. Rust also uses **automatic borrowing/dereferencing in many method-call contexts**; it is not merely manual raw-pointer programming.
+
+**Atto contrast:** make the read loan implicit in `inspect(c)`, request exclusive access through `increment(mut c)`, and require an explicit `take! c` at an owned handoff. Atto's `copy!!` promises deep mutable graph separation where proven, unlike the unconstrained meaning of an arbitrary Rust `Clone` implementation.
+
+Sources: [Rust ownership](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html), [Rust references and borrowing](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html).
+
+### Java: copied reference value, same object
+
+A Java object-reference argument is copied into a new local parameter variable. The object is **not** copied. The callee can mutate the original object through that reference, but **reassigning the parameter** does not reassign the caller's variable.
+
+~~~java
+class Counter { int n = 1; }
+
+static void modify(Counter c) {
+    c.n = 2;                // caller sees this field change
+    c = new Counter();      // does NOT rebind caller's variable
+    c.n = 100;
+}
+
+static void example() {
+    Counter original = new Counter();
+    modify(original);
+    // original.n is 2, not 100
+}
+~~~
+
+Thus Java is **pass-by-value of a reference**, *not* C++-style pass-by-reference of the caller's variable. GC handles object lifetime; it is **not** a borrow checker. `final Counter c` prevents reassigning `c`, not mutating the reachable object graph or precluding other mutable aliases.
+
+**Atto contrast:** Atto may lower a borrowed parameter to a JVM reference internally, but must also track permissions and owner lifetime; it cannot allow arbitrary mutation/escape through a readonly loan. Java/GraalVM's memory model and garbage collector are implementation foundations, not substitutes for Atto's language-level safety checks.
+
+Sources: [Oracle tutorial on argument passing](https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html), [JLS `4 parameter variables](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html).
+
+### C++: by-value, reference and pointer are *three* parameter forms
+
+~~~cpp
+struct Counter { int n = 1; };
+
+void by_value(Counter c)    { ++c.n; }       // independent value
+void by_ref(Counter& c)     { ++c.n; }       // caller object
+void by_ptr(Counter* c)     { ++c->n; }      // pointer copied; caller object
+void read(const Counter& c) { (void)c.n; }   // readonly through this alias
+
+void example() {
+    Counter c;
+    by_value(c);  // still 1
+    by_ref(c);    // now 2
+    by_ptr(&c);   // now 3
+}
+~~~
+
+`T&` is a language reference alias; `T*` is a separate pointer *value*. A `const T&` restricts mutation via that alias but does not prove nobody else is writing to the same object. C++ copy construction performs memberwise copies according to member type; copying a raw pointer member duplicates its address, **not the pointed-to allocation**. `std::move` makes a value eligible for a move-aware operation rather than automatically physically moving data; `std::unique_ptr`, `std::shared_ptr` and RAII provide important safe idioms. Nevertheless, dangling raw pointers, invalid manual lifetime assumptions and data races can cause undefined behavior.
+
+**Atto contrast:** Atto aims to replace a routine selection among `const T&`, `T&`, `T*` and move/sharing wrappers with ordinary borrowed parameters plus explicit `mut`, `take!` and `share!` operations. **Atto `copy!` additionally rejects unsafe shallow nested ownership duplication**, while `copy!!` has a separate proven graph-duplication contract.
+
+Sources: [C++ references](https://en.cppreference.com/cpp/language/reference), [pointers](https://en.cppreference.com/cpp/language/pointer), [copy constructors](https://en.cppreference.com/cpp/language/copy_constructor).
+
+### Which Atto operation do you actually want?
+
+| Intent | Target AttoLang spelling | Key guarantee |
+| --- | --- | --- |
+| Read object without taking ownership | `inspect(obj)` | Non-owning inferred readonly loan |
+| Make borrow boundary visible | `inspect(borrow! obj)` | Same rights as an inferred loan |
+| Temporarily mutate object | `update(mut obj)` | Exclusive non-owning loan; caller remains owner |
+| Transfer unique ownership | `consume(take! obj)` with a consuming formal | Prior owner's access invalidated |
+| Duplicate only immediate fields safely | `copy! obj` | Fresh root, nested aliases only when provably legal |
+| Create a separate mutable reachable graph | `copy!! obj` | New reachable mutable nodes, cycles/repeated aliases preserved inside clone |
+| Add an owner of the same frozen allocation | `share! obj` | Same immutable graph, no unchecked mutable sharing |
+| Typed low-level memory control | `Pointer<T>` `read_at` / `write_at` (proposal) | Checked provenance, bounds, generation and region lifetime |
+
+**Key principle:** the way a parameter is *represented* (address, register or handle), whether its referent is *shared*, and whether the callee may *read, mutate, retain, drop or move* it are separate questions. Atto's explicit ownership vocabulary and default loans address the last two without requiring source-level unary `&`/`*` for every ordinary object operation.
+
+## 9. Other explicit lifecycle operations
 
 AttoLang's expanded ownership vocabulary gives important supporting controls without C/C++/Rust pointer punctuation:
 
@@ -283,7 +478,7 @@ pub fnc main(): int {
 
 This is **not** general-purpose `Pointer<T>` support. The current scoped checked-handle design is for local class owners in one worker with limited control flow, no mutable dereference, no arbitrary raw addresses, and no cross-actor/foreign transfer. In that profile, use the explicit `block { ... }` scope, not a bare statement-position `{ ... }`. Full generation reuse, actor-domain enforcement, exception cleanup and all-backend support require independent implementation.
 
-## 9. Lifetimes: usually inferred, explicit when relationships matter
+## 10. Lifetimes: usually inferred, explicit when relationships matter
 
 AttoLang deliberately does **not** import Rust's apostrophe lifetime syntax. A named lifetime binder uses `lt! name`, and the long spelling `lifetime! name` formats to `lt! name`. References use a **named** lifetime argument, e.g. `Borrow<Child, lt=a>`.
 
@@ -306,7 +501,7 @@ A plain `fnc read(Foo foo)` has an inferred loan scoped to the caller's actual o
 
 The checker handles lexical scopes, last uses, reborrowing, nested calls, closures/captures, field projections, branches/joins, loops/backedges, exceptional exits, and cleanup. It must conservatively reject uncertain aliases, unconstrained public signatures, unknown dynamic effects, actor escapes, and missing source-to-IR provenance. Neither annotating a lifetime nor writing `borrow!` manufactures ownership.
 
-## 10. Async, actors and sealed state
+## 11. Async, actors and sealed state
 
 Loans are especially dangerous when execution may be suspended, resumed elsewhere or outlive the owner:
 
@@ -318,7 +513,7 @@ Loans are especially dangerous when execution may be suspended, resumed elsewher
 
 For Mailman delivery, the source-level operation and its runtime ticket must agree. Runtime envelopes carry authenticated actor incarnation, domain/generation, type/layout and transitive graph authorization; mailbox commit is linearizable. Failed admission rolls back private copies/escrow without exposing a partial graph; committed receiver ownership cannot be reclaimed by the sender. The proposed READ_LEASE/WRITE_LEASE modes need a protocol beyond local `borrow!`.
 
-## 11. Why AttoLang does **not** require unary `*` and `&` for ordinary memory access
+## 12. Why AttoLang does **not** require unary `*` and `&` for ordinary memory access
 
 In Go and C/C++, `&x` commonly takes an address and `*p` dereferences one. Rust uses `&x` and `&mut x` to form references and `*r` for dereference. The same short glyphs sit beside very different concerns: raw storage addresses, temporary borrows, mutability, references, pointer indirection and lifetime rules. In C/C++, pointer arithmetic and unchecked dereference additionally expose undefined-behavior hazards.
 
@@ -365,7 +560,7 @@ pub fnc example(): Result<int, PointerError> {
 
 The compiler/ABI can use native machine pointers, Wasm linear-memory offsets, or checked handle tables **behind** the abstraction. That implementation freedom is an advantage: users express the same safe semantics without repeatedly writing address-of/dereference punctuation or accidentally relying on a C layout. Where exact zero-overhead access is required, the compiler proves bounds and lifetime or rejects an unsupported profile instead of offering unchecked undefined behavior. Pointer operations are **not** automatically free of runtime cost; a hard-real-time target must bound that cost.
 
-## 12. Compiler enforcement, diagnostics and proof gates
+## 13. Compiler enforcement, diagnostics and proof gates
 
 A conforming compiler should:
 
@@ -382,7 +577,7 @@ Examples of useful diagnostic families include `E_BORROW`, `E_BORROW_MUT_REQUIRE
 
 For each backend (Rust/browser, independent Wasm, Java/GraalVM, LLVM, .NET Native AOT, Forge, and others), publish exact source/head/tree SHA, compiler/runtime artifact hashes, target/toolchain, **actual compiled guest** positive and negative execution, no-artifact rejection evidence, race/sanitizer or equivalent runtime gates, and separate `PASS` / `FAIL` / `UNSUPPORTED` / `NOT_EXECUTED` results. A GitHub Actions run with zero executed steps is `NOT_EXECUTED`, not a passing build. Full graph copying, general `Pointer<T>`, cross-domain leases, and five-plus-backend parity **must not be represented as implemented merely because a feature branch merges**.
 
-## 13. Specification and implementation reading list
+## 14. Specification and implementation reading list
 
 This guide intentionally reconciles the **heads of pending feature work** with the merged specification rather than relying on `main` alone. Relevant sources and scopes:
 
