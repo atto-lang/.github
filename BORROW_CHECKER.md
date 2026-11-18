@@ -397,7 +397,7 @@ Thus Java is **pass-by-value of a reference**, *not* C++-style pass-by-reference
 
 **Atto contrast:** Atto may lower a borrowed parameter to a JVM reference internally, but must also track permissions and owner lifetime; it cannot allow arbitrary mutation/escape through a readonly loan. Java/GraalVM's memory model and garbage collector are implementation foundations, not substitutes for Atto's language-level safety checks.
 
-Sources: [Oracle tutorial on argument passing](https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html), [JLS `4 parameter variables](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html).
+Sources: [Oracle tutorial on argument passing](https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html), [JLS section 4 — parameter variables](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html).
 
 ### C++: by-value, reference and pointer are *three* parameter forms
 
