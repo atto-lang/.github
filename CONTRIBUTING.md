@@ -21,3 +21,16 @@ Use `snake_case` for AttoLang callable names and Rust helpers. Document unsuppor
 ## Legacy Python retirement checklist
 
 Identify every Python test/tool in a touched repository; create a Rust equivalent with the **same source fixtures, negative mutation coverage, exit codes and deterministic byte output**, exercise both on an immutable baseline until equivalent, then switch CI to the Rust version and remove the legacy Python dependency in a separately reviewed change. If a pilot compiler still uses Python, label it as such and do not represent its tests as Rust-native.
+
+
+## Issue, branch, pull request and review workflow
+
+- Create or link a scoped issue with the owning repo, normative contract, acceptance oracle, dependency/stacked-PR relationships and directly responsible engineer. Avoid duplicate cross-backend tickets.
+- Work on a feature/fix branch; do not commit directly to protected main. Keep stacked branches explicit and review their base/head dependencies before retargeting or merging.
+- Keep PRs small enough to validate. The description must link the issue, enumerate changed/unsupported behavior, show real positive and negative tests, source/head/tree, target/toolchain, artifacts, and exact CI receipts.
+- Require an independent qualified review for compiler semantics, ownership, actor isolation, security-critical code, package provenance and CI trust boundaries. The author's self-approval is insufficient.
+- Changes to observable language semantics require the accepted specification/RFC and a portable regression oracle; an implementation is not a language specification.
+- Resolve conflicts semantically (never drop assertions or safety checks to make Git merge clean), rerun immutable-head CI after rebasing, and merge only after required checks and approval.
+- A completed task requires merged code, documented supported profiles, actual test execution, regression and negative cases, and updated fixtures/docs when applicable. Pending/skipped tests remain visible as NOT_EXECUTED.
+
+See [RFC_PROCESS.md](RFC_PROCESS.md), [TESTING.md](TESTING.md), [ROADMAP.md](ROADMAP.md), [SECURITY.md](SECURITY.md) and [CODEOWNERS](CODEOWNERS). These are organization defaults; the assigned repository's more specific controls take precedence where they are stricter. The CODEOWNERS file here is **not** automatically inherited by other repositories.

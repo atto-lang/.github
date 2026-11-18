@@ -16,3 +16,21 @@ Changes asserting compiler/runtime support must identify the exact source head, 
 ## CI/testing language
 
 **Rust-first policy:** new test harnesses and CI support scripts must use Rust, not Python. Legacy Python tests and pilot compilers must be migrated with verified fixture and negative-test parity before removal. See [CONTRIBUTING.md](CONTRIBUTING.md) for required exact-source Actions evidence and private alternate-runner mirroring.
+
+## Engineering handbook and onboarding
+
+For new compiler, runtime and tooling engineers, start with [ONBOARDING.md](ONBOARDING.md) and the [engineering roadmap](ROADMAP.md). These documents are guidance for the AttoLang organization and compatibility work, **not** a declaration that any backend has completed the whole language.
+
+| Guide | Focus |
+| --- | --- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Compiler phases, actors, IR and backend boundaries |
+| [BUILDING.md](BUILDING.md) | Verified repository toolchain references and build examples |
+| [TESTING.md](TESTING.md) | Host vs guest proof, conformance, AOT, CI and sanitizers |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Rust-first tooling, PR process and independent reviews |
+| [CODEOWNERS](CODEOWNERS) | Maintainers of **this** .github repository |
+| [RFC_PROCESS.md](RFC_PROCESS.md) | Language-change decision and ratification process |
+| [ROADMAP.md](ROADMAP.md) | P0–P3 priorities and milestone gates |
+| [ONBOARDING.md](ONBOARDING.md) | First-month engineering checklist |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting, trusted CI and source protection |
+
+Per-backend CODEOWNERS, access control, issues, releases and branch protection must be installed and maintained **in each implementation repository**.
