@@ -1,0 +1,507 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-11-19",
+  "purpose": "Route legacy Oreslang agents and migration work toward existing AttoLang organization repositories without asserting that code or history has already been transferred.",
+  "mappings": [
+    {
+      "legacy_repo": ".github",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "async-testing",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "atto-ci",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "atto-redis-clone.atto",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "atto-source.atto",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "attolang-language-spec.md",
+      "atto_counterpart": "atto-spec",
+      "link": "https://github.com/atto-lang/atto-spec",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "compiler-parity-website",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "gh-linguist-fork",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "html-js-css-syntax-highlighter",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "ores-fm-mac-agent.ores",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "ores-truffle-oreslang.github.io",
+      "atto_counterpart": "atto-lang.github.io",
+      "link": "https://github.com/atto-lang/atto-lang.github.io",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslana.ores",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "oreslang-ai-agent-coordination-via-actors-demo",
+      "atto_counterpart": "atto-ai-agent-coordination-demo",
+      "link": "https://github.com/atto-lang/atto-ai-agent-coordination-demo",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-api-server.ores",
+      "atto_counterpart": "atto-api-server.atto",
+      "link": "https://github.com/atto-lang/atto-api-server.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-autograd",
+      "atto_counterpart": "atto-autograd",
+      "link": "https://github.com/atto-lang/atto-autograd",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-browser",
+      "atto_counterpart": "atto-browser",
+      "link": "https://github.com/atto-lang/atto-browser",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-cli",
+      "atto_counterpart": "atto-cli",
+      "link": "https://github.com/atto-lang/atto-cli",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-common-source",
+      "atto_counterpart": "atto-common-source",
+      "link": "https://github.com/atto-lang/atto-common-source",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-compilers-parity-testing",
+      "atto_counterpart": "atto-compilers-parity-testing",
+      "link": "https://github.com/atto-lang/atto-compilers-parity-testing",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-data-science",
+      "atto_counterpart": "atto-data-science",
+      "link": "https://github.com/atto-lang/atto-data-science",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-db",
+      "atto_counterpart": "atto-db",
+      "link": "https://github.com/atto-lang/atto-db",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-demo",
+      "atto_counterpart": "atto-demo",
+      "link": "https://github.com/atto-lang/atto-demo",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-demo-restful-server",
+      "atto_counterpart": "atto-demo-restful-server",
+      "link": "https://github.com/atto-lang/atto-demo-restful-server",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-demos",
+      "atto_counterpart": "atto-demos",
+      "link": "https://github.com/atto-lang/atto-demos",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-design-patterns",
+      "atto_counterpart": "atto-design-patterns",
+      "link": "https://github.com/atto-lang/atto-design-patterns",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-durable-objects.ores",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "oreslang-format",
+      "atto_counterpart": "atto-format",
+      "link": "https://github.com/atto-lang/atto-format",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-forward-proxy-demo.ores",
+      "atto_counterpart": "atto-forward-proxy-demo.atto",
+      "link": "https://github.com/atto-lang/atto-forward-proxy-demo.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-hot-loading-tests",
+      "atto_counterpart": "atto-hot-loading-tests",
+      "link": "https://github.com/atto-lang/atto-hot-loading-tests",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-hpc-finance",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "oreslang-http-routing",
+      "atto_counterpart": "atto-http-routing",
+      "link": "https://github.com/atto-lang/atto-http-routing",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-language-specs.md",
+      "atto_counterpart": "atto-spec",
+      "link": "https://github.com/atto-lang/atto-spec",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-linked-queue",
+      "atto_counterpart": "atto-linked-queue",
+      "link": "https://github.com/atto-lang/atto-linked-queue",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-logic.ores",
+      "atto_counterpart": "atto-logic.atto",
+      "link": "https://github.com/atto-lang/atto-logic.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-ml",
+      "atto_counterpart": "atto-ml",
+      "link": "https://github.com/atto-lang/atto-ml",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-ml-conformance",
+      "atto_counterpart": "atto-ml-conformance",
+      "link": "https://github.com/atto-lang/atto-ml-conformance",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-n8n-make-zapier-app",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "oreslang-orie-ieor",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "oreslang-otel",
+      "atto_counterpart": "atto-otel",
+      "link": "https://github.com/atto-lang/atto-otel",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-phoenix-server.ores",
+      "atto_counterpart": "atto-phoenix-server.atto",
+      "link": "https://github.com/atto-lang/atto-phoenix-server.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-physics-demo.ores",
+      "atto_counterpart": "atto-physics-demo.atto",
+      "link": "https://github.com/atto-lang/atto-physics-demo.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-platform-conformance",
+      "atto_counterpart": "atto-platform-conformance",
+      "link": "https://github.com/atto-lang/atto-platform-conformance",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-platform.asic",
+      "atto_counterpart": "atto-platform.asic",
+      "link": "https://github.com/atto-lang/atto-platform.asic",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-platform.desktop",
+      "atto_counterpart": "atto-platform.desktop",
+      "link": "https://github.com/atto-lang/atto-platform.desktop",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-platform.embedded",
+      "atto_counterpart": "atto-platform.embedded",
+      "link": "https://github.com/atto-lang/atto-platform.embedded",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-platform.fpga",
+      "atto_counterpart": "atto-platform.fpga",
+      "link": "https://github.com/atto-lang/atto-platform.fpga",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-platform.iot",
+      "atto_counterpart": "atto-platform.iot",
+      "link": "https://github.com/atto-lang/atto-platform.iot",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-platform.mobile",
+      "atto_counterpart": "atto-platform.mobile",
+      "link": "https://github.com/atto-lang/atto-platform.mobile",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-proof-of-concepts",
+      "atto_counterpart": "atto-proof-of-concepts",
+      "link": "https://github.com/atto-lang/atto-proof-of-concepts",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-restful-server-perf-benchmarks",
+      "atto_counterpart": "atto-restful-server-perf-benchmarks",
+      "link": "https://github.com/atto-lang/atto-restful-server-perf-benchmarks",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-reverse-proxy-demo.ores",
+      "atto_counterpart": "atto-reverse-proxy-demo.atto",
+      "link": "https://github.com/atto-lang/atto-reverse-proxy-demo.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-rpc",
+      "atto_counterpart": "atto-rpc",
+      "link": "https://github.com/atto-lang/atto-rpc",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-runtime-ui",
+      "atto_counterpart": "atto-runtime-ui",
+      "link": "https://github.com/atto-lang/atto-runtime-ui",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-runtime.realtime-java",
+      "atto_counterpart": "atto-runtime.realtime-java",
+      "link": "https://github.com/atto-lang/atto-runtime.realtime-java",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-serialization-and-validation",
+      "atto_counterpart": "atto-serialization-and-validation",
+      "link": "https://github.com/atto-lang/atto-serialization-and-validation",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-sg-stategraph.ores",
+      "atto_counterpart": "atto-stategraph.atto",
+      "link": "https://github.com/atto-lang/atto-stategraph.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.cranelift",
+      "atto_counterpart": "atto-source.cranelift",
+      "link": "https://github.com/atto-lang/atto-source.cranelift",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.forge",
+      "atto_counterpart": "atto-source.forge",
+      "link": "https://github.com/atto-lang/atto-source.forge",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.hdl",
+      "atto_counterpart": "atto-source.hdl",
+      "link": "https://github.com/atto-lang/atto-source.hdl",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.java",
+      "atto_counterpart": "atto-source.java",
+      "link": "https://github.com/atto-lang/atto-source.java",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.js",
+      "atto_counterpart": "atto-source.js",
+      "link": "https://github.com/atto-lang/atto-source.js",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.llvm",
+      "atto_counterpart": "atto-source.llvm",
+      "link": "https://github.com/atto-lang/atto-source.llvm",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.net",
+      "atto_counterpart": "atto-source.net",
+      "link": "https://github.com/atto-lang/atto-source.net",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.rs",
+      "atto_counterpart": "atto-source.rs",
+      "link": "https://github.com/atto-lang/atto-source.rs",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-source.wasm",
+      "atto_counterpart": "atto-source.wasm",
+      "link": "https://github.com/atto-lang/atto-source.wasm",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-spin",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "oreslang-ssr",
+      "atto_counterpart": "atto-ssr",
+      "link": "https://github.com/atto-lang/atto-ssr",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-stack-cli",
+      "atto_counterpart": null,
+      "link": "https://github.com/atto-lang",
+      "status": "unmapped-review-needed"
+    },
+    {
+      "legacy_repo": "oreslang-static-analysis.rs",
+      "atto_counterpart": "atto-static-analysis.rs",
+      "link": "https://github.com/atto-lang/atto-static-analysis.rs",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-step-function-demo",
+      "atto_counterpart": "atto-step-function-demo",
+      "link": "https://github.com/atto-lang/atto-step-function-demo",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-target-profiles",
+      "atto_counterpart": "atto-target-profiles",
+      "link": "https://github.com/atto-lang/atto-target-profiles",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-tensor",
+      "atto_counterpart": "atto-tensor",
+      "link": "https://github.com/atto-lang/atto-tensor",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-test.cli",
+      "atto_counterpart": "atto-test.cli",
+      "link": "https://github.com/atto-lang/atto-test.cli",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-wasm",
+      "atto_counterpart": "atto-wasm",
+      "link": "https://github.com/atto-lang/atto-wasm",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-web-browser.ores",
+      "atto_counterpart": "atto-browser",
+      "link": "https://github.com/atto-lang/atto-browser",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "oreslang-websocket-server-demo.ores",
+      "atto_counterpart": "atto-websocket-server-demo.atto",
+      "link": "https://github.com/atto-lang/atto-websocket-server-demo.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "postgres-orm.ores",
+      "atto_counterpart": "atto-postgres-orm.atto",
+      "link": "https://github.com/atto-lang/atto-postgres-orm.atto",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "rx-ores",
+      "atto_counterpart": "atto-rx",
+      "link": "https://github.com/atto-lang/atto-rx",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "rx-ores-callbacks",
+      "atto_counterpart": "atto-rx-callbacks",
+      "link": "https://github.com/atto-lang/atto-rx-callbacks",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "rx-ores-tasks",
+      "atto_counterpart": "atto-rx-tasks",
+      "link": "https://github.com/atto-lang/atto-rx-tasks",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "rx-oreslang-channels",
+      "atto_counterpart": "atto-rx-channels",
+      "link": "https://github.com/atto-lang/atto-rx-channels",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "sublime-text-plugins",
+      "atto_counterpart": "atto-sublime",
+      "link": "https://github.com/atto-lang/atto-sublime",
+      "status": "counterpart-name-verified"
+    },
+    {
+      "legacy_repo": "vscode-plugins",
+      "atto_counterpart": "atto-vscode",
+      "link": "https://github.com/atto-lang/atto-vscode",
+      "status": "counterpart-name-verified"
+    }
+  ],
+  "policy": "For existing mapped counterparts, prefer new feature work and migration PRs in atto-lang; inspect exact code/history, PR overlap, and compatibility before declaring parity. Unmapped entries route to the atto-lang organization for destination selection, not an invented counterpart.",
+  "notes": "A repository's existence and analogous name are not proof of full functional equivalence, transferred history or passing tests."
+}
