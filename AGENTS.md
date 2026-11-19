@@ -90,4 +90,4 @@ Report merged PR URLs/SHAs, readiness-cycle age, draft-to-ready promotions, hold
 
 ## Sealed AOT and zero-guest-GC review policy
 
-Follow the [controlled-dynamism review checklist](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md) together with the [compiler capability matrix](https://github.com/atto-lang/.github/pull/10). These are architectural targets, **not** a modification to the draft/ready review clock, independent approvals, private-source controls, required checks or merge-first governance above.
+Follow the [controlled-dynamism review checklist](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md) together with the [compiler capability matrix](https://github.com/atto-lang/.github/blob/main/docs/compiler-feature-matrix.md). These are architectural targets, **not** a modification to the draft/ready review clock, independent approvals, private-source controls, required checks or merge-first governance above.

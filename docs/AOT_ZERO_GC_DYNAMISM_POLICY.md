@@ -1,6 +1,6 @@
 # AttoLang organization policy: AOT and controlled dynamism
 
-**Architectural review directive, not a declaration of compiler support.** Use [atto-spec](https://github.com/atto-lang/atto-spec) for current language semantics, [atto-target-profiles](https://github.com/atto-lang/atto-target-profiles) for target restrictions, [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance) for executed proof, and the [backend capability matrix](https://github.com/atto-lang/.github/pull/10) for design responsibilities. The old Oreslang-language and organization PRs are migration context, not current normative authority.
+**Architectural review directive, not a declaration of compiler support.** Use [atto-spec](https://github.com/atto-lang/atto-spec) for current language semantics, [atto-target-profiles](https://github.com/atto-lang/atto-target-profiles) for target restrictions, [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance) for executed proof, and the [backend capability matrix](https://github.com/atto-lang/.github/blob/main/docs/compiler-feature-matrix.md) for design responsibilities. The old Oreslang-language and organization PRs are migration context, not current normative authority.
 
 ## Mandatory author/reviewer checklist
 

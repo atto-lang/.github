@@ -44,4 +44,4 @@ Per-backend CODEOWNERS, access control, issues, releases and branch protection m
 
 ## AOT and zero-guest-GC architecture review
 
-Contributor and agent reviews should use the [controlled-dynamism checklist](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md) together with the [11-backend capability matrix](https://github.com/atto-lang/.github/pull/10). Neither document certifies whole-process zero GC, secure native multi-tenancy, or hard-real-time deadlines.
+Contributor and agent reviews should use the [controlled-dynamism checklist](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md) together with the [11-backend capability matrix](https://github.com/atto-lang/.github/blob/main/docs/compiler-feature-matrix.md). Neither document certifies whole-process zero GC, secure native multi-tenancy, or hard-real-time deadlines.
