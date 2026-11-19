@@ -79,3 +79,9 @@ Apply the same overlap integration habit **when recovering drafts and during ini
 This `AGENTS.md` is the organization's canonical instruction for AI agents; it is **not itself an enforced GitHub rule**. Repository README pointers remain useful but are not a substitute for independently loading the policy. A trusted installed GitHub App/check, accurate lifecycle timeline, indexed open PRs, authorized draft-promotion service, and compatible rulesets are needed for automatic enforcement. The existing Rust evaluator at `gha-indie-worker/.github#52` is standalone unless separately deployed.
 
 Report merged PR URLs/SHAs, readiness-cycle age, draft-to-ready promotions, holds, overlap candidates and dispositions, test evidence, and unresolved blockers. Prefer accurate partial progress over unverified assertions. Preserve repo-specific stronger safety and technical requirements.
+
+<!-- incoming-oreslang-migration:begin -->
+## Incoming migration from the legacy Oreslang organization
+
+`atto-lang` is the primary organization for new language and implementation work. Before creating/merging a substantial PR, inspect relevant open and draft work in the corresponding legacy `ores-truffle-oreslang` repo, using the [legacy-to-AttoLang repository crosswalk](https://github.com/ores-truffle-oreslang/.github/blob/main/governance/atto-migration-map.json). This applies to readiness triage and especially to the mandatory competing/overlapping PR audit in the 72–240-hour fast lane. Consolidate independent fixes and tests into the canonical AttoLang PR rather than leaving parallel features to diverge. Similar names are not evidence of parity or completed migration; verify exact commits, contracts and executed tests. Continue to respect labels, current ready-cycle timestamps, and GitHub protections. Do not auto-close, force-update, or discard unique legacy work without verified disposition.
+<!-- incoming-oreslang-migration:end -->
