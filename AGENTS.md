@@ -1,54 +1,55 @@
-# AGENTS.md — Merge-First Stealth Development Policy
+# AGENTS.md — Time-Windowed Merge-First Review Policy
 
-> **Scope:** All repositories belonging to this GitHub organization.
-> **Operating mode:** Stealth development / rapid integration.
-> **Primary objective:** Reduce the open pull-request backlog by integrating eligible work. Do not optimize for the number of PRs created.
+> **Scope:** All repositories in this GitHub organization, including legacy repositories.
+> **Mode:** Stealth development with rapid, auditable integration.
+> **Primary objective:** Merge eligible PRs promptly, keep the backlog small, and preserve mandatory tests and time-bounded independent review.
 
-## Default behavior: merge first
+## Mandatory PR review windows
 
-**A conflict-free, otherwise eligible PR should be merged by default, not left open awaiting perfect test coverage, repeated audits, or extra hardening.** Agents carrying out authorized PR maintenance may merge eligible PRs without asking for approval on each one.
+All durations are measured from the immutable GitHub `pull_request.created_at` timestamp, in UTC. Reopening, rebasing, changing labels, updating commits, or requesting review must **not** reset the PR age.
 
-1. **Merge before creating.** Search for existing PRs addressing the task before opening another. Prefer completing and merging those PRs over duplicating work.
-2. **Merge eligible PRs promptly.** If the PR is not on hold, has no merge conflicts, and GitHub allows the merge, merge it. Do not stop after the first success; continue through the eligible backlog.
-3. **Tests are advisory in stealth mode.** Pending, skipped, unavailable, or failing noncritical CI checks do not by themselves justify delaying a merge. Record known failures and handle them after integration.
-4. **Respect enforced protections.** Never bypass required reviews, branch protections, repository rulesets, or other GitHub-enforced restrictions. Report them as blockers instead of attempting to evade them.
-5. **Avoid CI-capacity deadlocks.** Exhausted GitHub Actions minutes are not a reason to leave otherwise mergeable PRs idle. If running tests is important, an authorized alternate runner/organization may be used with a token-free mirror of the exact Git tree; verify source blob SHAs, avoid cross-org secrets, and do not delay safe integration solely to obtain a run.
-6. **Resolve conflicts semantically.** Reconcile both sides' intended behavior rather than blindly choosing one branch. Validate conflict resolution sufficiently to detect obvious breakage, then merge.
-7. **Don't over-harden before integration.** Avoid repetitive review, refactoring, and test loops that keep otherwise eligible PRs open. Open follow-up issues or small post-merge PRs for nonblocking improvements.
-8. **Merge in dependency order.** Prioritize shared contracts, language specifications, parsers/compilers, runtime foundations, and prerequisites before dependent repositories or documentation that assumes them.
-9. **Use batch processing.** Work across multiple repositories and target 15–25 successful merges per maintenance run when the eligible backlog and execution budget allow. Spend approximately 80% of PR-management effort integrating existing work and 20% on new PRs.
-10. **Verify outcomes.** After each merge, confirm GitHub reports it as merged. Never describe a queued, attempted, or blocked merge as successful.
+| Elapsed age | Review gate | Merge action |
+| --- | --- | --- |
+| **0 ≤ age < 72 hours** | Verified reviews from **both designated AI families** (OpenAI Codex/ChatGPT AND Anthropic Claude/Opus) **and both designated humans** (`ORESoftware` AND `the1mills`) | Merge immediately once all four reviews and common merge gates pass. Do **not** wait until day 3. |
+| **72 ≤ age < 240 hours** | **One** qualified, independent, positively recorded reviewer is sufficient: either a designated human or a verified AI reviewer/agent. | Merge immediately when one valid review, passing tests, and the common merge gates are satisfied. This is the **7-day accelerated merge window**. |
+| **Age ≥ 240 hours** | **Fresh, post-240-hour reviews from all four designated parties**: both AI families and both humans | Return to strict review; merge immediately after the refreshed reviews and common merge gates pass. |
 
-## Safety and hold exceptions
+At exactly 72 hours the one-review window opens. At exactly 240 hours it closes. Determine eligibility **at merge time**, not when a job began. Previously collected approvals may remain recorded for audit, but approvals predating the 240-hour boundary do **not** satisfy the final strict re-review requirement. Reviews and AI evidence must pertain to the **current PR head commit SHA**; stale or superseded approvals never count.
 
-Do **not** automatically merge:
-- PRs explicitly labeled or described as **HOLD**, **DO NOT MERGE**, or otherwise intentionally deferred.
-- PRs containing exposed secrets or credentials, known critical security vulnerabilities, or credible risks of irreversible data loss.
-- Changes that would knowingly break essential production/infrastructure controls or violate an explicit repository-specific safety requirement.
-- PRs blocked by GitHub-enforced rules or genuinely conflicting with their target branch.
+**Verified independent review:** A reviewer must not be the author; different AI families must each provide their own authenticated review evidence. An AI-generated PR comment, unverifiable label, self-declared reviewer, or untrusted workflow output is not an approval. A human approval must come from the correct authenticated GitHub identity. If a designated human is the PR author, use a separately authorized independent substitution; do not count self-approval or silently waive the review.
 
-Document the precise blocker and route exceptions for focused review. Do not treat every ordinary test failure as a safety exception. This policy does not grant permission to alter protected-branch settings or disable required checks; that requires separate authorization.
+## Common merge gates — every window
 
-## PR maintenance algorithm
+- **No merge conflicts.** Resolve conflicts semantically, with the surrounding implementation and history; recheck the actual mergeability of the current head.
+- **Tests pass.** All applicable, configured required checks and material tests must have an actual **successful** result on the exact current PR head/integration SHA. Failed, pending, skipped, timed-out, cancelled, or never-run tests are **not passes**. A missing CI budget is not passing evidence. Where necessary, use an authorized alternative CI organization with a **token-free exact-tree mirror and per-blob SHA verification**. Never expose source-repository secrets across organizations.
+- **No unresolved blocking review, explicit HOLD, critical credential exposure, known critical security flaw, irreversible data loss, or other high-severity safety risk.**
+- **Respect GitHub rulesets, CODEOWNERS, branch protections, required checks, and permissions.** Never bypass or weaken them to claim a merge. Record mismatches between this time-window policy and native GitHub rules as blockers requiring separately authorized policy-enforcement changes.
+- **Auditability.** Decisions must bind immutable repo/PR identity, `created_at`, exact head SHA, verified reviewer identity/provenance, CI results, and current GitHub mergeability; fail closed if those are unavailable. No self-approval, duplicate AI-family counting, recycled approval across PRs, or replayed exception permits.
 
-1. Inventory open PRs across the organization, including age, mergeability, dependencies, labels, and GitHub-enforced blockers.
-2. Merge immediately eligible PRs, with priority to the oldest ready PRs and foundational dependencies.
-3. Resolve straightforward merge conflicts conceptually, then reassess mergeability.
-4. For uncertain or genuinely blocked PRs, record a concrete next action and move to the next eligible PR instead of stalling the entire batch.
-5. Create new PRs only when an existing one cannot reasonably be extended or the work is genuinely distinct.
-6. Repeat until the available batch budget is used or no eligible PRs remain.
+## Merge-first working instructions
 
-## Report after each run
+1. **Merge before creating.** Search the relevant organizations for open PRs solving the task and prefer completing those over creating duplicates.
+2. **Prioritize ready PRs and day-9 urgency.** Merge immediately once a PR passes its currently applicable gate. In the 72–240-hour fast lane, actively resolve blockers before the 10-day deadline. Do not artificially age a PR to bypass four reviews.
+3. **Use batches.** Target 15–25 confirmed merges per maintenance run as backlog allows; allocate approximately **80% of PR-management effort to integrating existing work** and 20% to newly proposed work.
+4. **Prefer foundational dependencies first** and avoid overly long review/hardening loops. Follow-up defects may go into new issues or PRs, but never misclassify a failing required test as nonblocking.
+5. **Do not stop at one PR.** Continue through all eligible PRs in each batch, and move on from genuinely blocked PRs after recording exact next steps.
+6. **Do not force, rewrite protected history, or bypass hooks/rulesets.** Preserve all repository-specific technical, language, runtime, security, and conformance requirements.
 
-Provide:
-- **Merged:** exact repository names, PR numbers/links, and confirmed merge results.
-- **Conflicts resolved:** PRs and the semantic resolution.
-- **Blocked:** PRs with specific blockers (policy, conflict, security, dependency, etc.).
-- **Backlog:** open PR count before and after, net change, and oldest outstanding PR when available.
-- **Follow-ups:** actionable post-merge defects, CI failures, or hardening tasks.
+## PR scheduling and alerts
 
-**Success is measured by merged PRs and shrinking backlog, not PR creation, test perfection, or length of review.**
+- **At creation:** Request the two named human reviewers and both AI-family reviews in parallel.
+- **At 72 hours:** Re-evaluate; if one verified independent approval and common gates are satisfied, merge now.
+- **At 7 days:** Escalate outstanding tests, conflicts, or missing approval evidence.
+- **At 9 days:** Make eligible PRs top priority, before the fast lane closes.
+- **At 10 days:** Require four **new** post-240-hour approvals. Notify all four immediately, and keep the PR blocked until satisfied.
+- **At every update/merge attempt:** Re-read `created_at`, current head SHA, reviews, CI checks, labels, protections, and mergeability. Recheck the time boundary at the moment of merge.
 
-## Precedence
+## Reporting
 
-Follow higher-priority instructions, explicit user requests, and applicable repository policies. If a repository-specific `AGENTS.md` imposes stronger safety or compatibility requirements, honor those requirements; this organization-level policy is the default where no stricter local rule applies.
+Report exact repositories and PR URLs, confirmed merges and merge SHAs, conflicts resolved, CI/evidence status, the active age window, reviewer coverage, pending code-owner/security blockers, and open-backlog before/after. Never claim a queued attempt, doc-only policy, or standalone evaluator is an enforced rule or a successful merge.
+
+## Policy deployment and precedence
+
+This `AGENTS.md` is the canonical **human/agent instruction** for this organization. Repository `README.md` and root `AGENTS.md` files should link to it. A README link alone **does not** automatically activate agent instructions in all AI tools. Repo-specific instructions remain in effect; any stronger safety requirement is preserved. A live time-dependent merge gate requires a trusted, installed GitHub App/check with verified external AI review provenance and compatible repository rulesets; documentation alone is **not** enforcement.
+
+Follow explicit user instructions, applicable law and GitHub-enforced restrictions; do not lower repository protections unilaterally.
