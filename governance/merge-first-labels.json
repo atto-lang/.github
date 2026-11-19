@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "description": "Canonical label definitions for Merge-First draft recovery. Requires explicit provisioning in each target repository; this file does not create GitHub labels.",
+  "labels": [
+    {
+      "name": "keep-draft",
+      "color": "B60205",
+      "description": "Persistent hold: never auto-promote draft or auto-merge; owner must remove",
+      "behavior": "block_auto_ready_and_auto_merge",
+      "removal": "authorized_human_only"
+    },
+    {
+      "name": "not-ready",
+      "color": "D93F0B",
+      "description": "Not ready: prevent automatic draft promotion and merge until resolved",
+      "behavior": "block_auto_ready_and_auto_merge",
+      "removal": "authorized_actor_after_resolution"
+    },
+    {
+      "name": "overlap-review-needed",
+      "color": "FBCA04",
+      "description": "Review competing or overlapping PR implementations",
+      "behavior": "triage_only"
+    },
+    {
+      "name": "needs-tests",
+      "color": "E4E669",
+      "description": "Draft or ready PR still needs substantive test evidence",
+      "behavior": "triage_only"
+    },
+    {
+      "name": "blocked",
+      "color": "D4C5F9",
+      "description": "PR has a recorded blocker needing attention",
+      "behavior": "triage_only"
+    }
+  ],
+  "source_policy": "AGENTS.md",
+  "note": "Re-fetch labels immediately before mark-ready and merge. Missing labels or label API failures must not be silently treated as clearance. Provisioning and enforcement must run under trusted authorization."
+}
