@@ -26,34 +26,33 @@ git rev-parse 'HEAD^{tree}'
 
 The browser compiler also has guest tests run by Node and Chromium in its CI; **cargo test alone is not its full guest conformance suite**. Run the repository's current exact-head workflow/test commands before claiming Wasm execution.
 
-## Existing Oreslang Java/Graal reference
+## AttoLang Java/GraalVM backend
 
-The [Java pom.xml](https://github.com/ores-truffle-oreslang/oreslang-source.java/blob/main/pom.xml) specifies Maven compiler release **21** and GraalVM dependency version **25.3.4.1** at the inspected revision. Use a compatible JDK, Maven and the distribution required by the relevant build profile:
+The canonical [atto-source.java](https://github.com/atto-lang/atto-source.java) repository contains **target-specific** native/host pilot workflows and source-backed conformance experiments. At the time of this documentation audit, its `main` tree does **not** contain a root `pom.xml`; therefore a generic `mvn test` instruction and the previous Maven compiler-release claims are not valid setup instructions for this repository.
 
 ~~~sh
-git clone git@github.com:ores-truffle-oreslang/oreslang-source.java.git
-cd oreslang-source.java
-java -version
-mvn -version
-mvn -B test
+git clone git@github.com:atto-lang/atto-source.java.git
+cd atto-source.java
 git rev-parse HEAD
+git rev-parse 'HEAD^{tree}'
+# Choose a checked-in .github/workflows profile and inspect its pinned toolchain
 ~~~
 
-Maven unit tests are **not** a GraalVM Native Image execution receipt. Native Image requires the target repository's explicit build profile, installed GraalVM/native-image tooling and a verified execution of the output binary. Do not infer a JDK 25 requirement from the Maven release=21 setting; pin the chosen qualification matrix separately.
+For a concrete GraalVM Native Image pilot inspect [the guard Native Image workflow](https://github.com/atto-lang/atto-source.java/blob/main/.github/workflows/guard-graal-native-image.yml) and `ci/verify-static-actor-native-image.sh`. Its GraalVM 25 configuration and source fixture are **profile-specific**; executing a host helper or Epsilon pilot does not certify general full-language guest parity, zero GC, or tenant isolation.
 
-## Existing Oreslang native LLVM/C++ backend
+## AttoLang LLVM/C++ backend
 
-Its [CMakeLists.txt](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/blob/main/CMakeLists.txt) requires CMake **3.20+** and C++ **17**. The repository has special host-only configurations and target-dependent LLVM/Clang requirements. First follow its current README/workflow for the desired profile; a generic starting point is:
+The canonical [atto-source.llvm](https://github.com/atto-lang/atto-source.llvm) owns its native code-generation and runtime experiments. Its current root CMake configuration is a **temporary carrier-only build subset**, not a full-tree production compiler build; do not advertise `cmake --build` or `ctest` as universal success criteria.
 
 ~~~sh
-git clone git@github.com:ores-truffle-oreslang/oreslang-source.llvm.git
-cd oreslang-source.llvm
-cmake -S . -B build
-cmake --build build --parallel 2
-ctest --test-dir build --output-on-failure
+git clone git@github.com:atto-lang/atto-source.llvm.git
+cd atto-source.llvm
+git rev-parse HEAD
+git rev-parse 'HEAD^{tree}'
+# Inspect .github/workflows and the exact LLVM18/Clang18 source-backed profile
 ~~~
 
-A successful host-only CTest profile does **not** show actual .atto/.ores source lowered and executed natively. Record the executable, inputs, and native exit/output evidence separately.
+For restricted native guest and rejection tests, inspect [guard native E2E](https://github.com/atto-lang/atto-source.llvm/blob/main/.github/workflows/guard-native-e2e.yml). It explicitly requires source/blob provenance and a real compiler-produced guest, and contains migration-era tooling that needs separate remediation. Host-only CMake/CTest or parser checks do **not** prove AttoLang execution; report exact toolchain, artifact digest, guest exit/output, negative diagnostics and nonzero steps.
 
 ## Zed-Pkg CLI integration
 
@@ -70,6 +69,6 @@ Package consumer verification should separately check manifest validation, lockf
 
 ## Other backends and troubleshooting
 
-Other atto-source.* / oreslang-source.* targets may use different build systems and incomplete subsets. Before publishing a command, verify the exact repository, target and executable path. If CI does not start or its steps are empty, report **NOT_EXECUTED** with the failure reason; do not report a pass.
+Other `atto-source.*` targets may use different build systems and incomplete guest subsets. Before publishing a command, verify the exact repository, target and executable path. If CI does not start or its steps are empty, report **NOT_EXECUTED** with the failure reason; do not report a pass.
 
 For reproducibility archive the source and Git-tree SHAs, toolchains, command line, target platform, test counts, output artifact digest, failure status and log URL. See [TESTING.md](TESTING.md).
