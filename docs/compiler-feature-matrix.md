@@ -1,7 +1,7 @@
 # AttoLang compiler × feature capability matrix
 
 > **Status:** Architecture targets and ownership mapping — **NOT** a claim of implemented or certified parity.  
-> **Updated:** 2026-11-19  
+> **Updated:** 2026-11-19 (PR- and conversation-audited architecture target; sampled evidence, not exact-head certification)  
 > **Scope:** 11 `atto-source.*` backends, actor runtime, tenant isolation, permissions, compilation, and real-time capabilities.  
 > **Normative sources:** [atto-spec](https://github.com/atto-lang/atto-spec), [atto-target-profiles](https://github.com/atto-lang/atto-target-profiles), [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance).  
 > **Related policy:** [Architecture orientation](../ARCHITECTURE.md); [AOT / zero-GC proposal](https://github.com/atto-lang/.github/pull/1).
@@ -19,23 +19,43 @@
 
 **Critical naming distinction:** `atto-source.rs` implements a Rust-authored compiler that emits Wasm and can itself be built for wasm32; `atto-source.wasm` owns a separate Wasm integration, binary-admission and worker execution path. Do **not** count them as two independently proven, general-purpose source compilers.
 
+## 0. Audited current implementation evidence (November 19, 2026)
+
+**This section is deliberately separate from the target grids below.** It is a targeted PR and source audit, not a universal exact-head test certification. A PR being merged means its code entered its canonical repository; it does **not** establish complete feature support. Private CI receipts described by PRs are not independently re-certified by this document. Treat unverified capabilities as **NOT_EXECUTED** or **UNSUPPORTED** until independently tested.
+
+| Backend | Implemented / evidenced narrow slice | Not established | Representative sources |
+| --- | --- | --- | --- |
+| **`atto-source.llvm`** | Bounded native Atto AOT, FFI and compact Offset32/Ref32 actor storage; separate process-worker prototype | Not general in-process hostile actor crash containment; pthread SIGSEGV may terminate process; hard RT unproved | [1](https://github.com/atto-lang/atto-source.llvm/pull/21), [2](https://github.com/atto-lang/atto-source.llvm/pull/12), [3](https://github.com/atto-lang/atto-source.llvm/pull/47) |
+| **`atto-source.wasm`** | Binary validation, typed ABI checking, Node Worker protocols, host ActorRef/ActorGroup registry | Host/runtime evidence is not a second independent full source compiler or portable guest ActorGroup implementation | [1](https://github.com/atto-lang/atto-source.wasm/pull/8), [2](https://github.com/atto-lang/atto-source.wasm/pull/21), [3](https://github.com/atto-lang/atto-source.wasm/pull/35) |
+| **`atto-source.rs`** | Rust-authored source-to-Wasm compiler, executed bounded browser guests and actor-owned JSPI suspending receive subset | Not full language parity, general native scheduler or independently bounded actor stacks; release/receipt gates remain | [1](https://github.com/atto-lang/atto-source.rs/pull/52), [2](https://github.com/atto-lang/atto-source.rs/pull/384), [3](https://github.com/atto-lang/atto-source.rs/pull/23) |
+| **`atto-source.java`** | Restricted JVM and Graal Native Image guest compilation, arena Ref32 and checked structural/async subsets | No proved arbitrary untrusted guest isolation, full portability, host zero-GC or certified RT | [1](https://github.com/atto-lang/atto-source.java/pull/29), [2](https://github.com/atto-lang/atto-source.java/pull/30), [3](https://github.com/atto-lang/atto-source.java/pull/38) |
+| **`atto-source.net`** | Direct native Atto-to-CIL signed-i64 compiler and real CoreCLR/NativeAOT exit-42 guest; exact-head private carrier receipt | Wasmtime-backed hostile guest path remains experimental and deny-by-default, especially under Windows CET; no actor frontend | [1](https://github.com/atto-lang/atto-source.net/pull/9), [2](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/563) |
+| **`atto-source.js`** | Constrained checked source-to-JS/ESM scalar, actor and structural compiler slices; Worker host primitives | No secure hostile JavaScript TenantVM, general borrowing/compiler parity, or production hot loading | [1](https://github.com/atto-lang/atto-source.js/pull/29), [2](https://github.com/atto-lang/atto-source.js/pull/6) |
+| **`atto-source.forge`** | Native bounded scalar compiler via deterministic C++ emission and checked-i64 native guest tests | No general native actor compiler, custom TenantVM or working general JIT despite architecture targets | [1](https://github.com/atto-lang/atto-source.forge/pull/15), [2](https://github.com/atto-lang/atto-source.forge/pull/25) |
+| **`atto-source.cranelift`** | Stage-0 trusted signed-i64 native JIT and executable scalar fixtures; fail-closed admission guards | No general AOT, zero-GC actor runtime, actor compilation or verified native sandbox | [1](https://github.com/atto-lang/atto-source.cranelift/pull/13), [2](https://github.com/atto-lang/atto-source.cranelift/pull/32) |
+| **`atto-source.atto`** | Draft Stage-0 Atto-authored scalar seed compiled/executed with a pinned external LLVM compiler | NOT SELF-HOSTED; no Stage 1/2/3 compiler rebuild or independent full language compilation | [1](https://github.com/atto-lang/atto-source.atto/pull/1) |
+| **`atto-source.hdl`** | Experimental target definition and repository setup for HDL/synthesizable subset | No operational HDL compiler, FPGA/ASIC timing signoff or verified hardware hard real-time | [1](https://github.com/atto-lang/atto-source.hdl) |
+| **`atto-source.realtime`** | Planned target-profile/WCET/scheduling admission analysis repository | BOOTSTRAP ONLY: no operating compiler, target scheduler or hard-real-time proof | [1](https://github.com/atto-lang/atto-source.realtime) |
+
+**Cross-backend security/real-time status:** NO row here claims certified same-process hostile native-actor SIGSEGV containment, broad actor graph/ownership parity, universal hot-loading, or general hard real-time. Bounded native/Wasm guest execution is not equivalent to those guarantees.
+
 ## 1. Compiler and execution capabilities
 
-| Compiler | Native AOT | Wasm | JS output | JIT | AOT/JIT instrumentation | Hot loading | Browser | Node/Bun | JVM |  .NET |
+| Compiler | Native AOT | Wasm output | Wasm admission / host | JS output | JIT | AOT/JIT instrumentation | Hot loading | Browser | Node/Bun | JVM |  .NET |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **`atto-source.llvm`** | P | S | — | S | P | S | H | H | — | — |
-| **`atto-source.wasm`** | — | P | — | H | S | S | P | P | — | — |
-| **`atto-source.rs`** | — | P | — | H | S | S | P | P | — | — |
-| **`atto-source.java`** | P (Graal) | — | — | H | P | S | — | — | P | — |
-| **`atto-source.net`** | P (NativeAOT) | H | — | H | P | S | — | — | — | P |
-| **`atto-source.js`** | — | — | P | H | S | P | P | P | — | — |
-| **`atto-source.forge`** | P | S | — | P | P | P | — | S | — | — |
-| **`atto-source.cranelift`** | S | — | — | P | P | S | — | S | — | — |
-| **`atto-source.atto`** | H | H | H | H | S | S | H | H | H | H |
-| **`atto-source.hdl`** | — | — | — | — | C | — | — | — | — | — |
-| **`atto-source.realtime`** | H | — | — | — | P | — | — | — | S | S |
+| **`atto-source.llvm`** | P | S | — | — | S | P | S | H | H | — | — |
+| **`atto-source.wasm`** | — | C (LLVM bridge) | P | — | H | S | S | P | P | — | — |
+| **`atto-source.rs`** | — | P | H | — | H | S | S | P | P | — | — |
+| **`atto-source.java`** | P (Graal) | — | — | — | H (JVM only) | P | S | — | — | P | — |
+| **`atto-source.net`** | P (NativeAOT) | — | P (Wasmtime goal) | — | H (CoreCLR only) | P | S | — | — | — | P |
+| **`atto-source.js`** | — | — | — | P | H | S | S | P | P | — | — |
+| **`atto-source.forge`** | P | S | H | — | P | P | S | — | S | — | — |
+| **`atto-source.cranelift`** | S | — | — | — | P (scalar JIT) | P | S | — | S | — | — |
+| **`atto-source.atto`** | H | H | H | H | H | S | S | H | H | H | H |
+| **`atto-source.hdl`** | — | — | — | — | — | C | — | — | — | — | — |
+| **`atto-source.realtime`** | H | — | — | — | — | P | — | — | — | S | S |
 
-Native AOT includes Graal Native Image and .NET NativeAOT. Wasm output is separate from native machine-code AOT. Host JIT services are not the same as Atto-controlled JIT compilation. Hot loading must not override sealing, cap fences or proof provenance.
+Wasm *emission* and Wasm *admission/hosting* are distinct responsibilities: `atto-source.rs` is the Rust-written source-to-Wasm compiler; `atto-source.wasm` is an execution/integration host with a constrained LLVM bridge. Node/Bun are intended platform categories; Bun compatibility is not certified here. Graal Native Image and .NET NativeAOT have no production JIT inside the resulting AOT binary; their JVM/CoreCLR developer hosts may JIT. All dynamic instrumentation/hot-loading cells are targets, not evidence of arbitrary executable patching.
 
 ## 2. Security, sandboxing and tenant isolation
 
@@ -45,10 +65,10 @@ Native AOT includes Graal Native Image and .NET NativeAOT. Wasm output is separa
 | **`atto-source.wasm`** | H | — | P | P | H | P | P | H | S |
 | **`atto-source.rs`** | H | — | H | P | H | H | S | H | H |
 | **`atto-source.java`** | H | P | — | P | P | P | P | G | G |
-| **`atto-source.net`** | H | — | P | P | P | P | P | G | G |
-| **`atto-source.js`** | — | — | — | S | H | S | S | — | — |
+| **`atto-source.net`** | H | — | P (not production) | P | P | P | P | G | G |
+| **`atto-source.js`** | — | — | — | S | H | C (trusted JS only) | S | — | — |
 | **`atto-source.forge`** | P | — | S | P | P | P | P | G | G |
-| **`atto-source.cranelift`** | S | — | S | P | S | P | P | G | G |
+| **`atto-source.cranelift`** | H (shared TenantVM) | — | S | P | S | P | P | G | G |
 | **`atto-source.atto`** | H | H | H | P | H | H | H | H | H |
 | **`atto-source.hdl`** | — | — | — | C | — | P | S | C | C |
 | **`atto-source.realtime`** | H | — | — | S | S | S | P | H | H |
@@ -57,23 +77,33 @@ Native AOT includes Graal Native Image and .NET NativeAOT. Wasm output is separa
 
 **Never equate:** worker threads with secure JavaScript sandboxing; separate actor arenas with arbitrary native memory fault containment; Native Image/NativeAOT with zero GC; or host/signal handler recovery with reliable cross-tenant isolation. An unverified native backend must use stronger containment (such as an OS process) for hostile code.
 
+**Required strict untrusted-tenant I/O profile:** no direct guest filesystem, environment, subprocess, FFI, raw descriptors or arbitrary OS syscalls. Permit *only* brokered network I/O through tenant-bound, revocable, generation-checked socket handles with independent `connect`, `bind`, `accept`, `read`, `write` and `close` rights and per-operation quotas. Trusted supervisor/host services may have separately scoped resources. Use the prescribed [flags-2-env](https://github.com/flags-2-env) CLI/env mapping where applicable; the flags are not themselves sandbox enforcement.
+
+**Host boundary:** JVM/Graal isolates are not a blanket hostile native memory sandbox. .NET's [draft Wasmtime Store isolation plan](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/563) requires build-time precompiled authenticated guest artifacts, runtime compiler-free admission, per-Store quotas and platform-specific CET safety; production admission remains DENIED. Workers are scheduling tools, not secure sandboxes for arbitrary JavaScript.
+
+**Crash containment correction:** actor-owned arenas/private stacks alone cannot make native pthread `SIGSEGV` survivable. The merged [LLVM process-worker prototype #12](https://github.com/atto-lang/atto-source.llvm/pull/12) offers OS-process fault containment only, and its [draft #47](https://github.com/atto-lang/atto-source.llvm/pull/47) is explicit about absent native compiled-guest integration. Same-process hostile-code admission requires a *verified* memory/control-flow-safe execution domain and adversarial tests, or must fall back to a protected OS process.
+
 ## 3. Actor memory and runtime
 
 | Compiler | Actor heaps | 32-bit offsets | Zero guest GC | Minimal guest GC | Actor stacks | Deterministic reclamation | Scheduler | Supervisors | ActorRegistry | ActorGroups | Actor graphs |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **`atto-source.llvm`** | P | P | P | — | P | P | P | P | P | P | P |
-| **`atto-source.wasm`** | P | P | P | — | P | P | P | P | P | P | P |
+| **`atto-source.wasm`** | P | P | P | — | S/H (JSPI frames) | P | P | P | P | P | S |
 | **`atto-source.rs`** | H | H | H | — | H | H | H | H | H | H | H |
 | **`atto-source.java`** | P | P | — | P | P | S | P | P | P | P | P |
 | **`atto-source.net`** | P | P | — | P | P | S | P | P | P | P | P |
-| **`atto-source.js`** | S | C | — | H | H | S | P | S | S | S | S |
+| **`atto-source.js`** | S | C (compressed32) | — | H | H (Worker) | S | P | S | S | S | S |
 | **`atto-source.forge`** | P | P | P | — | P | P | P | P | P | P | P |
-| **`atto-source.cranelift`** | S | S | P | — | S | S | S | S | S | S | S |
+| **`atto-source.cranelift`** | S | S | S | — | S | S | S | S | S | S | S |
 | **`atto-source.atto`** | H | H | H | H | H | H | H | H | H | H | H |
-| **`atto-source.hdl`** | C | C | C | — | C | P | C | — | — | C | C |
-| **`atto-source.realtime`** | H | S | P | — | P | P | P | H | H | H | H |
+| **`atto-source.hdl`** | C | C | — | — | C (static) | P | C | — | — | C | C |
+| **`atto-source.realtime`** | H | S | P (profile) | — | P | P | P | H | H | H | H |
 
 "Zero guest GC" means deterministic or explicitly controlled reclamation of **guest actor-owned allocations**, not elimination of all host-runtime GC. Actor stack implementations may be native stacks, guarded stack segments or compiler-managed continuation frames. No host process survival from a guest stack overflow or native segmentation fault is guaranteed until specifically proven.
+
+**Actor-heap/stack caveats:** a four-byte Offset32 reference is not a generational capability: issuer, heap identity and reuse epochs are separate checks (see [LLVM #21](https://github.com/atto-lang/atto-source.llvm/pull/21) and [#42](https://github.com/atto-lang/atto-source.llvm/pull/42)). Zero guest-GC means actor-owned guest allocations avoid tracing collection; it does not mean no host JVM/CLR/V8 GC. JSPI uses host-managed continuations, not independently proven actor-owned guarded native stacks.
+
+**Not yet compiled cross-backend behavior:** ActorRegistry typed envelope and admission receipts ([spec draft #113](https://github.com/atto-lang/atto-spec/pull/113)), capability-scoped graph self-organization/atomic child creation and telemetry sidecars ([spec draft #112](https://github.com/atto-lang/atto-spec/pull/112)), and shared/isolated/TenantVM carrier-pool separation ([spec draft #49](https://github.com/atto-lang/atto-spec/pull/49)). The [Wasm ActorGroups host work #21](https://github.com/atto-lang/atto-source.wasm/pull/21) is not evidence of compiled actor graphs on every backend. Desired tenant-scoped Workers hosting multiple actors should not be conflated with current per-actor Workers in browser tests.
 
 ## 4. Language, real-time and hardware profiles
 
@@ -81,17 +111,17 @@ Native AOT includes Graal Native Image and .NET NativeAOT. Wasm output is separa
 
 | Compiler | Ownership / borrowing | Sealed actor state | Panic / raise / throw | Cooperative preemption | Soft real-time | Hard real-time | Embedded | FPGA / ASIC | Self-hosting | Conformance |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **`atto-source.llvm`** | P | P | P | P | P | P (bounded profiles) | P | — | — | P |
-| **`atto-source.wasm`** | P | P | P | P | C | — | C | — | — | P |
-| **`atto-source.rs`** | P | P | P | S | C | — | — | — | — | P |
-| **`atto-source.java`** | P | P | P | P | P | — | — | — | — | P |
-| **`atto-source.net`** | P | P | P | P | P | — | S | — | — | P |
+| **`atto-source.llvm`** | P | P | P | P | P | P (bounded target) | P | — | — | P |
+| **`atto-source.wasm`** | P | P | P | P | C (best effort) | — | C | — | — | P |
+| **`atto-source.rs`** | P | P | P | S | C (best effort) | — | — | — | — | P |
+| **`atto-source.java`** | P | P | P | P | P (goal) | — | — | — | — | P |
+| **`atto-source.net`** | P | P | P | P | P (goal) | — | S | — | — | P |
 | **`atto-source.js`** | S | S | S | S | — | — | — | — | — | P |
-| **`atto-source.forge`** | P | P | P | P | P | S (bounded profiles) | S | — | — | P |
+| **`atto-source.forge`** | P | P | P | P | P | S (bounded target) | S | — | — | P |
 | **`atto-source.cranelift`** | P | P | S | P | S | — | — | — | — | P |
 | **`atto-source.atto`** | P | P | P | H | H | H | H | — | P | P |
-| **`atto-source.hdl`** | C | C | C | C | P | P (verified hardware) | P | P | — | P |
-| **`atto-source.realtime`** | P | P | P | P | P | P | P | S | — | P |
+| **`atto-source.hdl`** | C | C | C | C | C | P (qualified hardware) | P | P | — | P |
+| **`atto-source.realtime`** | P | P | P | P | P (profile) | P (profile) | P | S | — | P |
 
 ### Real-time definitions
 
@@ -100,7 +130,7 @@ Native AOT includes Graal Native Image and .NET NativeAOT. Wasm output is separa
 | **Soft real-time** | Bounded *typical* latency and operational SLOs; isolated GC, scheduler and OS jitter may exist. Missed deadlines degrade service rather than violate a hard safety promise. | JVM/Graal and .NET are primary soft-RT environments; native and bounded Wasm can also target it. |
 | **Hard real-time** | Demonstrated upper bounds on execution, memory allocation, scheduler response and I/O latency for an explicitly admitted program/hardware target; fail closed if the proof cannot be established. | LLVM/realtime and qualified synthesizable HDL profiles; Forge only if a particular target demonstrates comparable bounds. |
 
-**Hard real-time is not an automatic LLVM, zero-GC, FPGA or bare-metal property.** It applies only to a specified target, admitted subset, WCET/scheduling evidence, bounded calls/allocations, interrupt and I/O behavior, and defined failure mode. No promise is made for unrestricted programs. Soft real-time is a latency objective rather than a mathematical deadline guarantee.
+**Hard real-time is not an automatic LLVM, zero-GC, FPGA or bare-metal property. No Atto backend currently has a certified hard-real-time profile in this document.** It applies only to a specified target, admitted subset, WCET/scheduling evidence, bounded calls/allocations, interrupt and I/O behavior, and defined failure mode. No promise is made for unrestricted programs. Soft real-time is a latency objective rather than a mathematical deadline guarantee.
 
 ## 5. Primary backend responsibilities
 
@@ -137,7 +167,7 @@ Native AOT includes Graal Native Image and .NET NativeAOT. Wasm output is separa
 | **Self-hosting** | atto bootstrapped by pinned compiler toolchain |
 | **AOT-compatible telemetry instrumentation** | llvm, java, net, forge, realtime primary; others platform specific |
 
-The reverse map expresses architecture responsibility and does not grant independent readiness or deployment authority.
+The reverse map expresses architecture responsibility and does not grant independent readiness or deployment authority. See the audited evidence matrix above before making any feature-support claim.
 
 ## 7. Portable contracts and required verification gates
 
