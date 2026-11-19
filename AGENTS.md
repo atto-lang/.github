@@ -34,6 +34,8 @@ A draft is a work queue, **not a way to bypass governance or wait out the clock*
 
 ### Label contract for draft automation
 
+Canonical label names, descriptions, and intended behavior are recorded in [`governance/merge-first-labels.json`](governance/merge-first-labels.json). This file is a provisionable catalog, **not** evidence that labels have been created in every repository or that automation is deployed.
+
 - **`keep-draft`** — explicit persistent hold. **Never automatically convert a draft to ready** while present. Do not remove this label automatically; require authorized human/owner action.
 - **`not-ready`** — work/readiness blocker. **Never automatically convert a draft to ready** while present. Resolve the stated blocker and remove the label only by an authorized action.
 - Both labels also prevent **automated merging** if someone manually marks the PR ready without removing them.
