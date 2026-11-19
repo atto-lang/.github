@@ -29,19 +29,21 @@ A draft is a work queue, **not a way to bypass governance or wait out the clock*
 1. **Triage each draft:** inspect its head, changed files, open blockers, test evidence, related issues, and current compatibility with the base branch. Identify obsolete or abandoned work and its owner.
 2. **Search for overlaps before more coding:** inspect other open PRs in the repo and related org repositories by changed paths, modules, exported APIs, issue/feature intent and dependency relationships. Compare implementations semantically, not merely by filename. Choose which implementation should remain canonical; incorporate missing behavior/tests into the chosen PR, update dependent/competing PRs, or mark a superseded PR for closure with a reason. Never discard unique improvements silently.
 3. **Make the draft reviewable:** finish outstanding implementation, resolve conflicts, update docs/specs/tests, record runnable test results (or explicit missing test infrastructure), and write a concise overlap/disposition summary linked to competing PRs.
-4. **Promote promptly:** if the PR is coherent and reviewable, known overlapping changes have been reconciled, there is no explicit hold label, and the owner has not identified other blockers, **automatically mark it ready for review** using an authorized GitHub actor. Do not wait until it has aged three days. Full ready-PR CI can run after promotion; it must pass before merge.
-5. **If still blocked:** leave it draft, record exact missing work and a next owner/action; revisit in subsequent backlog runs. Draft age drives **triage priority only**, never fast-lane eligibility.
+4. **Automatically promote at 72 hours in Draft:** if the draft has spent **at least 72 consecutive hours in its CURRENT draft cycle**, its required/material tests have genuinely **passed on the exact current head SHA**, labels are freshly verified and **neither `keep-as-draft` nor `not-ready` nor legacy `keep-draft`** is applied, and no hard safety or GitHub restriction prevents a ready transition, an authorized agent **MUST mark the PR Ready for review automatically**. Do not require a human review or wait for the new Ready cycle to age. Continue overlap/competing-PR consolidation: update the draft or a competing PR before promotion where genuinely necessary, but never use low-priority perfectionism to indefinitely postpone an otherwise qualified draft.
+5. **Draft clock definition:** if a PR is opened as Draft, the first draft cycle begins at `pull_request.created_at`. If a Ready PR is legitimately converted back to Draft, the **new** draft cycle begins at that latest authenticated `converted_to_draft` event. Draft age is measured from this start, NOT original PR creation after re-drafting; a new push or test rerun does not restart it. At the first scheduled evaluation at/after **72h**, check passing exact-head tests and labels and promote. If tests fail, remain Draft, repair/test and retry promptly when green (including after 72h); if a hold label exists, remain Draft regardless of test results.
+6. **If still blocked:** leave Draft, record exact missing tests/holds/overlap and a next owner/action; revisit every backlog run. Draft time **never** counts toward the Ready 3–10-day merge window. On successful promotion, start a **fresh 0h Ready review clock**; require four reviews until Ready age reaches 72h.
 
 ### Label contract for draft automation
 
 Canonical label names, descriptions, and intended behavior are recorded in [`governance/merge-first-labels.json`](governance/merge-first-labels.json). This file is a provisionable catalog, **not** evidence that labels have been created in every repository or that automation is deployed.
 
-- **`keep-draft`** — explicit persistent hold. **Never automatically convert a draft to ready** while present. Do not remove this label automatically; require authorized human/owner action.
+- **`keep-as-draft`** — **canonical persistent human hold**. NEVER automatically convert a Draft to Ready while present, even after 72 hours and successful tests; only an authorized owner/human removes this label.
+- **`keep-draft`** — backwards-compatible alias treated exactly like `keep-as-draft`; do not automatically remove existing labels.
 - **`not-ready`** — work/readiness blocker. **Never automatically convert a draft to ready** while present. Resolve the stated blocker and remove the label only by an authorized action.
-- Both labels also prevent **automated merging** if someone manually marks the PR ready without removing them.
+- **All three labels (`keep-as-draft`, `not-ready`, and `keep-draft`) also prohibit automated merging**, even after a manual transition to Ready.
 - `overlap-review-needed`, `needs-tests`, or `blocked` are useful optional triage labels, but are advisory unless configured by an enforcing workflow. Labels are case-normalized when checked; do not infer approval from the absence of labels.
 
-Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-draft` or `not-ready`. Manual transition with a hold label must not be interpreted as permission to merge.
+Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-as-draft`, `keep-draft`, or `not-ready`. Manual transition with a hold label must not be interpreted as permission to merge.
 
 ## Mandatory competing/overlapping PR audit — especially fast lane
 
@@ -57,7 +59,7 @@ Apply the same overlap integration habit **when recovering drafts and during ini
 
 ## Common merge gates — all windows
 
-- PR is currently **ready**, not draft; current ready-cycle history verified; no `keep-draft`, `not-ready`, explicit hold or critical risk.
+- PR is currently **ready**, not draft; current ready-cycle history verified; no `keep-as-draft`, `keep-draft`, `not-ready`, explicit hold or critical risk.
 - GitHub confirms **no merge conflicts**, no outstanding blocking change requests, no critical credential exposure, known critical security flaw, or irreversible data loss.
 - All applicable required CI/material tests actually **pass** on the current head/integration SHA. Failed, pending, skipped, cancelled, timed out, absent or unrun checks do **not** count as passing. If Actions minutes are exhausted, use an authorized **token-free Git-tree mirror** to an alternate CI org, with per-blob SHA verification; never leak source secrets.
 - Comply with actual GitHub branch rules, CODEOWNERS, checks, and existing stronger protections. Do not unilaterally remove rules to facilitate a merge.
@@ -71,12 +73,12 @@ Apply the same overlap integration habit **when recovering drafts and during ini
 4. **Ready + 7d:** escalate tests, semantic conflicts, competing PR decisions and missing review evidence.
 5. **Ready + 9d:** prioritize executable integrations before the ten-day cutoff.
 6. **Ready + 10d:** demand fresh four-party reviews; never reuse earlier approvals, and merge immediately once renewed gate passes.
-7. **Draft backlog:** revisit each active draft, resolve overlap, finish missing work and auto-promote only if not held by `keep-draft` or `not-ready`.
+7. **Draft backlog:** at/after **72h of the current Draft cycle**, automatically mark Ready when current-head material tests pass, authenticated labels have none of `keep-as-draft`, `not-ready` or legacy `keep-draft`, and no hard restrictions apply. If tests are not green, repair and rerun; promote promptly when green. Never confuse Draft age with Ready review age.
 8. Before any action, refresh lifecycle, head SHA, draft status, labels, related PR landscape, reviews, checks, protections and mergeability. Use expected-head-SHA on merge. Never treat policy docs, stale checks or an isolated unit test as live enforcement.
 
 ## Deployment, reporting, and precedence
 
-This `AGENTS.md` is the organization's canonical instruction for AI agents; it is **not itself an enforced GitHub rule**. Repository README pointers remain useful but are not a substitute for independently loading the policy. A trusted installed GitHub App/check, accurate lifecycle timeline, indexed open PRs, authorized draft-promotion service, and compatible rulesets are needed for automatic enforcement. The existing Rust evaluator at `gha-indie-worker/.github#52` is standalone unless separately deployed.
+This `AGENTS.md` is the organization's canonical instruction for AI agents; it is **not itself an enforced GitHub rule**. Repository README pointers remain useful but are not a substitute for independently loading the policy. A trusted installed GitHub App/check, accurate Draft/Ready lifecycle timeline, indexed open PRs, authorized 72-hour draft-promotion service, and compatible rulesets are needed for automatic enforcement. The existing Rust evaluator at `gha-indie-worker/.github#52` is standalone unless separately deployed.
 
 Report merged PR URLs/SHAs, readiness-cycle age, draft-to-ready promotions, holds, overlap candidates and dispositions, test evidence, and unresolved blockers. Prefer accurate partial progress over unverified assertions. Preserve repo-specific stronger safety and technical requirements.
 
