@@ -42,7 +42,7 @@
 ## 1. Compiler and execution capabilities
 
 | Compiler | Native AOT | Wasm output | Wasm admission / host | JS output | JIT | AOT/JIT instrumentation | Hot loading | Browser | Node/Bun | JVM |  .NET |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **`atto-source.llvm`** | P | S | — | — | S | P | S | H | H | — | — |
 | **`atto-source.wasm`** | — | C (LLVM bridge) | P | — | H | S | S | P | P | — | — |
 | **`atto-source.rs`** | — | P | H | — | H | S | S | P | P | — | — |
@@ -136,35 +136,35 @@ Wasm *emission* and Wasm *admission/hosting* are distinct responsibilities: `att
 
 | Backend | Main responsibility | Runtime / isolation approach | Memory model |
 | --- | --- | --- | --- |
-| [`atto-source.llvm`](https://github.com/atto-lang/atto-source.llvm) | Main high-performance native compiler | Custom validated TenantVM, runtime-owned capabilities | Zero-GC actor arenas, checked 32-bit offsets and bounded private stacks |
+| [`atto-source.llvm`](https://github.com/atto-lang/atto-source.llvm) | Main high-performance native compiler | Custom TenantVM target (not yet hostile-native-sandbox certified); runtime-owned capabilities | Zero-GC actor arenas, checked 32-bit offsets and bounded private stacks |
 | [`atto-source.wasm`](https://github.com/atto-lang/atto-source.wasm) | Wasm guest backend, binary admission and worker host | Wasm validation/linear-memory isolation; workers for scheduling | Bounded guest linear memory and actor frames |
 | [`atto-source.rs`](https://github.com/atto-lang/atto-source.rs) | Rust-authored compiler producing guest Wasm; browser/Node compiler | Delegates guest isolation to Wasm execution host | Compiler memory managed by Rust/host; emitted guest memory via Wasm |
 | [`atto-source.java`](https://github.com/atto-lang/atto-source.java) | JVM/Graal compiler and Graal Native Image | Graal isolate mechanisms plus controlled host entrypoints | Arena-backed actor heaps with 32-bit offsets; minimize guest-data GC |
-| [`atto-source.net`](https://github.com/atto-lang/atto-source.net) | .NET CIL and NativeAOT, Windows/Linux | Wasm guests for untrusted tenants; managed host capability broker | Arena-backed actor heaps with bounded guest lifetimes; minimize guest-data GC |
-| [`atto-source.js`](https://github.com/atto-lang/atto-source.js) | Atto-to-JavaScript transpilation for trusted runtime environments | Node/browser/Bun host isolation only; no arbitrary hostile guest JS tenancy | Host GC and logical actor memory |
-| [`atto-source.forge`](https://github.com/atto-lang/atto-source.forge) | Independent native JIT and AOT engine | Custom validated TenantVM sharing the native isolation contract | Zero-GC actor heaps and bounded private stacks |
-| [`atto-source.cranelift`](https://github.com/atto-lang/atto-source.cranelift) | Low-latency Rust/Cranelift codegen and scalar JIT | Reuse validated TenantVM; scalar trusted JIT is not an untrusted sandbox | Native actor arenas as target; verifier ahead of codegen |
-| [`atto-source.atto`](https://github.com/atto-lang/atto-source.atto) | Future self-hosted compiler | Bootstrapped through an already-certified backend | Inherits the selected backend's runtime |
-| [`atto-source.hdl`](https://github.com/atto-lang/atto-source.hdl) | Hardware-description/synthesizable subset | Physical target isolation and explicit external I/O constraints | Static, bounded buffers and hardware resources |
+| [`atto-source.net`](https://github.com/atto-lang/atto-source.net) | .NET CIL and NativeAOT, Windows/Linux | Planned Wasmtime guest stores (production admission denied); managed host capability broker | Arena-backed actor heaps with bounded guest lifetimes; minimize guest-data GC |
+| [`atto-source.js`](https://github.com/atto-lang/atto-source.js) | Atto-to-JavaScript transpilation for trusted runtime environments | Workers for trusted host concurrency only; no hostile guest JS security boundary | Host GC and logical actor memory |
+| [`atto-source.forge`](https://github.com/atto-lang/atto-source.forge) | Independent native JIT and AOT engine | Custom TenantVM target; native isolation contract not yet certified | Zero-GC actor heaps and bounded private stacks |
+| [`atto-source.cranelift`](https://github.com/atto-lang/atto-source.cranelift) | Low-latency Rust/Cranelift codegen and scalar JIT | Future shared TenantVM contract; current scalar JIT is trusted, not an untrusted sandbox | Native actor arenas as target; verifier ahead of codegen |
+| [`atto-source.atto`](https://github.com/atto-lang/atto-source.atto) | Future self-hosted compiler | Stage-0 seed compiled by a pinned external LLVM compiler (not self-hosted) | Inherits the selected backend's runtime |
+| [`atto-source.hdl`](https://github.com/atto-lang/atto-source.hdl) | Hardware-description/synthesizable subset | Hardware-target isolation to be defined with explicit external I/O constraints | Static, bounded buffers and hardware resources |
 | [`atto-source.realtime`](https://github.com/atto-lang/atto-source.realtime) | Timing-aware admission/compilation profiles | Host/native target-specific isolation contract | Bounded memory, stack, scheduling and worst-case timing profiles |
 
 ## 6. Reverse map — feature → compiler owners
 
 | Feature | Intended owners / participants |
 | --- | --- |
-| **Native executable AOT** | llvm, java (Graal Native Image), net (NativeAOT), forge; cranelift planned |
+| **Native executable AOT** | llvm, java (Graal Native Image), net (NativeAOT), forge as targets; direct-CIL .net has a narrow executed NativeAOT guest; Cranelift currently has scalar JIT, not full native AOT |
 | **Wasm guest compiler/host** | rs emits guest Wasm; wasm owns Wasm runtime/binary admission; llvm can target Wasm |
-| **Native custom TenantVM** | llvm and forge primary; cranelift reuses same security contract |
+| **Native custom TenantVM** | llvm and forge primary design targets; Cranelift should reuse their security contract, not invent an independent sandbox; none certified for malicious in-process native guest execution |
 | **Graal isolate-backed tenancy** | java |
-| **Wasm-backed .NET tenancy** | net (host) + Wasm sandbox component |
+| **Wasm-backed .NET tenancy** | net (host) + Wasmtime Stores as a planned, denied-production, strict-AOT guest sandbox |
 | **Deno-style permission enforcement** | llvm, wasm, rs, java, net, forge, cranelift, atto; JS constrained and HDL specialized |
 | **Per-socket read/write capabilities** | llvm, forge, java, net primary; wasm/rs delegated to host |
-| **Zero guest GC** | llvm, wasm, forge, cranelift; realtime as a target constraint, HDL statically bounded |
+| **Zero guest GC** | llvm, wasm, forge, Cranelift as intended guest-actor allocation goals, not blanket proven support; realtime imposes bounded critical-path constraints; static HDL hardware buffers are not a GC runtime |
 | **Minimal guest-data GC** | java and net; not a claim about host VM GC |
 | **Actor-local heaps and stacks** | llvm, forge, java, net, wasm; others delegate or provide constrained forms |
-| **Soft real-time** | llvm, java, net, forge, realtime, hdl; wasm/rs/cranelift are constrained profiles |
-| **Hard real-time** | llvm and realtime target profiles, HDL hardware targets; forge only with bounded certified profile |
-| **Self-hosting** | atto bootstrapped by pinned compiler toolchain |
+| **Soft real-time** | llvm, java, net, forge, realtime target profiles; wasm/rs/cranelift best effort under constraints; HDL target-specific, none universally certified |
+| **Hard real-time** | llvm plus realtime restricted target profiles, hardware HDL subsets; Forge conditional on future bounded profile; **no qualified real-time evidence yet** |
+| **Self-hosting** | Atto-authored Stage-0 kernel executed using a pinned external LLVM compiler; Stage 1/2/3 rebuilding NOT_IMPLEMENTED |
 | **AOT-compatible telemetry instrumentation** | llvm, java, net, forge, realtime primary; others platform specific |
 
 The reverse map expresses architecture responsibility and does not grant independent readiness or deployment authority. See the audited evidence matrix above before making any feature-support claim.
@@ -182,7 +182,7 @@ The reverse map expresses architecture responsibility and does not grant indepen
 | **Dynamic instrumentation** | Pre-emitted AOT probes with runtime enable masks; dynamic JIT recompilation optional and capability-gated. |
 | **Permission flags** | Deno-like deny-by-default permissions, including filesystem, environment, network, subprocess, FFI and imports; explicit flags-2-env mapping where applicable. |
 | **Socket capabilities** | Broker handles per tenant with independent read/write/accept/bind/connect rights, quotas, generation fencing and revocation; never expose raw OS descriptors. |
-| **Actor organization** | ActorRegistry, ActorGroups, supervisor CONTROL notices, self-discovered graphs, mailbox lifecycle and telemetry sidecars use common semantics. |
+| **Actor organization** | Proposed ActorRegistry, ActorGroups, supervisor CONTROL, typed job admission, atomic children, dynamic graphs, mailbox lifecycle and telemetry sidecar semantics. Candidate [spec #112](https://github.com/atto-lang/atto-spec/pull/112) and [#113](https://github.com/atto-lang/atto-spec/pull/113) are not portable guest support. |
 | **Safe ownership** | borrow!, take!, share!, copy!, copy!!, pin!, drop! must preserve moves/loans across actor send, suspension, cancellation and error exit. |
 | **Proof receipts** | Exact source/tree and toolchain SHA; compiled positive/negative guest cases, targeted platform, nonzero CI steps and explicit PASSED/FAILED/UNSUPPORTED/NOT_EXECUTED. |
 
