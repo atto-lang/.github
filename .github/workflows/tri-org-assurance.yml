@@ -40,3 +40,5 @@ jobs:
           node --check governance/tri-org-assurance.mjs
           node --check tests/tri-org-assurance.test.mjs
           node --test tests/tri-org-assurance.test.mjs
+          node --check governance/atto-ready-four-party.mjs
+          node --test tests/atto-ready-four-party.test.mjs
