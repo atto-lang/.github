@@ -1,6 +1,6 @@
 # Compiler engineering architecture
 
-**Scope:** engineering orientation for AttoLang, the independently developed Oreslang-named compiler implementations, and integration with Zed-Pkg. This is an architecture map, **not** a declaration that every backend supports every described feature.
+**Scope:** engineering orientation for AttoLang, the independent AttoLang backend implementations, and integration with Zed-Pkg. This is an architecture map, **not** a declaration that every backend supports every described feature.
 
 ## Source of truth and repository boundaries
 
@@ -8,15 +8,15 @@
 - [AttoLang common source](https://github.com/atto-lang/atto-common-source): shared contracts, model types and future common semantic infrastructure where verified. Never assume common code is already linked into every backend.
 - [AttoLang platform conformance](https://github.com/atto-lang/atto-platform-conformance): portable fixtures, negative oracles, provenance and backend-specific execution receipts.
 - Individual **atto-source.\*** repositories: independently own parsing/admission, semantic lowering, generated target code, runtime support and local tests. The Rust browser/Wasm compiler is a constrained executable subset, not an all-language reference.
-- Existing **oreslang-source.\*** implementations: historically named, independent compilers with backend-specific runtime and legacy compatibility. Java/GraalVM and LLVM have distinct implementation paths and verification states; other targets must not inherit claims from either.
+- Backend-specific components and legacy-origin code now live under **atto-source.\*** names. Java/GraalVM and LLVM have distinct implementation paths and verification states; browser Rust-to-Wasm compilation lives in `atto-source.rs` while `atto-source.wasm` handles separate Wasm integration/runtime scope. Do not double-count these as independent compiler implementations.
 - [Zed-Pkg CLI](https://github.com/zed-pkg/zed-cli): external package installation, version/lockfile and provenance surfaces. The compiler must explicitly declare how manifests, import roots and package resolution interact; package-manager behavior is not language semantics.
 
-The public language name is **AttoLang**; Oreslang names, the .ores extension, compiler binaries, package coordinates, ABIs and protocols remain compatibility surfaces until a versioned migration with tests. New portable language source should prefer .atto **where that backend actually admits it**.
+**AttoLang is canonical.** New portable language source uses `.atto`, and authoritative syntax and ownership rules live in [atto-spec](https://github.com/atto-lang/atto-spec). Any old ABI or internally named executable remains an explicitly versioned implementation migration, not a second public language identity or proof of compatibility. Backends must reject features they do not admit.
 
 ## Target compilation pipeline and ownership
 
 ~~~text
-.atto / compatible .ores source + package/import manifest
+.atto source + checked package/import manifest
     -> lexer/parser and AST with source spans
     -> name/module/type/visibility resolution and diagnostics
     -> typed HIR (effects, capabilities, ownership and actor identity)

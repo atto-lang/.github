@@ -4,7 +4,7 @@
 
 Open an RFC before changing normative syntax, type rules, ownership/borrowing, actor semantics, errors/effects, module/const initialization, import/package resolution, ABI/wire formats, security capabilities or backwards compatibility across backends. Ordinary internal refactors that preserve observable semantics can proceed with an implementation issue and tests.
 
-The [AttoLang specification](https://github.com/atto-lang/atto-spec) owns normative AttoLang language decisions. Oreslang-named compatibility contracts must be coordinated with their own source/spec owners. **This organization .github repository does not ratify language semantics.**
+The [AttoLang specification](https://github.com/atto-lang/atto-spec) owns normative AttoLang language decisions. Backend-specific compatibility or migration requirements must be coordinated with the current `atto-source.*` owners and versioned in [atto-spec](https://github.com/atto-lang/atto-spec). **This organization .github repository does not ratify language semantics.**
 
 ## RFC lifecycle
 
@@ -41,6 +41,6 @@ Decision, date, references and unresolved concerns:
 - Ownership operations, actor sealed-state contracts, lifetime syntax, checked effects and total environment reads must be assessed together for evaluation order and safety.
 - A feature can be accepted in the language spec while remaining UNIMPLEMENTED or UNSUPPORTED in individual compilers.
 - If implementations diverge, log a spec/conformance issue and fail closed rather than choosing behavior by whichever backend is easiest to modify.
-- Breaking changes require versioning, migration examples, and compatibility tests for historical .ores/CLI/ABI surfaces.
+- Breaking changes require versioning, migration examples, and explicit tests for retired implementation interfaces, migrated CLI names, and changed ABIs.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md), [TESTING.md](TESTING.md) and [CONTRIBUTING.md](CONTRIBUTING.md).

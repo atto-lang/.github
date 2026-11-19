@@ -1,6 +1,6 @@
 # Compiler engineer onboarding
 
-This is the baseline checklist for engineers joining AttoLang compiler/runtime work, Oreslang-named backend compatibility, or Zed-Pkg compiler integrations. A designated technical lead adapts the tasks to each actual repository and target.
+This is the baseline checklist for engineers joining AttoLang compiler/runtime work, backend-specific migration, or Zed-Pkg compiler integrations. A designated technical lead adapts the tasks to each actual repository and target.
 
 ## Before access is granted (manager / repo owner)
 
