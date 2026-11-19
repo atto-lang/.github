@@ -24,6 +24,7 @@ For new compiler, runtime and tooling engineers, start with [ONBOARDING.md](ONBO
 | Guide | Focus |
 | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Compiler phases, actors, IR and backend boundaries |
+| [BORROW_CHECKER.md](BORROW_CHECKER.md) | Ownership, implicit borrowing, take/share/shallow/deep copy, pointer safety, and comparisons with Go, Erlang, Rust, Java and C++ |
 | [BUILDING.md](BUILDING.md) | Verified repository toolchain references and build examples |
 | [TESTING.md](TESTING.md) | Host vs guest proof, conformance, AOT, CI and sanitizers |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Rust-first tooling, PR process and independent reviews |
