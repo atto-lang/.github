@@ -1,55 +1,79 @@
-# AGENTS.md — Time-Windowed Merge-First Review Policy
+# AGENTS.md — Readiness-Cycled Merge-First Review & Draft Recovery Policy
 
-> **Scope:** All repositories in this GitHub organization, including legacy repositories.
-> **Mode:** Stealth development with rapid, auditable integration.
-> **Primary objective:** Merge eligible PRs promptly, keep the backlog small, and preserve mandatory tests and time-bounded independent review.
+> **Scope:** All repositories in this GitHub organization, including existing and legacy repositories.
+> **Mode:** Stealth development, merge-first integration with auditable checks.
+> **Priority:** Finish and integrate existing, ready PRs rather than create redundant PRs. Do not weaken required tests, security controls, CODEOWNERS, or branch protection.
 
-## Mandatory PR review windows
+## Authoritative review clock: READY, not PR creation
 
-All durations are measured from the immutable GitHub `pull_request.created_at` timestamp, in UTC. Reopening, rebasing, changing labels, updating commits, or requesting review must **not** reset the PR age.
+The **current ready-for-review cycle starts at the most recent authoritative transition to Ready for review**. For a PR opened directly as ready, it starts at `pull_request.created_at`. A draft's time in draft **never accrues review age**.
 
-| Elapsed age | Review gate | Merge action |
+If a ready PR is converted **back to draft**, its ready cycle ends immediately; no merger is permitted. On the next **draft → ready** transition, the 72-hour/240-hour clock **restarts at zero**, whether that happens after an hour or many days. Previous-cycle approvals do **not** satisfy the new cycle. Commit pushes, rebases, labels, reviewer requests, and reopenings do not restart an active ready cycle.
+
+Source the timeline from authenticated GitHub PR lifecycle events (`ready_for_review`, `converted_to_draft`, and initial draft state), not editable PR-body timestamps or labels. Reconcile GitHub's timeline and current draft flag; if event history, timestamp, or state is ambiguous or missing, **fail closed**, not `created_at`-fallback for formerly drafted PRs. Record UTC ready-cycle start and event IDs in the audit. **Do not toggle draft/ready just to reset age or avoid renewed review**: a draft conversion must represent actual incomplete work, documented blockers, or material rework.
+
+| Time since start of **current ready cycle** | Required independent reviews | Action |
 | --- | --- | --- |
-| **0 ≤ age < 72 hours** | Verified reviews from **both designated AI families** (OpenAI Codex/ChatGPT AND Anthropic Claude/Opus) **and both designated humans** (`ORESoftware` AND `the1mills`) | Merge immediately once all four reviews and common merge gates pass. Do **not** wait until day 3. |
-| **72 ≤ age < 240 hours** | **One** qualified, independent, positively recorded reviewer is sufficient: either a designated human or a verified AI reviewer/agent. | Merge immediately when one valid review, passing tests, and the common merge gates are satisfied. This is the **7-day accelerated merge window**. |
-| **Age ≥ 240 hours** | **Fresh, post-240-hour reviews from all four designated parties**: both AI families and both humans | Return to strict review; merge immediately after the refreshed reviews and common merge gates pass. |
+| `0 ≤ ready_age < 72h` | OpenAI Codex/ChatGPT + Anthropic Claude/Opus + authenticated `ORESoftware` + authenticated `the1mills` | Merge immediately as soon as all four and the common gates pass; never wait for day 3. |
+| `72h ≤ ready_age < 240h` | **One** independently authenticated, qualified human or verified AI/agent approval | **Fast lane:** perform the competing/overlapping-PR integration audit described below; update the current PR or a competing PR where needed; then merge immediately once all gates pass. |
+| `ready_age ≥ 240h` | **Fresh, post-boundary approvals from all four** named parties | Re-review on the current SHA and merge as soon as all gates pass. |
 
-At exactly 72 hours the one-review window opens. At exactly 240 hours it closes. Determine eligibility **at merge time**, not when a job began. Previously collected approvals may remain recorded for audit, but approvals predating the 240-hour boundary do **not** satisfy the final strict re-review requirement. Reviews and AI evidence must pertain to the **current PR head commit SHA**; stale or superseded approvals never count.
+At **exactly** 72 hours the fast lane opens. At **exactly** 240 hours it closes. Recalculate immediately before merging and at every relevant transition.
 
-**Verified independent review:** A reviewer must not be the author; different AI families must each provide their own authenticated review evidence. An AI-generated PR comment, unverifiable label, self-declared reviewer, or untrusted workflow output is not an approval. A human approval must come from the correct authenticated GitHub identity. If a designated human is the PR author, use a separately authorized independent substitution; do not count self-approval or silently waive the review.
+All counted reviews must cover the current head SHA, must be submitted in the **current ready cycle**, and must be newer than the applicable 240-hour re-review boundary. Human identities must be verified by immutable GitHub account ID; AI evidence needs independently authenticated provider provenance and separate family identities. No author self-approval, unverified AI comment, repeated reviewer, revoked review, dismissed review, or stale SHA may count. If a designated human authored a PR, require explicit independent authorized substitute approval rather than silently waive the requirement.
 
-## Common merge gates — every window
+## Draft lifecycle: recover, integrate, then make ready
 
-- **No merge conflicts.** Resolve conflicts semantically, with the surrounding implementation and history; recheck the actual mergeability of the current head.
-- **Tests pass.** All applicable, configured required checks and material tests must have an actual **successful** result on the exact current PR head/integration SHA. Failed, pending, skipped, timed-out, cancelled, or never-run tests are **not passes**. A missing CI budget is not passing evidence. Where necessary, use an authorized alternative CI organization with a **token-free exact-tree mirror and per-blob SHA verification**. Never expose source-repository secrets across organizations.
-- **No unresolved blocking review, explicit HOLD, critical credential exposure, known critical security flaw, irreversible data loss, or other high-severity safety risk.**
-- **Respect GitHub rulesets, CODEOWNERS, branch protections, required checks, and permissions.** Never bypass or weaken them to claim a merge. Record mismatches between this time-window policy and native GitHub rules as blockers requiring separately authorized policy-enforcement changes.
-- **Auditability.** Decisions must bind immutable repo/PR identity, `created_at`, exact head SHA, verified reviewer identity/provenance, CI results, and current GitHub mergeability; fail closed if those are unavailable. No self-approval, duplicate AI-family counting, recycled approval across PRs, or replayed exception permits.
+A draft is a work queue, **not a way to bypass governance or wait out the clock**. An agent working the backlog must actively review draft PRs as well as ready PRs:
 
-## Merge-first working instructions
+1. **Triage each draft:** inspect its head, changed files, open blockers, test evidence, related issues, and current compatibility with the base branch. Identify obsolete or abandoned work and its owner.
+2. **Search for overlaps before more coding:** inspect other open PRs in the repo and related org repositories by changed paths, modules, exported APIs, issue/feature intent and dependency relationships. Compare implementations semantically, not merely by filename. Choose which implementation should remain canonical; incorporate missing behavior/tests into the chosen PR, update dependent/competing PRs, or mark a superseded PR for closure with a reason. Never discard unique improvements silently.
+3. **Make the draft reviewable:** finish outstanding implementation, resolve conflicts, update docs/specs/tests, record runnable test results (or explicit missing test infrastructure), and write a concise overlap/disposition summary linked to competing PRs.
+4. **Promote promptly:** if the PR is coherent and reviewable, known overlapping changes have been reconciled, there is no explicit hold label, and the owner has not identified other blockers, **automatically mark it ready for review** using an authorized GitHub actor. Do not wait until it has aged three days. Full ready-PR CI can run after promotion; it must pass before merge.
+5. **If still blocked:** leave it draft, record exact missing work and a next owner/action; revisit in subsequent backlog runs. Draft age drives **triage priority only**, never fast-lane eligibility.
 
-1. **Merge before creating.** Search the relevant organizations for open PRs solving the task and prefer completing those over creating duplicates.
-2. **Prioritize ready PRs and day-9 urgency.** Merge immediately once a PR passes its currently applicable gate. In the 72–240-hour fast lane, actively resolve blockers before the 10-day deadline. Do not artificially age a PR to bypass four reviews.
-3. **Use batches.** Target 15–25 confirmed merges per maintenance run as backlog allows; allocate approximately **80% of PR-management effort to integrating existing work** and 20% to newly proposed work.
-4. **Prefer foundational dependencies first** and avoid overly long review/hardening loops. Follow-up defects may go into new issues or PRs, but never misclassify a failing required test as nonblocking.
-5. **Do not stop at one PR.** Continue through all eligible PRs in each batch, and move on from genuinely blocked PRs after recording exact next steps.
-6. **Do not force, rewrite protected history, or bypass hooks/rulesets.** Preserve all repository-specific technical, language, runtime, security, and conformance requirements.
+### Label contract for draft automation
 
-## PR scheduling and alerts
+- **`keep-draft`** — explicit persistent hold. **Never automatically convert a draft to ready** while present. Do not remove this label automatically; require authorized human/owner action.
+- **`not-ready`** — work/readiness blocker. **Never automatically convert a draft to ready** while present. Resolve the stated blocker and remove the label only by an authorized action.
+- Both labels also prevent **automated merging** if someone manually marks the PR ready without removing them.
+- `overlap-review-needed`, `needs-tests`, or `blocked` are useful optional triage labels, but are advisory unless configured by an enforcing workflow. Labels are case-normalized when checked; do not infer approval from the absence of labels.
 
-- **At creation:** Request the two named human reviewers and both AI-family reviews in parallel.
-- **At 72 hours:** Re-evaluate; if one verified independent approval and common gates are satisfied, merge now.
-- **At 7 days:** Escalate outstanding tests, conflicts, or missing approval evidence.
-- **At 9 days:** Make eligible PRs top priority, before the fast lane closes.
-- **At 10 days:** Require four **new** post-240-hour approvals. Notify all four immediately, and keep the PR blocked until satisfied.
-- **At every update/merge attempt:** Re-read `created_at`, current head SHA, reviews, CI checks, labels, protections, and mergeability. Recheck the time boundary at the moment of merge.
+Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-draft` or `not-ready`. Manual transition with a hold label must not be interpreted as permission to merge.
 
-## Reporting
+## Mandatory competing/overlapping PR audit — especially fast lane
 
-Report exact repositories and PR URLs, confirmed merges and merge SHAs, conflicts resolved, CI/evidence status, the active age window, reviewer coverage, pending code-owner/security blockers, and open-backlog before/after. Never claim a queued attempt, doc-only policy, or standalone evaluator is an enforced rule or a successful merge.
+**Before authorizing any merge in the 72h–240h fast lane**, the reviewing+merging agent MUST:
 
-## Policy deployment and precedence
+1. Search **all currently open ready and draft PRs** that compete with or depend on the target, including other relevant repos, matching changed files, symbols, feature goals, linked issues, APIs, tests, and branch history.
+2. Read the relevant diffs and determine whether they duplicate, conflict conceptually, introduce incompatible designs, or contain complementary functionality. A clean Git merge is **not** evidence of semantic independence.
+3. **Update the current PR or the competing PR(s) before merging** where overlap exists. Prefer one canonical solution with all needed tests/specs. Rebase/retest impacted code and handle dependencies in the correct order. Record a concrete disposition for each candidate (`incorporated`, `updated`, `superseded`, or `independent with rationale`); leave **no unresolved competing PR**.
+4. Re-run required CI on the resulting exact SHA and collect a fresh independent review if SHA changes. Re-run overlap discovery if the head or relevant open-PR landscape changes.
+5. Record scan time, current SHA, scope of repo/org searches, competing PR URLs and dispositions in the PR or authenticated policy-check evidence. If a relevant diff or overlap search is unavailable, block the **automated fast-lane merge** pending inspection; never assert `no overlaps` without evidence.
 
-This `AGENTS.md` is the canonical **human/agent instruction** for this organization. Repository `README.md` and root `AGENTS.md` files should link to it. A README link alone **does not** automatically activate agent instructions in all AI tools. Repo-specific instructions remain in effect; any stronger safety requirement is preserved. A live time-dependent merge gate requires a trusted, installed GitHub App/check with verified external AI review provenance and compatible repository rulesets; documentation alone is **not** enforcement.
+Apply the same overlap integration habit **when recovering drafts and during initial/re-renewed reviews**; the explicitly mandatory *pre-merge audit gate* is the fast lane.
 
-Follow explicit user instructions, applicable law and GitHub-enforced restrictions; do not lower repository protections unilaterally.
+## Common merge gates — all windows
+
+- PR is currently **ready**, not draft; current ready-cycle history verified; no `keep-draft`, `not-ready`, explicit hold or critical risk.
+- GitHub confirms **no merge conflicts**, no outstanding blocking change requests, no critical credential exposure, known critical security flaw, or irreversible data loss.
+- All applicable required CI/material tests actually **pass** on the current head/integration SHA. Failed, pending, skipped, cancelled, timed out, absent or unrun checks do **not** count as passing. If Actions minutes are exhausted, use an authorized **token-free Git-tree mirror** to an alternate CI org, with per-blob SHA verification; never leak source secrets.
+- Comply with actual GitHub branch rules, CODEOWNERS, checks, and existing stronger protections. Do not unilaterally remove rules to facilitate a merge.
+- Authenticate reviewer evidence, lifecycle events, overlap audit evidence and check provenance via an external trusted integration. Status checks and labels cannot be satisfied using attacker-controlled PR text or untrusted workflows.
+
+## Merge-first operating cadence
+
+1. Allocate about **80%** of PR-management effort to finishing existing PRs; prefer completing, merging, or properly consolidating existing work before opening more.
+2. **Every pass:** assess drafts for promotion and ready PRs for immediate merge; search and reconcile duplicate work. Prefer foundational dependencies and unblock downstream PRs.
+3. **Ready + 72h:** examine all fast-lane-eligible PRs and merge qualifying, green, conflict-free work **after overlap audit**.
+4. **Ready + 7d:** escalate tests, semantic conflicts, competing PR decisions and missing review evidence.
+5. **Ready + 9d:** prioritize executable integrations before the ten-day cutoff.
+6. **Ready + 10d:** demand fresh four-party reviews; never reuse earlier approvals, and merge immediately once renewed gate passes.
+7. **Draft backlog:** revisit each active draft, resolve overlap, finish missing work and auto-promote only if not held by `keep-draft` or `not-ready`.
+8. Before any action, refresh lifecycle, head SHA, draft status, labels, related PR landscape, reviews, checks, protections and mergeability. Use expected-head-SHA on merge. Never treat policy docs, stale checks or an isolated unit test as live enforcement.
+
+## Deployment, reporting, and precedence
+
+This `AGENTS.md` is the organization's canonical instruction for AI agents; it is **not itself an enforced GitHub rule**. Repository README pointers remain useful but are not a substitute for independently loading the policy. A trusted installed GitHub App/check, accurate lifecycle timeline, indexed open PRs, authorized draft-promotion service, and compatible rulesets are needed for automatic enforcement. The existing Rust evaluator at `gha-indie-worker/.github#52` is standalone unless separately deployed.
+
+Report merged PR URLs/SHAs, readiness-cycle age, draft-to-ready promotions, holds, overlap candidates and dispositions, test evidence, and unresolved blockers. Prefer accurate partial progress over unverified assertions. Preserve repo-specific stronger safety and technical requirements.
