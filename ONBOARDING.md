@@ -12,7 +12,7 @@ This is the baseline checklist for engineers joining AttoLang compiler/runtime w
 
 ## Days 1–3: understand and reproduce
 
-- [ ] Read [ARCHITECTURE.md](ARCHITECTURE.md), [BUILDING.md](BUILDING.md), [CONTRIBUTING.md](CONTRIBUTING.md), [TESTING.md](TESTING.md), [RFC_PROCESS.md](RFC_PROCESS.md), [SECURITY.md](SECURITY.md) and the assigned repository's README.
+- [ ] Read [ARCHITECTURE.md](ARCHITECTURE.md), [BORROW_CHECKER.md](BORROW_CHECKER.md), [BUILDING.md](BUILDING.md), [CONTRIBUTING.md](CONTRIBUTING.md), [TESTING.md](TESTING.md), [RFC_PROCESS.md](RFC_PROCESS.md), [SECURITY.md](SECURITY.md) and the assigned repository's README.
 - [ ] Find the current normative language spec, matching versioned conformance fixtures and backend capability statement.
 - [ ] Check out the assigned repository on an isolated branch; record exact HEAD, root tree SHA, platform and toolchain.
 - [ ] Run its documented local build and native tests; run a **real guest program** if the target supports that profile.
