@@ -52,3 +52,27 @@ If the script reports conflicts, resolve them semantically, especially overlappi
 - Rust [PR #232](https://github.com/atto-lang/atto-source.rs/pull/232) imported a legacy compiler under `native/`; review its integration separately from preserving the complete Oreslang source Git graph.
 
 No other pair should be marked fully migrated without an independent source-ancestry verification.
+
+
+## Operator workspaces on macOS (2026-11-19 clarification)
+
+The migration must use both existing local checkouts **without overwriting either**:
+
+- Legacy: `~/codes/ores-truffle-oreslang/oreslang-source.<backend>`
+- Canonical: `~/codes/atto-lang/atto-source.<backend>`
+
+A local runner must retain **four** independent classes of original commits: published legacy main/branches, legacy local-only branches, published Atto main/branches, and Atto local-only branches. It must also fetch GitHub source PR head refs (`refs/pull/*/head`) and inventory source/destination PR metadata with pagination, including open/draft/closed/merged statuses. Preserve source PR URLs, discussions, and approvals as original provenance: GitHub does not support transferring their native identities to a different repository.
+
+### Backup before touching branch integration
+
+Before each fetch: create and verify a local `git bundle --all` for the two checkouts, and a **local-only** backup of any dirty/uncommitted worktree. After fetching both remotes, create additional Git bundles (remote history onto local). Protect **local committed-only** heads on the destination private remote with non-overwriting backup refs (local onto remote). For a large set of PRs, a remote archival branch may use a synthetic merge-parent chain whose **tree is exactly Atto main** and whose parents preserve original Git object IDs. This avoids checking out/pushing untrusted source workflows as the archive tree, but the archive is **backup only**, not semantic integration or proof of completion on Atto main. Verify every original ref OID is an ancestor of the fetched-back backup branch SHA. Do not publish uncommitted files, ignored data, tokens, or secrets to the remote.
+
+Stage the **real** original-history merge in a separate Atto worktree with `git merge --no-commit --no-ff --allow-unrelated-histories`. On conflicts, preserve the worktree and inspect their meaning; do not automatically select `ours` or `theirs` or rewrite original Oreslang SHAs with rebase/squash. The existing Atto checkout, current branch, and `main` remain unchanged during staging.
+
+An offline Bash fixture suite (separate local kit provided to the operator) passed for nine synthetic repository pairs, bidirectional local/remote backup preservation, exact original commit ancestry, unrelated-history conflicts, dirty working trees, and one source PR worktree preparation. This fixture evidence is **not** a claim of live private-repo Git execution or actual backend CI. The operator's local checkout is not mounted in the GitHub connector or ChatGPT cloud runtime.
+
+### Review and destination PR handling
+
+Source PR head objects can be archived without duplicating unreviewed PRs. Only create a destination Atto draft PR when the latest source main is an ancestor of canonical Atto main and the particular PR is semantically reconciled. Each destination PR should backlink to the original source PR, original head SHA and state, overlap disposition, exact-head CI evidence and independently authenticated reviews. A source PR with merge conflicts is **blocked**, not lost or silently skipped. Do not automatically merge old draft PRs or bypass readiness labels.
+
+Follow completion tracking in [issue #11](https://github.com/atto-lang/.github/issues/11), and never equate a remote backup branch or file-level snapshot with fully migrated source history.
