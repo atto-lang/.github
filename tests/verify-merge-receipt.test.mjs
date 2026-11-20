@@ -62,3 +62,63 @@ test('case-mixed but genuinely different GitHub logins remain independent', () =
   const x=good(); x.pr.author='Author'; x.reviews[0].author='INDEPENDENT';
   assert.equal(verifyMergeReceipt(x).status,'SNAPSHOT_VALID_RECHECK_LIVE');
 });
+
+import { mkdtempSync, rmSync, writeFileSync, symlinkSync, linkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+// CLI snapshot admission is intentionally not an authorization mechanism.
+const withSnapshotDir = run => {
+  const dir = mkdtempSync(join(tmpdir(), 'atto-merge-receipt-'));
+  try { run(dir); } finally { rmSync(dir, {recursive:true, force:true}); }
+};
+const cliResult = path => {
+  let output;
+  const code = main([path], s => {output = s;});
+  return {code, result:JSON.parse(output)};
+};
+test('regular bounded snapshot never returns success exit zero', () => withSnapshotDir(dir => {
+  const p = join(dir, 'receipt.json');
+  writeFileSync(p, JSON.stringify(good()));
+  const {code, result} = cliResult(p);
+  assert.equal(code, 3);
+  assert.equal(result.status, 'SNAPSHOT_VALID_RECHECK_LIVE');
+}));
+test('CLI rejects symlink snapshot paths before reading', () => withSnapshotDir(dir => {
+  const original = join(dir, 'original.json'), alias = join(dir, 'alias.json');
+  writeFileSync(original, JSON.stringify(good()));
+  symlinkSync(original, alias);
+  const {code, result} = cliResult(alias);
+  assert.equal(code, 2); assert.equal(result.status, 'BLOCKED');
+}));
+test('CLI rejects hardlinked snapshot bytes', () => withSnapshotDir(dir => {
+  const original = join(dir, 'original.json'), alias = join(dir, 'alias.json');
+  writeFileSync(original, JSON.stringify(good()));
+  linkSync(original, alias);
+  for (const p of [original, alias]) {
+    const {code, result} = cliResult(p);
+    assert.equal(code, 2); assert.equal(result.status, 'BLOCKED');
+  }
+}));
+test('CLI rejects over-256-KiB snapshot without unbounded reads', () => withSnapshotDir(dir => {
+  const p = join(dir, 'oversized.json');
+  writeFileSync(p, ' '.repeat(256 * 1024 + 1));
+  const {code, result} = cliResult(p);
+  assert.equal(code, 2); assert.equal(result.status, 'BLOCKED');
+}));
+test('CLI refuses nonregular directory source', () => withSnapshotDir(dir => {
+  const {code, result} = cliResult(dir);
+  assert.equal(code, 2); assert.equal(result.status, 'BLOCKED');
+}));
+test('CLI rejects malformed UTF-8 instead of silently replacing bytes', () => withSnapshotDir(dir => {
+  const p = join(dir, 'malformed.json');
+  writeFileSync(p, Buffer.from([0xc0, 0xaf]));
+  const {code, result} = cliResult(p);
+  assert.equal(code, 2); assert.equal(result.status, 'BLOCKED');
+}));
+test('CLI rejects empty snapshot files', () => withSnapshotDir(dir => {
+  const p = join(dir, 'empty.json');
+  writeFileSync(p, '');
+  const {code, result} = cliResult(p);
+  assert.equal(code, 2); assert.equal(result.status, 'BLOCKED');
+}));
