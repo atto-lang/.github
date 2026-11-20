@@ -3,6 +3,7 @@
 import { openSync, fstatSync, readSync, closeSync, constants as FS } from 'node:fs';
 import { TextDecoder } from 'node:util';
 import { pathToFileURL } from 'node:url';
+import { parseSnapshotJSON } from './strict-receipt-json-v1.mjs';
 
 const SHA = /^[a-f0-9]{40}$/;
 const ISO = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/;
@@ -84,7 +85,7 @@ function readSnapshot(path) {
 export function main(argv=process.argv.slice(2),write=console.log) {
   if(argv.length!==1){write(JSON.stringify({status:'BLOCKED',reasons:['USAGE']}));return 2;}
   try {
-    const result=verifyMergeReceipt(JSON.parse(readSnapshot(argv[0])));
+    const result=verifyMergeReceipt(parseSnapshotJSON(readSnapshot(argv[0])));
     write(JSON.stringify(result));
     return result.status==='BLOCKED'?1:3; // NEVER 0: live revalidation is mandatory.
   } catch {
