@@ -1,0 +1,56 @@
+name: Atto organization migration manifest integrity
+
+on:
+  pull_request:
+    paths:
+      - 'docs/atto-org-migration/**'
+      - 'tools/validate_migration_manifest.rs'
+      - '.github/workflows/atto-org-migration-manifest.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/atto-org-migration/**'
+      - 'tools/validate_migration_manifest.rs'
+      - '.github/workflows/atto-org-migration-manifest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manifest-integrity:
+    name: Manifest integrity (Rust, read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Validate toolchain and source-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v rustc
+          rustc --version
+          printf 'checkout_commit=%s\n' "$(git rev-parse HEAD)"
+          test -f docs/atto-org-migration/repo-manifest.csv
+
+      - name: Execute Rust regression tests and exact manifest validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          rustc --edition=2021 --test -D warnings tools/validate_migration_manifest.rs -o "$work/manifest-tests"
+          "$work/manifest-tests"
+          rustc --edition=2021 -D warnings tools/validate_migration_manifest.rs -o "$work/manifest-check"
+          "$work/manifest-check" docs/atto-org-migration/repo-manifest.csv
+
+      - name: Evidence classification
+        if: always()
+        shell: bash
+        run: |
+          printf '%s\n' 'Manifest structural validation only. This is not transfer approval, live destination/org access proof, repo branch protection proof, nor compiler/guest execution evidence.'
