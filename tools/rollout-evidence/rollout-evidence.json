@@ -1,0 +1,4323 @@
+{
+  "scope": "checker tooling only; not backend execution",
+  "repositories": [
+    {
+      "repository": "ores-truffle-oreslang/oreslang-static-analysis.rs",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-static-analysis.rs/pull/17",
+      "head": "c30b917124e37860c0a529aa715aeb392a7889bc",
+      "tree": "9684c0d61e4519c28642273bbebb231ec12cd889",
+      "base": {
+        "sha": "41bb4f437e5f17a06c53b20dfd69872a04ce7278",
+        "tree": "cfb8048108c83524f647e09e4506de6962e75d1c"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "b53c680b6d8e6b6ba2f81096fab0c837ebce4a03",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "c9a76e114a1afad6da73bb10384751fb893ba944",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "2a9c89b31c11f91c8729664e0310333ee1fe9c88",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "e20da0a95c71264f300d40a2ebeeca7b073616ea",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441510409,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-static-analysis.rs/actions/runs/40441510409/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-static-analysis.rs/actions/runs/40441510409/logs",
+          "workflow_id": 397775075
+        },
+        "jobs": [
+          {
+            "id": 121982719745,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441510409,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-restful-server-perf-benchmarks",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-restful-server-perf-benchmarks/pull/13",
+      "head": "5b3e184d32691137118755aee7e9eb3589c4e108",
+      "tree": "c2ab126d30322618a96d291672b948e4480f88e4",
+      "base": {
+        "sha": "0c40ababd8af22c1f5904dec8b854387dd653382",
+        "tree": "932cd9be6d0e3863b87184382127beaa34e5d135"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "8836d89ab72c140190324efa4e1fa2e06234804c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "ba365cddee4566c74adfde90a52738ba986b8f1f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "5e3f77da73ecc439654957e666d18b0ac8807996",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "861218f50568cc2747456298a12ded761127251c",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441556478,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-restful-server-perf-benchmarks/actions/runs/40441556478/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-restful-server-perf-benchmarks/actions/runs/40441556478/logs",
+          "workflow_id": 397775304
+        },
+        "jobs": [
+          {
+            "id": 121982865988,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441556478,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-ssr",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-ssr/pull/10",
+      "head": "f4f2212cd5c1f041eae7249d532e83bcf0c1e2d3",
+      "tree": "fd7164b2f9767362585be475e0903a609dc26848",
+      "base": {
+        "sha": "b87a9932a15ac65421cb55b0eb37b20fbad98480",
+        "tree": "26a3bb5504622c8b2e9fe8eecdd302cf62a93aff"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "0f1414f0e20c637c7fca4b8ca212e76b5f61945c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "048ba93a8db32406773100e10e1e82edfbac0c80",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "0d5d96d32b1b5355f91b52f0f2297a15946b95ee",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "e81062929260e83d1f928f27398c83d0aef042d2",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441563894,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-ssr/actions/runs/40441563894/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-ssr/actions/runs/40441563894/logs",
+          "workflow_id": 397775340
+        },
+        "jobs": [
+          {
+            "id": 121982890150,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441563894,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-format",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-format/pull/101",
+      "head": "37714d854440b2fd9874f2c50e04a1501e07da22",
+      "tree": "bc2af9f45ca699cdd2f6493d08001d4ab05f6558",
+      "base": {
+        "sha": "c4b785f091f198dd4344e49cda1e25c8eee163b1",
+        "tree": "90434d6b7f60513f7366a9dc9c13bb49bb1fff99"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "a5042453ae1094b8e50a5f5d8faa6a3ffa579140",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "ffb583cf7e3b986c844b6898998519b93fda1783",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "b9e84101534ee3608802c27273799d0287c1b9f0",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "267184b31bce939482beb0b444c056422b38a03d",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441567629,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-format/actions/runs/40441567629/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-format/actions/runs/40441567629/logs",
+          "workflow_id": 397775356
+        },
+        "jobs": [
+          {
+            "id": 121982902682,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441567629,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-platform.mobile",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-platform.mobile/pull/14",
+      "head": "cdfb33e0b4d87a06b0cfb876cc9998891de407f7",
+      "tree": "96858f1660f773c676d4df0196daf44e1a6c952c",
+      "base": {
+        "sha": "8a7417613b92e6b1781dd521bae008acc9ae1f4a",
+        "tree": "75ad643f85cc50894b6c2a51f39d05bfcb3f55e1"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "b8dd20575bd10387ed9fed90492fa7349f602692",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "592fa2e8a3695f36c6c1603b9ad93bbc256b940d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "57022d6214352cc657d559d971e88183b34e5ff0",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "2df3eb2f347568a210a5bb0a6072e9fbc296ef0e",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441574991,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.mobile/actions/runs/40441574991/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.mobile/actions/runs/40441574991/logs",
+          "workflow_id": 397775408
+        },
+        "jobs": [
+          {
+            "id": 121982926716,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441574991,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-spin",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-spin/pull/25",
+      "head": "4e5c38d54c7e9577784538f30f11c9df862a00fc",
+      "tree": "4109bdbe157571776e2586a1a9220c28987e25e9",
+      "base": {
+        "sha": "6700b5ca88c9e7278360134ad22d5d439952c0f0",
+        "tree": "d4dd00747d582696ff896487ecf6992c480a4e4a"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "784cc29540372b04d513505c0ed522022a0451ea",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "264410af4959bd9f3e61d0d4683e34d8b9cbd80b",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "b89f2f00d60a800936d06387aa7bc37211d12b9f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "011b08af1b96d9975740c052d73c884c62c059e6",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441583077,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-spin/actions/runs/40441583077/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-spin/actions/runs/40441583077/logs",
+          "workflow_id": 397775463
+        },
+        "jobs": [
+          {
+            "id": 121982954261,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441583077,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/rx-oreslang-channels",
+      "pr": "https://github.com/ores-truffle-oreslang/rx-oreslang-channels/pull/25",
+      "head": "a00ce808d14ba7a44c367abd788f7139c4c58181",
+      "tree": "1eb4124839df7e0782ee049614c83bab0aabd262",
+      "base": {
+        "sha": "9e75cbceaee49846031e5733e66aba82cddf9be6",
+        "tree": "3f4f7b2a1951ac2f412df3abdfe7191ef2257cae"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "02d0fee1ffde8e1bfb6195b68978d04125df0804",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "6cff066ef9cf4fc9040ba3d17784dd7dfffceb33",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "81bec9a6a1203f6eb437edfb367b24c8c4ad2831",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "03db0626894b486291171eb58023faea299a5bd3",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441586622,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/rx-oreslang-channels/actions/runs/40441586622/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/rx-oreslang-channels/actions/runs/40441586622/logs",
+          "workflow_id": 397775501
+        },
+        "jobs": [
+          {
+            "id": 121982965771,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441586622,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-platform.asic",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-platform.asic/pull/11",
+      "head": "0a1338224614c4653bceb5b765aae8aa08c57038",
+      "tree": "35fbb3cc0a136df0e2bcc9869ecd67272515bb9f",
+      "base": {
+        "sha": "04f63ef0203550b68d619b8b7ace9d19dda23fa3",
+        "tree": "0cb38d9801390ea8f2085711a5e953c5431b806b"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "35da10c2f772953ac1b8598794d110f202a4eed5",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "7689481847cf64b4f32bfe58259703f1a3911a6b",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "cea6964059f34c1752f8339b8259e04448701dd1",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "486bf6c22a2e83058aaf4278d11fda2f15f7555f",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441594357,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.asic/actions/runs/40441594357/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.asic/actions/runs/40441594357/logs",
+          "workflow_id": 397775549
+        },
+        "jobs": [
+          {
+            "id": 121982993434,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441594357,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/rx-ores-callbacks",
+      "pr": "https://github.com/ores-truffle-oreslang/rx-ores-callbacks/pull/11",
+      "head": "4f9102f3f3433ee9ba83571256985fdd32b129a9",
+      "tree": "00f5bd8e2ef3e031af2813ea9e5ae38834490ce8",
+      "base": {
+        "sha": "328f1914e49fc72b30360748bd94a3f3d9ed2835",
+        "tree": "6721898545521e20a04ee60240f3601462c9fd3b"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "5f0d26fb9e278fcc9a27d903bd11728aae3dd60d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "bb1a9e7990e3fcda9d2b7f6308c60b9a0bf35975",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "c914ce9a3219fce07b2c31e0dcf202a9a585a8a6",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "209af6411644a564e63eb6c48e359f8df9e372a8",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441599754,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/rx-ores-callbacks/actions/runs/40441599754/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/rx-ores-callbacks/actions/runs/40441599754/logs",
+          "workflow_id": 397775575
+        },
+        "jobs": [
+          {
+            "id": 121983011469,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441599754,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-serialization-and-validation",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-serialization-and-validation/pull/38",
+      "head": "a2957b52dec27c2d9be94f86e0b2b60550782c71",
+      "tree": "309c6194f9858a742ca35a8727a86e6c017435cc",
+      "base": {
+        "sha": "62e123bfa0d1f7a26578aa93df8dc56a80efc216",
+        "tree": "d3f0459a217d61fbd5247c1c460803f0d78662ff"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "3ca75ab47bc37dc3b3ecb80fa782ad3fc691e7a5",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "3610833cd3ab14db550ef9471724a6dafe143abf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "89406cd27c8d9dbec939b3e9b773736b41ccc5ec",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "ebf698f24023abf28795777172767fd6cf054512",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441607792,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-serialization-and-validation/actions/runs/40441607792/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-serialization-and-validation/actions/runs/40441607792/logs",
+          "workflow_id": 397775631
+        },
+        "jobs": [
+          {
+            "id": 121983036979,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441607792,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-rpc",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-rpc/pull/12",
+      "head": "dc131a9f4696830af7875e7004fa6019e7066afc",
+      "tree": "3553e9c21e1bbec9d83e1901a622e79be8fbfe4c",
+      "base": {
+        "sha": "6ef6372392d82560169a81286a8d500f56fd4db9",
+        "tree": "a1417cc1266a0b8dfbe8db29cb69ce9aebce212f"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "6e21547e399e224fe72f6fc2de0e883522136b26",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "f2a6c55b776d4513ef96b69dace920145c847e8e",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "7eba02372c216faddf1b9de3f2c20ea441f0219d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "918d509092e5eccd74e4a5da18a60165a9f5efcd",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441610429,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-rpc/actions/runs/40441610429/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-rpc/actions/runs/40441610429/logs",
+          "workflow_id": 397775647
+        },
+        "jobs": [
+          {
+            "id": 121983046761,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441610429,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-tensor",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-tensor/pull/11",
+      "head": "4b85ca9b52bd0d71a13619e6e20aa9b54cc8b95f",
+      "tree": "66eaa3efc3d893bd9cd5f3cb15dd54f1d6bab0d8",
+      "base": {
+        "sha": "4a12775c83ccd52fcd0e64ff7b5da5f116e1cf26",
+        "tree": "8c59fc6ca849d34fc76ebf1ce06100f411b1af32"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "44b0d2e0c893876a27c54e0e96951b5182a91cfe",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "a0a8f321a91033718ea5514654a9db718b30b7d0",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "535c843073d4afff278cdc3074e3e300ba9ba500",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "754ae21a7efef16c5416a6abb177bebd70f06b32",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441655862,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-tensor/actions/runs/40441655862/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-tensor/actions/runs/40441655862/logs",
+          "workflow_id": 397775858
+        },
+        "jobs": [
+          {
+            "id": 121983192272,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441655862,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/rx-ores",
+      "pr": "https://github.com/ores-truffle-oreslang/rx-ores/pull/17",
+      "head": "465ca4226205ead9a1422324aa999834fc121c9f",
+      "tree": "663f37b778754f09ae2408adcbab19449daad873",
+      "base": {
+        "sha": "23c8edbc231ac5eaa3e06d929bf2d9ba2e29f952",
+        "tree": "82c8665c44d89626603fa6a6db9a20b361cc563f"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "54c49d32f540091ff56a3ee4a96aa33bc29d8ab8",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "65a585f173d374ceac323979511164a6d8b2074c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "f77ccc2c3db1aea7362f86e6a0a5a93de894c7f7",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "bdf0304f454bdddd431cfc04a8a3efa1f41af179",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441664209,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/rx-ores/actions/runs/40441664209/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/rx-ores/actions/runs/40441664209/logs",
+          "workflow_id": 397775911
+        },
+        "jobs": [
+          {
+            "id": 121983215658,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441664209,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-ml-conformance",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-ml-conformance/pull/10",
+      "head": "953dcd5c98a310eb961132e866bed0d18eae79ca",
+      "tree": "aa59df0940305666f5d2709d64c38cbb0ede22f7",
+      "base": {
+        "sha": "e1bba900c35fd24d760aedc396831449aba99fb0",
+        "tree": "3299a1c9eda9a7716e273c75e6913e0f16fdb36e"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "317115db378c05b24efeb9df10f53d80dce72b40",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "35d64e03ef84ed659ef01663fc2b55aebd5b1b64",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "188166934bd5d31f33d25163edccb9010d990482",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "d063fb11046ce5a78ce230bf9c21323a01ffade0",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441673849,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-ml-conformance/actions/runs/40441673849/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-ml-conformance/actions/runs/40441673849/logs",
+          "workflow_id": 397775992
+        },
+        "jobs": [
+          {
+            "id": 121983242252,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441673849,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.js",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.js/pull/86",
+      "head": "8ba300e41556734200b33c88067b420ef786de54",
+      "tree": "812e01167327752fcbc6ffbdafb3427da480fae1",
+      "base": {
+        "sha": "f2ad6b97f9e52632260f21ec3f913d4227b38fec",
+        "tree": "4c630a16014eededb9c75bcb3c123002d34a3fee"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "6b5c77d0f0cedaa98ea15f8b03a6a132eb67e4c7",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "ec8a5c9020411d96a320858163667a685c86ba1f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "56d40c84d9d9becdab61d2f4822ecb0839bb9953",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "a74f863adf6d8058cadb53b11a9c6e714c33a886",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441681129,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.js/actions/runs/40441681129/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.js/actions/runs/40441681129/logs",
+          "workflow_id": 397776006
+        },
+        "jobs": [
+          {
+            "id": 121983263153,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441681129,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-common-source",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/165",
+      "head": "d03505f9c8ca8719c1445cd3f4db92fdb40f6aa8",
+      "tree": "8a774ff4b5cafb49724143bec9337a08abb35b44",
+      "base": {
+        "sha": "72bcf5a5a181a5cc3ca321f3e9dd1a9c85d9f8ef",
+        "tree": "ba80f4129f9c1bae84e612bb631910b6e149dea0"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "6684b190a4170f04659b4be35e85586f98992cc0",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "30560e22e82c2ff54583b12f0dd3c201f43c6fda",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "a0b9f815c7277706d40b8c9835638b487f6a30a4",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "aec9d68e4927749fa1f24d0222be3d8bbc9a8210",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441689448,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-common-source/actions/runs/40441689448/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-common-source/actions/runs/40441689448/logs",
+          "workflow_id": 397776050
+        },
+        "jobs": [
+          {
+            "id": 121983288684,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441689448,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-platform.embedded",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-platform.embedded/pull/27",
+      "head": "c68075c7a60ec44860f291160ed81f9979c7ed6d",
+      "tree": "f588712aab19f8a51704e4f7de2d734014dea4fe",
+      "base": {
+        "sha": "f9f7af3205721fe4647c36c17d78948c5f0736dc",
+        "tree": "fd67467f063239b7540423c73324966e19a08e03"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "11e1a6a7bc3ff4883c0cb2e21c23e1f1df4b290a",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "dba76f02148bc17a8e891188780989e186595cd9",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "04969d2bc5babbe819b460123cd7e93cc6e9532c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "37fe51283d45a75db95b0b119ff713286ea9fe08",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441695711,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.embedded/actions/runs/40441695711/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.embedded/actions/runs/40441695711/logs",
+          "workflow_id": 397776067
+        },
+        "jobs": [
+          {
+            "id": 121983307938,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441695711,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-runtime.realtime-java",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-runtime.realtime-java/pull/7",
+      "head": "651cd96140f79b05a642ccc8f760fe8b6f9d9e84",
+      "tree": "89a3720e318db0ac541793e54c6404f0ff825cd9",
+      "base": {
+        "sha": "aa2eb7421ebeafe463cbb1b7e7e497f5df7a1fb6",
+        "tree": "9b04c9cecafa0f8911a493afed60bf6194f1c28f"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "af212eadc031a11c2cd7f759ab2a1998f0e9428b",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "b2ebad1fb0be909234955c2c99276f8ac5895279",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "403221e1f5fa0cc203bf4cfa29f8bb13bcdfeaf0",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "7218d593411d9a33f794c70db9425b26eb2f8864",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441701317,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-runtime.realtime-java/actions/runs/40441701317/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-runtime.realtime-java/actions/runs/40441701317/logs",
+          "workflow_id": 397776088
+        },
+        "jobs": [
+          {
+            "id": 121983325195,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441701317,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-cli",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-cli/pull/17",
+      "head": "5a0bf92d89ebf1bd6e214700938e1aa5f71794ec",
+      "tree": "b12e5ada8b3fb15729618579162b0248afd33508",
+      "base": {
+        "sha": "2c601d72752312fbad12c7c5e3d7fbda45bb57e3",
+        "tree": "81e00081e3f810b77f57199c316cf401da8ffcd7"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "c4a47969d7cf4382b3f04a9c133dc693a8538d40",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "9ec668855849d660aa56c382ca269ea82cf911df",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "38e6e4e502ca7e4b50cc660f90d1beb8cee9c0e4",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "a6bf0328b4dca1b5a85ce80f9021c5f6c18504ce",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441710791,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "success",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-cli/actions/runs/40441710791/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-cli/actions/runs/40441710791/logs",
+          "workflow_id": 397776118
+        },
+        "jobs": [
+          {
+            "id": 121983354052,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 40441710791,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Toolchain identity",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Format",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Lint",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Receipt inspector unit tests (not guest execution)",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Acceptance profile CLI",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              }
+            ]
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-hpc-finance",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-hpc-finance/pull/9",
+      "head": "0fef966ef26b7ce8c3d7c31aacd2e2a8288808c4",
+      "tree": "e73082d679ab06bfb42bef37f8ed3d4cb227ef61",
+      "base": {
+        "sha": "539f41c6e3b390eb6c7980a26ed0249455b02bee",
+        "tree": "4c4c8b6b6cf06d8de1d258801e962a0db634e8d9"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "eda4617bfbd71e7b8b250af5d80d41686e3b5aa6",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "45bc24138b5eff9ead92d953fcb9f0ce79e49247",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "4d07a102a5f4d9a16354f79e7062637efdc9dbbf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "280f81c977422a61e39e242b21e9c7b46cb9f26d",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441716184,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-hpc-finance/actions/runs/40441716184/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-hpc-finance/actions/runs/40441716184/logs",
+          "workflow_id": 397776150
+        },
+        "jobs": [
+          {
+            "id": 121983370869,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441716184,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-data-science",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-data-science/pull/16",
+      "head": "dde6cf4d8655e965d31a88beb14f7fbac605ce37",
+      "tree": "60fbd920f0937a2b0f09dd6a01002a36c6877491",
+      "base": {
+        "sha": "2782dde8c2028aeac292654093853de1008b47ba",
+        "tree": "7c237b75cbf88480e7e71bf5bcb0dafe8126955a"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "375f25b8eca6d18de134078fce2018bf3285c557",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "db420114496d0a3e1233475c782445d0db0cc534",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "8f535d13f628a674a623a281bacbb1db8d6dc76b",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "078d48d3ea9b65b6e4fb9364ea0af4c991b71dc9",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441723270,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-data-science/actions/runs/40441723270/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-data-science/actions/runs/40441723270/logs",
+          "workflow_id": 397776188
+        },
+        "jobs": [
+          {
+            "id": 121983393348,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441723270,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.rs",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.rs/pull/18",
+      "head": "709cd7be93b9e2959f820e95a0ee119d2460134f",
+      "tree": "20853a401e63b0b1f9f2609965a3433f6ec3ca42",
+      "base": {
+        "sha": "3376ce8e93d0b5fd24933797c5696eea4ffce44a",
+        "tree": "2499d22286b812761dfb81d6063c6dccadf71c03"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "434c88a46a823ae145ee143018a5a496f6a8b418",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "a42dde8a2eeb8ba72796eda7ee6de0f320e53b0d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "9c4387da724ce6ea4869232a9382d34759242f9f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "b6549be80689f837bbb2f1d61abf84fae8440282",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441731456,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.rs/actions/runs/40441731456/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.rs/actions/runs/40441731456/logs",
+          "workflow_id": 397776235
+        },
+        "jobs": [
+          {
+            "id": 121983417522,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441731456,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-proof-of-concepts",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-proof-of-concepts/pull/14",
+      "head": "4ffbb823e93d9a94b499b95744a049c777129173",
+      "tree": "659d2ab2e87f511195a4a9eaa386675f176a460a",
+      "base": {
+        "sha": "b7e92b77e86ffe2be29fa9163e61787285c2b245",
+        "tree": "b608743417ba8a9a63624559967772464c313ee8"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "4df8f3939d8989849c00861fe23655beaec347c9",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "ef777e37984d8dd6413af3893507baf5d20fbeb2",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "26fd4d719c20b11ebb1ac921acb084d97daae921",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "67152b16ff8079901719b70d0be6007f9ac4f37d",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441740937,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-proof-of-concepts/actions/runs/40441740937/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-proof-of-concepts/actions/runs/40441740937/logs",
+          "workflow_id": 397776281
+        },
+        "jobs": [
+          {
+            "id": 121983446710,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441740937,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-test.cli",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-test.cli/pull/20",
+      "head": "99986c40b86cdca0763012d087c1e1dc55a13f4a",
+      "tree": "76040a6e4333c9df6a89f8c4dc3248345c87ab7b",
+      "base": {
+        "sha": "1f5c9615464b891869443645a48dc537396aa294",
+        "tree": "7b8d31cdb50fdab7c31f588fe16ec2d44190704a"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "457143dca1caf7a1f8d8367e23f989fff5fb4d27",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "00810965dde0f5ca7b01a461146a8d6d4c05ceaf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "afa043d54ddf2c6bf4b670483490a03f9e5887ce",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "343bad5a1e71b0a6515d5b571369c17f8c36f01a",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441746547,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-test.cli/actions/runs/40441746547/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-test.cli/actions/runs/40441746547/logs",
+          "workflow_id": 397776299
+        },
+        "jobs": [
+          {
+            "id": 121983463912,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441746547,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-db",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-db/pull/3",
+      "head": "40fe642fe0b9aadf40ad0bfdea793eb3e2877904",
+      "tree": "bc8a80ce621f6f1b705a1b0c8d5ff7232f064243",
+      "base": {
+        "sha": "94ef615a31543ee6db306116bf7f99f278bf1bfd",
+        "tree": "d89b0ebd07a93c00b9044ffea0722225f27688a6"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "df6926f565598b70651c8bca25613a496e11bbad",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "4ed7db692e16dcfe4970c858aee86813208cac1a",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "e22283a1c0881f8b1663a705d0dc52b0701496ba",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "0d50c54ea5beede5bc3cd70010bc1e80097e5b86",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441755350,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-db/actions/runs/40441755350/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-db/actions/runs/40441755350/logs",
+          "workflow_id": 397776337
+        },
+        "jobs": [
+          {
+            "id": 121983491981,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441755350,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-linked-queue",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-linked-queue/pull/10",
+      "head": "f943a651fee9d1d1a8f598a005117017c60d26c9",
+      "tree": "20f9f7f4f40e4b53e3ef8d4949068b16657cbadd",
+      "base": {
+        "sha": "a5510b0af57392588b6afff49926803d2b7a6161",
+        "tree": "30ed369daaed0512d79c6d5ee5fd8232500510f2"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "3aecf6bb1db5e66780ff5f36078ef53606234025",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "74e264d0cdc6a59e8c34e24ef0db64cea9ed6414",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "9b260c0e8030976d66c01c1418876252001c1d60",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "5f9f98b52c1a41d35311e89ea0a617e2166d1975",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441760849,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-linked-queue/actions/runs/40441760849/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-linked-queue/actions/runs/40441760849/logs",
+          "workflow_id": 397776361
+        },
+        "jobs": [
+          {
+            "id": 121983508394,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441760849,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-target-profiles",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-target-profiles/pull/33",
+      "head": "4c0c71d25e5df13205b68181b30d5145af4ab6c1",
+      "tree": "1be2ed4c2e0b4e6c5e426cd22f1345876a8f16b3",
+      "base": {
+        "sha": "7d520b065533fbdc24a4740901a9a2a711b6947c",
+        "tree": "6a9000434c58f7bf38ca4a513478adf021518951"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "5204872c4c133345b6c883b15ec2f43455121b4c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "174e50413d0f9619124529e47d34259b6b557109",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "0c2bb9949b7922886db2f82653a1683693b8dcdb",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "3323734339b2533a0646149ec9b38e65b67d7d87",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441768894,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-target-profiles/actions/runs/40441768894/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-target-profiles/actions/runs/40441768894/logs",
+          "workflow_id": 397776398
+        },
+        "jobs": [
+          {
+            "id": 121983533322,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441768894,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-http-routing",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-http-routing/pull/23",
+      "head": "2b542ef9ef3f4d04ab1cd95251239511d92074c4",
+      "tree": "1aad5667e89f6deb900921fb52dfc7c15fcfe120",
+      "base": {
+        "sha": "603a7e79761d07e8f0e8fa7827fef8f222ca8244",
+        "tree": "445f98a0e91caf093a6190e0d3d221d94b22dbe6"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "b9e519cfa514b5f493a8c2c1fcec934b46e1ed46",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "fb99ff86b06e5258a378d8822171367a685df2e1",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "a997243e51feffc8a78ad70496f9dc54e80937f8",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "d44104288db77fff11e32e9a28a1fc44b006c6e0",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441774926,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-http-routing/actions/runs/40441774926/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-http-routing/actions/runs/40441774926/logs",
+          "workflow_id": 397776468
+        },
+        "jobs": [
+          {
+            "id": 121983550478,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441774926,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.hdl",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.hdl/pull/21",
+      "head": "f807594ddfc2ba8d8e7f00b48ee703029b4bd35e",
+      "tree": "9137ad6c75dd1ae6ee16591e646b8b9a892fff5f",
+      "base": {
+        "sha": "5fed67f0cba3fc0ad8de49d75778eafde4586ec3",
+        "tree": "98ce8939a63e3c4d49ec6e2834551675d03730ba"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "ed2ffefb9c40c0faa36d841d6bebf88f0e08eae1",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "1a3b364ccebaf1cc82c06e53447649a9c002a740",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "47e8c1c66742a4c57288e444983a3b85308b23e2",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "d621fc72f373ca2bd3608c353795828f4c6201d3",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441782733,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.hdl/actions/runs/40441782733/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.hdl/actions/runs/40441782733/logs",
+          "workflow_id": 397776503
+        },
+        "jobs": [
+          {
+            "id": 121983573584,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441782733,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.forge",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/112",
+      "head": "fa7d7f2a68d96291e139f633f9a31275bf57b065",
+      "tree": "2fdada32f54e7306ddbb2aa3521cdbe3cc1b26da",
+      "base": {
+        "sha": "e0513d495f0b0b30bd6999f402b4dec2f2f1f4b4",
+        "tree": "6a4a90f8932c4f05ffec7e731bc124db28b02241"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "73472f9315f2933de255467589c714df6dfa97a8",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "0142e7746af10ee28bc203b8ed5bad701aa233e7",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "8f8eb39006aac30cc10da22b0d4af1aa14fd2d78",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "92ea89eec6455d4575cf2d251d6810f787e0e74f",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441788765,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.forge/actions/runs/40441788765/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.forge/actions/runs/40441788765/logs",
+          "workflow_id": 397776541
+        },
+        "jobs": [
+          {
+            "id": 121983593070,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441788765,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.java",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2133",
+      "head": "20be7c1cdcdb71316ee1e6571e3c5725fb7f320a",
+      "tree": "929edf148290497f9918d2ddbb4494403e612fb7",
+      "base": {
+        "sha": "5c9e30174bb4ceec93c5dadbffd1b90b6f3b9aef",
+        "tree": "5833a5506ed9b0d33886afcb7a0ee03fcf916dfe"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "4634af5d77ac5a322eaa24d73e2971dcfc3dca5c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "4ad54116e7e80977df886ae3c21a7a7933e4d991",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "dde3bc1aaf8c504eac69c75dd323efe43a138b8f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "391d65ea5cf4a46d3749c84c26f845421f7c87e5",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441794640,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.java/actions/runs/40441794640/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.java/actions/runs/40441794640/logs",
+          "workflow_id": 397776555
+        },
+        "jobs": [
+          {
+            "id": 121983612175,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441794640,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.net",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/181",
+      "head": "37405d64322fd42fda3de90be4fff6417913f711",
+      "tree": "8b5d13af4394a4da6575c79f4b17dfab60cb186b",
+      "base": {
+        "sha": "05b33e67cc2e3f465eb3a9f94d9218c797d72543",
+        "tree": "0d4e75ed654933a7dad7d12ac4f46cadd8516a9b"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "e491b79b05765cadd0b8371fb0e3b91ec48ab34c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "001a6befdc2a14652e2d5a94288dd1f59c6217de",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "30c741935e029eff04eebd95b9f7fbf7fd1b082d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "74a5d9413bb489395e56992c7fde5b318926412c",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441801927,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.net/actions/runs/40441801927/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.net/actions/runs/40441801927/logs",
+          "workflow_id": 397776601
+        },
+        "jobs": [
+          {
+            "id": 121983635844,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441801927,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-compilers-parity-testing",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-compilers-parity-testing/pull/6",
+      "head": "313c13edf1ca06e4b7d286372fb28e897e3a53d4",
+      "tree": "0fd52259cf3c5563c629c76e50003d10ef654660",
+      "base": {
+        "sha": "c484f9093433e58ab707f5a6022276c480b1d823",
+        "tree": "84d41a7fa4a883ed517050d5b650ade258a54984"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "0141b7547f604e7bd80fa885fcb272360c21f85a",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "eadf02b2d1872dcd8833a57ebeccca016f35e924",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "3fcf5d0f3e1cac557b18c9d4f5e1ff935f5b9c21",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "8f0b32e58810fa60d01824f8e9c3fe6cb6b51d3b",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441808373,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-compilers-parity-testing/actions/runs/40441808373/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-compilers-parity-testing/actions/runs/40441808373/logs",
+          "workflow_id": 397776636
+        },
+        "jobs": [
+          {
+            "id": 121983656321,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441808373,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/postgres-orm.ores",
+      "pr": "https://github.com/ores-truffle-oreslang/postgres-orm.ores/pull/3",
+      "head": "ae4edfa90fca4097c702df712c5cce18d64fa184",
+      "tree": "3d4b56c5db3d9b3060f8734d9a14524044f6887c",
+      "base": {
+        "sha": "b3a6713501071ebb8651285034386b39d3ab8cd2",
+        "tree": "e04e153f43bf959c890108c3df43ad73fe680919"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "c339cdff9e10ce9cfbe50e74739f2af71ce2f81c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "c8c712da7de7e5877e13c0f1819e7c9f7a156f55",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "53051223a8c120a30e5ce0a4770cef95b582da59",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "423db8acff7e059b8b2222b32ac290177bf091f4",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441818607,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/postgres-orm.ores/actions/runs/40441818607/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/postgres-orm.ores/actions/runs/40441818607/logs",
+          "workflow_id": 397776675
+        },
+        "jobs": [
+          {
+            "id": 121983689904,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441818607,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-platform.iot",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-platform.iot/pull/15",
+      "head": "d39f0cbdf00048f21088eec868b0ae8261ea6def",
+      "tree": "d16358f865bbcd21174458525e4c3569edf2f421",
+      "base": {
+        "sha": "4baa51102c81ac8c151f653934661a165622a3eb",
+        "tree": "ef4bddb5b001e9d4f82de917665139b4baf55a9a"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "4b4009a4d3fc6abfa482e936e28694fcd8594097",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "52840639273c36ea23ee98134308d6e6fcbb8e20",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "e1b2cee4aa3f4194140d9f2e090cc801f57799e4",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "2002d13ee11dfc01789473e96bb3c3aaad3c809c",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441819939,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.iot/actions/runs/40441819939/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.iot/actions/runs/40441819939/logs",
+          "workflow_id": 397776683
+        },
+        "jobs": [
+          {
+            "id": 121983693655,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441819939,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-ml",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-ml/pull/21",
+      "head": "5c4eaf4c007fe458dcd0e6b4e51c2228a25d3008",
+      "tree": "072ebb63049c79460a320518d9593ed4feedd5d2",
+      "base": {
+        "sha": "aad5420be7b7235fd96a8534cb247a03d741c00c",
+        "tree": "ddc96635306bbbf02087c47b8370eafcfdc23985"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "8e367a5295d4bcddd5d353c41130e04ae5bdd937",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "4e82cfb227409eaade0394fa9cf02c88e22ddc49",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "8b5669e19e4efd5256f5ceeb8a98b92c1777a9fd",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "fbc34cbc9760a3572d7aaadb8809407e65c70f15",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441825915,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-ml/actions/runs/40441825915/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-ml/actions/runs/40441825915/logs",
+          "workflow_id": 397776721
+        },
+        "jobs": [
+          {
+            "id": 121983712358,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441825915,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-design-patterns",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-design-patterns/pull/9",
+      "head": "79e7abbc01242e31faaa994f4b3c921343bb18b0",
+      "tree": "a35a5c6f74c6d90921fcde605af9370bda411ccc",
+      "base": {
+        "sha": "3b42e20cf05861264765ed488a21ef8e39104b34",
+        "tree": "377c260976edaff58add46948ed865e329546c61"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "227d5926dce2b43036ed0088f67df7ba8f1e6758",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "61278ccb5085137665f0178b35ce3c8f93e414d0",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "281d59eb1a1ee51e1e66755009a1e8c9bdeb529b",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "ae1a77be19ae928ad7db2160ad67475dfa72e247",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441831102,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-design-patterns/actions/runs/40441831102/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-design-patterns/actions/runs/40441831102/logs",
+          "workflow_id": 397776751
+        },
+        "jobs": [
+          {
+            "id": 121983730938,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441831102,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-platform.desktop",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-platform.desktop/pull/12",
+      "head": "5496aac78fedb1724c6640a9569f06e907fa9d46",
+      "tree": "4fe614e195bb7283e3363276dd5dea2e44a96903",
+      "base": {
+        "sha": "41dc6f3820ed31672e74a8d01035194fd27f90b4",
+        "tree": "8203cf9c27ae6d451e1cae87679f3e221364d236"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "f6589a0631f7724c1896f9f2b752d83823ec22ec",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "fdc10b4c4399807dcee7f10eb243290b0721dd28",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "3102b56585d5938f553c9df7d8d92b437395c9ec",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "3ea9cd6b4e462742cabbcc4e94dc4db111081297",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441836282,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.desktop/actions/runs/40441836282/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.desktop/actions/runs/40441836282/logs",
+          "workflow_id": 397776772
+        },
+        "jobs": [
+          {
+            "id": 121983748315,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441836282,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.llvm",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1078",
+      "head": "77119348891c77c8bd97037e62da869a212ab328",
+      "tree": "c313eaf2477d1ed4370c8f5764add8c1ac53eedf",
+      "base": {
+        "sha": "6e36307ef7d89ba8e452458c217a078fc47ee0e8",
+        "tree": "f9d7f3a710da3f47758b9997fcc2d7ffb7fe5363"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "8538efdc04410f18c68f7258d52d54ec39f30e5f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "71a134bfc400886c78d9a9e1247c4250d6226a63",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "661a1f88e904d15f32990aef2c3da0fe44c6bc10",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "330bcb867f1f9e7f180c261e46ed28f0eae5c872",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441843883,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.llvm/actions/runs/40441843883/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.llvm/actions/runs/40441843883/logs",
+          "workflow_id": 397776834
+        },
+        "jobs": [
+          {
+            "id": 121983773798,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441843883,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-platform-conformance",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/185",
+      "head": "4df27742b028061ad44eb3f2a2446166b66303eb",
+      "tree": "b32b563090d123dd6e91918afb7ad5d4b92bf169",
+      "base": {
+        "sha": "1dbf942f0eb30678765f03319aa111d3a54a9011",
+        "tree": "7f0e16685b0f08ec9b545d3b7d5efaf9d285186a"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "20a7143b2340c895162582f33ca8c495946c746a",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "f1e01c2b34ed698b104010dba344145f5e7970a1",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "f2a6374da51bc3e56aa209b8b341c1c4b1e50de6",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "01b2d6eceb61242e85874badd208d459ba33d92a",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441849457,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform-conformance/actions/runs/40441849457/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform-conformance/actions/runs/40441849457/logs",
+          "workflow_id": 397776869
+        },
+        "jobs": [
+          {
+            "id": 121983791743,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441849457,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-hot-loading-tests",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-hot-loading-tests/pull/4",
+      "head": "f11379756b2724d01788732754e28569fd400143",
+      "tree": "c4c7ee75d5fb2f886ae6d21d2d00040bad82e4e3",
+      "base": {
+        "sha": "42b46717a980291b74f31bbe93fe7b987cf0481a",
+        "tree": "3c0af1682022e3213daddf141b8cf1cfd0dcc31f"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "19aa382314ad06f8b4ed05a745c4aa3c5c7fd9e7",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "0d9c276c319afc90afeb5007d11d90ff21343135",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "1e289ba64cb6537ed558f3210fe171b48859ed2c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "abee3f747a6b73cf635dc1ed4f40ba6e6bac0c89",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441854807,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-hot-loading-tests/actions/runs/40441854807/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-hot-loading-tests/actions/runs/40441854807/logs",
+          "workflow_id": 397776904
+        },
+        "jobs": [
+          {
+            "id": 121983809636,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441854807,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/async-testing",
+      "pr": "https://github.com/ores-truffle-oreslang/async-testing/pull/26",
+      "head": "588e211df561cc4174bb4c4d4f0733f3a33fdaa1",
+      "tree": "e1a4b78195828b6cecfc6b48bc6648e5a12f5eda",
+      "base": {
+        "sha": "e3f7ca93fe4a79531a012cef4a0990e32f5895f0",
+        "tree": "e144e1512047feef0bca3ff4ebc7b4a6241551dc"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "eef3c2fb6abe6cbe6e782d55076cb9d79cd9495f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "60aa258d0c6af3e133f9efc09a9fff7ce84e1add",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "fb926d82d3c6225871183696c090fa2025de6b4a",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "09edd4664172f9904480ea602a63cd9e8acf8e93",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441861549,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/async-testing/actions/runs/40441861549/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/async-testing/actions/runs/40441861549/logs",
+          "workflow_id": 397776937
+        },
+        "jobs": [
+          {
+            "id": 121983832338,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441861549,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-browser",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-browser/pull/27",
+      "head": "7f26d5c71fb627d7670bbc89fa233fc298d86da3",
+      "tree": "f878e020593d51ca43506c34f8df72ca30f129f7",
+      "base": {
+        "sha": "c1d6c300b6ad62356b611a03b8f043fc46149da5",
+        "tree": "1787fa3239b70c39e3f6bb1697a68eb0793c32bc"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "ca0749d29d73d92d7c7a6b27372b62d6a3dee8db",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "7340c7704e4e11da667dcd0fab0b03afd1d7b0c1",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "4a8c7e2fc93a630176ef3242d1ff20cd6efa180e",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "5b53852ad9a74021b35f8aacf40f8288f9e25a1d",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441866819,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-browser/actions/runs/40441866819/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-browser/actions/runs/40441866819/logs",
+          "workflow_id": 397776956
+        },
+        "jobs": [
+          {
+            "id": 121983849088,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441866819,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-otel",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-otel/pull/12",
+      "head": "cd978119d40ccad5651e15262aea731ec4378030",
+      "tree": "706da6c699a1127274e54411b6e34f46a6e636ca",
+      "base": {
+        "sha": "d9f1832e58d950a7d9bdce7d16e0868b11329b73",
+        "tree": "ef7804090003d8c31fbb91f39d7043a0c3b79423"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "e3dff14e3cf9ba4e61e7af6c9421c6b8fb1df5f8",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "7388388463e55e78b9e0bd24f32db2fe4c28028f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "ae9ac7b95d20ab56b309c48d85a1539e9e3d0742",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "c5d09b0a423cc925090e79b057a38d7f18f0f328",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441874440,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-otel/actions/runs/40441874440/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-otel/actions/runs/40441874440/logs",
+          "workflow_id": 397776983
+        },
+        "jobs": [
+          {
+            "id": 121983874599,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441874440,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-platform.fpga",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-platform.fpga/pull/11",
+      "head": "06713f9687b45a7df2f65c0138588f235937259e",
+      "tree": "0ffa84699a0b4566841135169c13dae95807a910",
+      "base": {
+        "sha": "805486a0329b591e19a8300b6159132cf4b5db96",
+        "tree": "67421ed236d2528b29c53a67886ea31b669cc7db"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "23349e4736687c51cdc6ebcb12f8da83e84f1eb8",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "24b4f6a580fc2ff330b011f5a4dfd91f4294d80c",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "70d299b5d369dde0cdd2de1a541cfda43c797f06",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "5a3593a79181c81f8f8ce5b36ca228a7f9f81f89",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441882299,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.fpga/actions/runs/40441882299/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-platform.fpga/actions/runs/40441882299/logs",
+          "workflow_id": 397777016
+        },
+        "jobs": [
+          {
+            "id": 121983899421,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441882299,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-autograd",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-autograd/pull/8",
+      "head": "cc015d1a6d545a6efb2ad0aa021621dabc8b3149",
+      "tree": "37f14dc7854600574e5339afa9f403b345c51566",
+      "base": {
+        "sha": "dc5906868fb613930e201d9fdd6f06d4d7dd6c61",
+        "tree": "5506b247ab789c6b1c32d50de898731202c02d8d"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "0ccadb699f6df95a4438774bcd3b4cf4ea0285dc",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "d14695b802c173d621beb5a6e9dd170e60fdfe1b",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "84d21f47ed3b205ffa8aafca112eb8c059c01b08",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "d247bb921aae4fa3d9e7b799a5a4da3593d8aabd",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441888681,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-autograd/actions/runs/40441888681/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-autograd/actions/runs/40441888681/logs",
+          "workflow_id": 397777041
+        },
+        "jobs": [
+          {
+            "id": 121983919850,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441888681,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-stack-cli",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-stack-cli/pull/27",
+      "head": "9498059db1b9fe97610ba137f9cee220f9803397",
+      "tree": "d78bb22503b31a4e796ed9ec9bb2aa262e5f5dbe",
+      "base": {
+        "sha": "4329c37fbb793c278a2b469689be197749b426ad",
+        "tree": "36b29468f6fc7c97ca4b031c364c113fcfa11b06"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "254574b5f94141877672469fd663290db10cc646",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "1c4d64b04337c0b5da9463d56bfd3c023b71631f",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "329c75a387faf7748c6fe1ed175fdc6b27f05c41",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "7de0200ea869901e338ea8af38a3ccc110a0bfdd",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441896346,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-stack-cli/actions/runs/40441896346/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-stack-cli/actions/runs/40441896346/logs",
+          "workflow_id": 397777068
+        },
+        "jobs": [
+          {
+            "id": 121983944888,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441896346,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-wasm",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-wasm/pull/42",
+      "head": "07318a68ae89e601306274def640ebebe2ab4ca7",
+      "tree": "ed574904ddf652841bf97059aae552690070fbe9",
+      "base": {
+        "sha": "d65c2a978c642976e714e650d2ec1f5870be92b6",
+        "tree": "18011d4a89c9577dc0802a037dd6be1d10bdcf05"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "c14ddac955f37822abe5c4ba61c0257dc47745cf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "e6984ee3d20542ab922b30edc737749735e585a1",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "5536816d2bc48ff67a950d2ad40e2fc4a678f8ae",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "9be36e9bcd448b3fd7a5b37613358d0fbddbccba",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441903456,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-wasm/actions/runs/40441903456/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-wasm/actions/runs/40441903456/logs",
+          "workflow_id": 397777103
+        },
+        "jobs": [
+          {
+            "id": 121983967768,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441903456,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    },
+    {
+      "repository": "ores-truffle-oreslang/oreslang-source.wasm",
+      "pr": "https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/147",
+      "head": "0c3c62e6e559d1da802e043e380692a5bb6581ba",
+      "tree": "1ed87e1ca022c4b734a745875e39356cef24bf55",
+      "base": {
+        "sha": "af5739b9ec62d8737f1a43be774d2529c6ad5db2",
+        "tree": "f7fa5bbef4a4301bd52a3ee49a4fc8ad82befb4c"
+      },
+      "publishedFiles": {
+        "valid": true,
+        "files": [
+          {
+            "path": ".github/workflows/rollout-evidence.yml",
+            "sha": "87b9090ef113abfa8ccc02b23206da2a8d118e54",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/.gitignore",
+            "sha": "b83d22266ac8aa2f8df2edef68082c789727841d",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.lock",
+            "sha": "3d5f3a474884ece7e4a610b1ec7672a394b23347",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/Cargo.toml",
+            "sha": "b4cf8867e17b5dcb95fac8bf41d1524a335985bf",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/README.md",
+            "sha": "850bde7ecd013bbe425f4ffb711f9ab0f0ed3d41",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/cases.tsv",
+            "sha": "068ddfc17647fde3cfa3e3bd966df649de343eed",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/src/main.rs",
+            "sha": "e527931b92f1e0efd465203b3bd7d113f3ebcd57",
+            "status": "added"
+          },
+          {
+            "path": "tools/rollout-evidence/tests/cli.rs",
+            "sha": "456843f6206abf78e21c6bd9ff2d873eb0ff91e2",
+            "status": "added"
+          }
+        ],
+        "ahead": 1,
+        "behind": 0
+      },
+      "checkerCI": {
+        "run": {
+          "id": 40441910253,
+          "name": "Rollout receipt checker self-tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 1,
+          "jobs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.wasm/actions/runs/40441910253/jobs",
+          "logs_url": "https://api.github.com/repos/ores-truffle-oreslang/oreslang-source.wasm/actions/runs/40441910253/logs",
+          "workflow_id": 397777135
+        },
+        "jobs": [
+          {
+            "id": 121983989041,
+            "name": "receipt-checker-self-tests",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 40441910253,
+            "logs_url": null,
+            "steps": null
+          }
+        ]
+      },
+      "local": {
+        "format": "PASS",
+        "clippy": "PASS",
+        "unitTests": 10,
+        "cliTests": 4,
+        "scope": "checker only"
+      }
+    }
+  ]
+}
