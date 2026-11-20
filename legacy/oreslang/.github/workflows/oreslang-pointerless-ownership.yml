@@ -1,0 +1,58 @@
+name: Pointerless ownership lexical gate
+on:
+  push:
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  ownership-syntax:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Show and verify the exact checked-out Git tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "checkout commit: $(git rev-parse HEAD)"
+          echo "checkout tree: $(git rev-parse HEAD^{tree})"
+          test -z "$(git status --porcelain)"
+      - name: Compile and run Rust checker unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustc --version
+          rustc --edition=2021 -D warnings --test tools/check_oreslang_ownership.rs -o /tmp/oreslang-ownership-test
+          /tmp/oreslang-ownership-test
+      - name: Build checker and scan repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustc --edition=2021 -D warnings tools/check_oreslang_ownership.rs -o /tmp/oreslang-ownership-check
+          /tmp/oreslang-ownership-check .
+      - name: Verify accepted and rejected source in real process
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$(mktemp -d)"
+          trap 'rm -rf "$d"' EXIT
+          printf '%s\n' 'let x = rt borrow owner; let y = rt mut borrow owner; return a * b;' > "$d/accepted.ores"
+          printf '%s\n' 'let x = &owner;' > "$d/forbidden.ores"
+          printf '%s\n' 'let x = rt borrow mut owner;' > "$d/legacy.ores"
+          /tmp/oreslang-ownership-check "$d/accepted.ores"
+          if /tmp/oreslang-ownership-check "$d/forbidden.ores"; then
+            echo 'ERROR: source pointer syntax was accepted' >&2
+            exit 1
+          fi
+          if /tmp/oreslang-ownership-check "$d/legacy.ores"; then
+            echo 'ERROR: obsolete mutable borrow order was accepted' >&2
+            exit 1
+          fi
+  reusable-policy:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-pointerless-ownership-guard.yml

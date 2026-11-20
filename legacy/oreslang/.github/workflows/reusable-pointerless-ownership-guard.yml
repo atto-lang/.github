@@ -1,0 +1,59 @@
+name: Reusable Oreslang pointerless ownership guard
+
+on:
+  workflow_call:
+    inputs:
+      source_root:
+        description: Root of the checked-out caller repository to scan
+        required: false
+        default: .
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  pointerless-ownership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout caller
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify vendored Rust policy identity (no cross-repo token)
+        shell: bash
+        run: |
+          set -euo pipefail
+          guard=tools/check_oreslang_ownership.rs
+          test -f "$guard" || { echo "Missing vendored ownership guard" >&2; exit 1; }
+          expected=c0883a3d2bf8f79c20bea1359d37ec8cb21a73c5
+          actual="$(git hash-object "$guard")"
+          test "$actual" = "$expected" || {
+            echo "Ownership guard SHA mismatch; expected $expected, found $actual" >&2
+            exit 1
+          }
+
+      - name: Build and self-test Rust ownership guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v rustc >/dev/null
+          rustc --edition=2021 --test \
+            tools/check_oreslang_ownership.rs \
+            -o "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
+          "${RUNNER_TEMP}/pointerless-ownership-guard-tests"
+          rustc --edition=2021 \
+            tools/check_oreslang_ownership.rs \
+            -o "${RUNNER_TEMP}/pointerless-ownership-guard"
+
+      - name: Scan positive Oreslang source
+        shell: bash
+        env:
+          SOURCE_ROOT: ${{ inputs.source_root }}
+        run: |
+          set -euo pipefail
+          "${RUNNER_TEMP}/pointerless-ownership-guard" "$SOURCE_ROOT"

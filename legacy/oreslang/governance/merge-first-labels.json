@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "description": "Draft automation labels: after 72h in the current Draft cycle, auto-promote only when exact-head required/material CI is successful and no blocking label is present; label catalog alone does not provision GitHub labels or install automation.",
+  "labels": [
+    {
+      "name": "keep-as-draft",
+      "color": "B60205",
+      "description": "Canonical persistent hold: never automatically promote Draft or merge even after 72h with green tests; owner must remove",
+      "behavior": "block_auto_ready_and_auto_merge",
+      "removal": "authorized_human_only"
+    },
+    {
+      "name": "keep-draft",
+      "color": "B60205",
+      "description": "Legacy alias of keep-as-draft; still blocks automatic Draft-to-Ready transitions and merges",
+      "behavior": "block_auto_ready_and_auto_merge",
+      "removal": "authorized_human_only",
+      "alias_of": "keep-as-draft"
+    },
+    {
+      "name": "not-ready",
+      "color": "D93F0B",
+      "description": "Not ready: prevent automatic draft promotion and merge until resolved",
+      "behavior": "block_auto_ready_and_auto_merge",
+      "removal": "authorized_actor_after_resolution"
+    },
+    {
+      "name": "overlap-review-needed",
+      "color": "FBCA04",
+      "description": "Review competing or overlapping PR implementations",
+      "behavior": "triage_only"
+    },
+    {
+      "name": "needs-tests",
+      "color": "E4E669",
+      "description": "Draft or ready PR still needs substantive test evidence",
+      "behavior": "triage_only"
+    },
+    {
+      "name": "blocked",
+      "color": "D4C5F9",
+      "description": "PR has a recorded blocker needing attention",
+      "behavior": "triage_only"
+    }
+  ],
+  "source_policy": "AGENTS.md",
+  "note": "Fail closed for inaccessible labels, incomplete draft lifecycle, or missing/failed checks. A repository label must be provisioned separately; this catalog is not an installed ruleset. Existing keep-draft remains a blocking alias.",
+  "automation": "At first authorized check at or after 72h of the current Draft cycle, if all material tests pass on exact current HEAD and no keep-as-draft, not-ready, or keep-draft label is present, automatically mark Ready. Recheck labels and SHA immediately before the transition; Ready review age starts from the authenticated Ready event."
+}
