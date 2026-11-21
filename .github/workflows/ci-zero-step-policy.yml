@@ -37,7 +37,10 @@ jobs:
         run: |
           set -euo pipefail
           node --test governance/ci-zero-step-classifier.test.mjs governance/ci-zero-step-inspector.test.mjs governance/ci-recovery-gate.test.mjs governance/ci-tree-manifest-verify.test.mjs
+      # Never give a pull_request-controlled script a token, even read-only.
+      # Exact-head PR regression tests above deliberately run without secrets.
       - name: Smoke-test live same-repository GitHub Actions REST reader
+        if: github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
