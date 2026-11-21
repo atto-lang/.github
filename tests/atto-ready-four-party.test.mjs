@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {assessFourPartyReadyCycle} from '../governance/atto-ready-four-party.mjs';
 
 const HEAD = 'a'.repeat(40), NEW_HEAD = 'b'.repeat(40);
@@ -153,4 +154,18 @@ test('future reviews and invalid head timestamps cannot satisfy', () => {
   const x=ready();x.reviews[0].submitted_at='2026-12-01T00:00:00Z';hold(x);
   x.reviews=ready().reviews; x.head_sha='bad'; hold(x);
   x.head_sha=HEAD;x.last_push_at='2026-11-19T17:00:00Z';hold(x);
+});
+
+test('canonical policy documentation still contains both boundaries and draft holds', () => {
+  const canonical=readFileSync(new URL('../AGENTS.md',import.meta.url),'utf8');
+  const humans=readFileSync(new URL('../docs/ORG_TRUSTED_MERGE_APPROVALS.md',import.meta.url),'utf8');
+  for(const exact of ['0 ≤ ready_age < 72h', '72h ≤ ready_age < 240h',
+                       'ready_age ≥ 240h', 'OpenAI', 'Anthropic',
+                       'keep-as-draft', 'keep-draft', 'not-ready']) {
+    assert.ok(canonical.includes(exact), 'missing canonical policy requirement: '+exact);
+  }
+  assert.match(canonical,/one[^.\n]{0,100}human approval from \`the1mills\`[^.\n]{0,50}OR[^.\n]{0,50}\`ORESoftware\`/i);
+  assert.match(humans,/human-approval slot/i);
+  assert.match(humans,/72 hours/);
+  assert.match(humans,/240 hours/);
 });
