@@ -8,6 +8,7 @@ const HUMAN = new Map([['oresoftware', 11139560], ['the1mills', 2148448]]);
 const TRUSTED_IDS = new Set(HUMAN.values());
 const AI = ['openai', 'anthropic'];
 const HOLD_LABELS = new Set(['keep-as-draft', 'keep-draft', 'not-ready']);
+const PERSISTENT_DRAFT_HOLDS = new Set(['keep-as-draft', 'keep-draft']);
 const millis = s => typeof s === 'string' && Number.isFinite(Date.parse(s)) ? Date.parse(s) : NaN;
 const validId = n => Number.isSafeInteger(n) && n > 0;
 const text = s => typeof s === 'string' && s.trim().length > 0;
@@ -34,13 +35,24 @@ export function assessFourPartyReadyCycle(x) { // Retained export for existing c
   require(x?.labels_verified === true && Array.isArray(x?.labels),
     'current PR labels not independently verified');
 
+  let persistentDraftHold = false;
   for (const raw of Array.isArray(x?.labels) ? x.labels : []) {
     const name = typeof raw === 'string' ? raw :
       raw && typeof raw === 'object' && !Array.isArray(raw) ? raw.name : null;
     if (!text(name)) { failures.push('malformed current PR label'); continue; }
-    if (HOLD_LABELS.has(name.trim().toLowerCase()))
+    const label = name.trim().toLowerCase();
+    if (HOLD_LABELS.has(label))
       failures.push('explicit draft/readiness hold label present');
+    if (PERSISTENT_DRAFT_HOLDS.has(label)) persistentDraftHold = true;
   }
+  // This is advisory only; a separately authorized controller must re-fetch
+  // live lifecycle and labels before a Draft-state correction. "not-ready"
+  // blocks merge but is not itself a permanent Draft-state invariant.
+  const draftHoldAction = x?.labels_verified === true &&
+    x?.ready_cycle_verified === true && persistentDraftHold
+      ? x?.draft === false ? 'CONVERT_TO_DRAFT' :
+        x?.draft === true ? 'REMAIN_DRAFT' : 'RECHECK_LIFECYCLE_AND_LABELS'
+      : 'NONE';
 
   const humanLatest = new Map();
   const aiLatest = new Map();
@@ -111,6 +123,7 @@ export function assessFourPartyReadyCycle(x) { // Retained export for existing c
   return {
     status: failures.length ? 'HOLD' : 'REPORTED_SATISFIED_NOT_AUTHORIZED',
     advisory_only: true,
+    draft_hold_action: draftHoldAction,
     lane,
     ready_age_hours: Number.isFinite(age) ? age / HOUR : null,
     unique_reviewers: acceptedHumans.length + (aiRequired ? aiLatest.size : 0),
