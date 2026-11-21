@@ -9,7 +9,7 @@ const r=(label, time='2026-11-19T15:45:00Z') => {
   if (label==='anthropic') return {...common,source:'independent-provider-attestation',
     provider:'Anthropic',provider_verified:true,attestation_verified:true,agent_identity:'claude-run-1'};
   const login=label==='ore'?'ORESoftware':'the1mills';
-  return {...common,source:'github-human',login,github_id:label==='ore'?11139560:22222222};
+  return {...common,source:'github-human',login,github_id:label==='ore'?11139560:2148448};
 };
 function valid() {return {head_sha:HEAD,author_github_id:33333333,
   checked_at:'2026-11-19T16:00:00Z',ready_cycle_started_at:'2026-11-19T15:00:00Z',
@@ -46,7 +46,7 @@ test('review before the last push cannot be counted',()=>{
   const x=valid();x.reviews[2].submitted_at='2026-11-19T15:20:00Z';
   assert.equal(gate(x).status,'HOLD');
 });
-test('fast window opens at 72 hours with exactly one independent reviewer',()=>{
+test('fast window opens at 72 hours with a human plus AI',()=>{
   const x=valid();x.ready_cycle_started_at='2026-11-16T16:00:00Z';
   x.reviews=[r('ore'),r('openai')];assert.equal(gate(x).lane,'fast-one-independent');
   assert.equal(gate(x).status,'REPORTED_SATISFIED_NOT_AUTHORIZED');
@@ -110,4 +110,40 @@ test('hold overrides positive four-party approval in every ready-age window',()=
     assert.equal(gate(x).status,'HOLD');
     assert.equal(gate(x).draft_action,'CONVERT_TO_DRAFT');
   }
+});
+
+test('human approval must match immutable authenticated GitHub account ID',()=>{
+  const x=valid();
+  x.reviews[2].github_id=999999;
+  assert.equal(gate(x).status,'HOLD');
+  assert.match(gate(x).failures.join(' '),/unverified or unqualified reviewer identity/);
+  x.reviews[2]=r('ore');
+  x.reviews[3].login='ORESoftware';
+  assert.equal(gate(x).status,'HOLD');
+});
+test('a READY PR cannot be auto-promoted, even when unlabelled',()=>{
+  const x=valid();
+  assert.equal(assessDraftHold(x).labels_allow_auto_ready,false);
+  assert.equal(assessDraftHold({...x,draft:true}).labels_allow_auto_ready,true);
+  assert.equal(assessDraftHold({...x,draft:true,labels:['not-ready']}).labels_allow_auto_ready,false);
+});
+test('review clock is strict UTC; a re-draft and new Ready cycle reject old approvals',()=>{
+  const x=valid();
+  x.ready_cycle_started_at='2026-11-19T15:50:00Z';
+  assert.equal(gate(x).status,'HOLD');
+  x.ready_cycle_started_at='2026-11-19T15:00:00-00:00';
+  assert.equal(gate(x).status,'HOLD');
+  x.ready_cycle_started_at='2026-11-19T15:00:00Z';
+  x.checked_at='yesterday';
+  assert.equal(gate(x).status,'HOLD');
+});
+test('AI attestations require canonical provider identity and a nonblank agent identity',()=>{
+  const x=valid();
+  x.reviews[0].agent_identity=' ';
+  assert.equal(gate(x).status,'HOLD');
+  x.reviews[0]=r('openai');
+  x.reviews[0].provider='oPeNaI';
+  assert.equal(gate(x).status,'REPORTED_SATISFIED_NOT_AUTHORIZED');
+  x.reviews[0].provider='unknown-model';
+  assert.equal(gate(x).status,'HOLD');
 });
