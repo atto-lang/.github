@@ -1,0 +1,8 @@
+# atto-lang/.github repository owners (verified admin collaborators, 2026-11-18).
+# This file governs reviews of THIS .github repository only.
+# GitHub does not propagate CODEOWNERS from a centralized .github repository
+# into each atto-source.* or any oreslang-source.* repository.
+# Require code-owner reviews in this repo's branch rules to enforce review.
+# Replace/augment these interim owners with verified platform/language/security
+# teams when the maintainers create those teams and verify write access.
+* @the1mills @ORESoftware

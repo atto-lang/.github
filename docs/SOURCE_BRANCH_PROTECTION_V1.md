@@ -22,7 +22,7 @@ Each repository's default `main` branch MUST:
 1. report `protected=true` through GitHub's authenticated branch API;
 2. require pull requests and at least one **current approval from `@oresoftware` or `@the1mills`**, with the approving account distinct from the PR author;
 3. ensure CODEOWNER requirements for compiler/runtime/workflow/security-policy changes **can be satisfied by either trusted account**; do not require a separate CODEOWNER or second independent reviewer after a valid approval by either account;
-4. dismiss stale approvals after new commits;
+4. retain the one valid approval across ordinary new commits (`dismiss_stale_reviews_on_push=false`; `require_last_push_approval=false`), while still testing each changed SHA;
 5. require resolution of review conversations;
 6. apply protections to administrators and expose no user/team/app pull-request bypass allowance;
 7. reject direct/force pushes and branch deletion except through an explicitly reviewed incident procedure;
@@ -52,7 +52,7 @@ Do not activate required status contexts until source-org runners can actually s
 
 - a deliberately failing synthetic PR is blocked;
 - missing valid approval from `@oresoftware` or `@the1mills` is blocked, and an unrelated approver alone does not satisfy this review policy;
-- a new commit invalidates a stale approval;
+- a routine new commit does not automatically invalidate the already accepted one-time trusted-owner approval once the target repository rules have been changed;
 - a zero-step/startup-failure check is blocked;
 - the exact required checks plus valid approval from either trusted account permit merge (subject to all other applicable GitHub restrictions).
 
