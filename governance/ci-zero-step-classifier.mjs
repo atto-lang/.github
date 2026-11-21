@@ -101,6 +101,15 @@ export function classifyJobEvidence(input) {
     }
   }
 
+  // Report known stepful failures without hiding concurrent zero-step
+  // admission failures under a single NOT_EXECUTED result.
+  if (zeroStep.length && failed.length) {
+    return verdict('MIXED_ADMISSION_AND_TEST_FAILURE',
+      'stepful test failure and zero-step runner-admission failure coexist', {
+        job_ids: zeroStep, failed_job_ids: failed,
+        total_steps: totalSteps, skipped_steps: skippedSteps,
+      });
+  }
   // A missing runner anywhere in a required jobs set blocks a complete pass.
   if (zeroStep.length) {
     return verdict('NOT_EXECUTED', 'one or more jobs have no admitted runner or executed steps', {
@@ -153,7 +162,7 @@ if (invokedPath && import.meta.url === pathToFileURL(resolve(invokedPath)).href)
     const result = classifyJobEvidence(data);
     console.log(JSON.stringify(result));
     process.exitCode = result.status === 'STEPFUL_RUN_REPORTED_SUCCESS' ? 0 :
-      result.status === 'TEST_FAILED' ? 1 : 2;
+      ['TEST_FAILED', 'MIXED_ADMISSION_AND_TEST_FAILURE'].includes(result.status) ? 1 : 2;
   } catch (error) {
     console.error('INCONCLUSIVE: ' + error.message);
     process.exitCode = 2;
