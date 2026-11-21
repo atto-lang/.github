@@ -145,8 +145,14 @@ The canonical tooling includes:
   reviewed atto-lang/.github diagnostic scripts, not private compiler source.
 - Each repository's draft .github/workflows/ci-zero-step-admission-watch.yml
   schedules a daily local metadata scan and offers workflow_dispatch for an
-  exact run_id. The reusable workflow dependency at @main must be merged
-  before these callers are activated.
+  exact run_id. **Call the reusable workflow at a full, immutable,
+  independently reviewed commit SHA rather than a mutable `@main`.**
+  Do not activate private callers until this governance PR is reviewed and
+  merged, the reviewed workflow commit has been pinned by each caller, and
+  applicable source-private approval/branch protections have been checked.
+  Inside the watcher, the public diagnostic script checkout is separately
+  pinned to tested commit `82f050ee5d4043d98c0150458bca743970b390ed`.
+  Later source updates require an independently reviewed SHA re-pin.
 
 The watch is *diagnostic*, not a CI test replacement, permission to export
 private source, an independent PR review, or a certified test pass. It never
