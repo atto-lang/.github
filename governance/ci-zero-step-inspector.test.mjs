@@ -157,6 +157,34 @@ test('recent watcher skips itself, bounds scan, and reports uncertain API failur
   assert.equal(r.results[0].status, 'INCOMPLETE_JOB_EVIDENCE');
   assert.equal(calls.filter(x => x.includes('/runs/43')).length, 0);
 });
+test('recent scan never discards malformed or duplicated run-listing records', async () => {
+  const calls = [];
+  const reader = async route => {
+    calls.push(route);
+    if (route.endsWith('/actions/runs?per_page=5')) return {
+      workflow_runs: [
+        {id: 43, name: MONITOR_NAME},
+        {name: 'missing ID'},
+        {id: 42, name: 'compiler'},
+        {id: 42, name: 'duplicate'},
+        {id: -1, name: 'bad ID'},
+      ],
+    };
+    if (route.endsWith('/runs/42')) return makeRun({
+      status: 'in_progress', conclusion: null,
+    });
+    throw new Error('unexpected URL: ' + route);
+  };
+  const result = await inspectRecent({repository, limit: 5, getJson: reader});
+  assert.equal(result.exhaustive, false);
+  assert.equal(result.results.length, 4);
+  assert.equal(summarize(result).statuses.INCOMPLETE_JOB_EVIDENCE, 3);
+  assert.equal(summarize(result).statuses.PENDING_OR_INCONCLUSIVE, 1);
+  assert.equal(inspectionExitCode('--recent', summarize(result)), 0);
+  assert.equal(inspectionExitCode('--run-id', summarize(result)), 2);
+  assert.deepEqual(calls.filter(x => x.endsWith('/runs/42')).length, 1);
+  assert.ok(!calls.some(x => x.endsWith('/runs/43')));
+});
 test('Markdown summary escapes workflow-controlled characters to block injection', () => {
   const formatted = formatSummary([{ run_id: 42, workflow_name: 'a|b\n# header', status: 'NOT_EXECUTED', head_sha: sha }]);
   assert.ok(formatted.includes('a b # header'));
