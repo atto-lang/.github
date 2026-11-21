@@ -168,3 +168,35 @@ INCOMPLETE_JOB_EVIDENCE, INCONSISTENT_JOB_EVIDENCE, STALE_HEAD, and genuinely
 failed stepful jobs. A diagnosis is successful when the read-only observation
 completed, even when the observed workflow failed. Test certificates still
 require independent exact-head provenance and actual required test evidence.
+
+
+## Off-host monitor and fail-closed recovery handoff
+
+An existing **six-hour CI Admission Watch automation** also uses the connected
+GitHub app directly outside source-hosted Actions to inspect AttoLang CI. This
+matters because an in-repository scheduled workflow cannot execute during
+source-organization runner admission or billing lockouts. The off-host monitor
+may diagnose and request source-free capacity probes without any private-source
+checkout. GitHub connector rate limits must be respected, and a 403 means STOP,
+not aggressive retries.
+
+`governance/ci-recovery-gate.mjs` is a pure **non-authorizing decision engine**
+used for the next handoff. It accepts immutable source commit/tree/run identity,
+a classified CI diagnosis, and optional source-free private carrier probe
+receipts. It distinguishes actual stepful test failures from zero-step
+admission failures; rejects public or same-org carrier candidates; and rejects
+zero-step, cancelled, mismatched-head, or non-running capacity probes.
+
+**Security boundary:** even when supplied JSON claims export approval,
+`ci-recovery-gate.mjs` always reports
+`PRIVATE_EXPORT_AUTHORIZATION_REQUIRED` for private/internal source.
+An external actor with independent authenticated read access to source export
+rules and owner/security approvals must verify these *live* before any
+connector private blob transfer. No plan output is an authorization capability.
+For public source it may produce `PUBLIC_MIRROR_PLAN_ONLY` but cannot perform
+mirroring or certify actual test results. It never executes Actions, writes
+GitHub statuses, exports source, or bypasses branch protection.
+
+The off-host watch and in-repository watcher are complementary; neither can
+create an authenticated approval, fix GitHub billing automatically, or replace
+an actual executed exact-head compiler/conformance test receipt.
