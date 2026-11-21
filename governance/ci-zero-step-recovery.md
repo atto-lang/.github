@@ -201,3 +201,11 @@ GitHub statuses, exports source, or bypasses branch protection.
 The off-host watch and in-repository watcher are complementary; neither can
 create an authenticated approval, fix GitHub billing automatically, or replace
 an actual executed exact-head compiler/conformance test receipt.
+
+## Reaffirmed standing instruction and live capacity receipt (2026-11-21)
+
+The user explicitly reaffirmed: **When the source organization has insufficient GitHub Actions minutes, proactively locate a different GitHub organization with a working runner.** For a private source, the destination's `GITHUB_TOKEN` cannot directly check out the source across organization boundaries. **Only when the exact source-to-private-destination transfer has independent security authorization and an effective allowlist**, construct a temporary destination-local Git-tree mirror through the GitHub connector, using no cross-organization source checkout credential, and verify every path, mode, blob SHA and complete source root-tree SHA before executing real tests. This is a **standing instruction**, not a one-time prompt or exception to private-source security.
+
+**Live source-free proof:** A newly created synthetic-only Rust workflow on private `file-tunnel-test/atto-ci` (repository ID `1458317355`) [run 44949778398](https://github.com/file-tunnel-test/atto-ci/actions/runs/44949778398) executed **three job steps** and **two passing Rust unit tests**. No private compiler source was transferred. This proves **carrier capacity at that moment only**, not permission to copy any private source, ongoing available minutes, or material compiler CI. Newly tested other private carrier candidates `ores-data-platform/atto-ci` and `benefactor-cc/atto-ci` failed with **zero executed steps** and are `NOT_EXECUTED`, not code-test failures. See [independent private transfer approval/incident issue #548](https://github.com/atto-lang/atto-platform-conformance/issues/548) for the authorization/cleanup queue and mutable live evidence.
+
+The enabled **Review, test and merge PRs** recurring automation holds the same fallback instruction for future CI triage. An unmerged PR or an automation prompt is not a GitHub branch protection setting; the independent source/destination security decision, real source CI admission and normal merge gates remain mandatory.
