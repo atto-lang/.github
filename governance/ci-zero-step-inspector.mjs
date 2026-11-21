@@ -95,6 +95,23 @@ export function summarize(inspected) {
   return { checked: results.length, statuses, results };
 }
 
+// Recent scans are an informational, non-authorizing monitor over a changing
+// Actions run list. A just-created run may be listed before its detail API is
+// readable (404), even if a later fetch succeeds. Retain INCOMPLETE evidence
+// in the report and emit an explicit warning, but do not make a best-effort
+// recent scan a mandatory, permanently red status check.
+// An exact --run-id inspection MUST still fail closed on missing metadata.
+export function inspectionExitCode(mode, summary) {
+  if (!['--recent', '--run-id'].includes(mode) ||
+      !summary || typeof summary !== 'object' ||
+      !summary.statuses || typeof summary.statuses !== 'object') {
+    throw new Error('invalid inspection mode or summary');
+  }
+  const uncertain = (summary.statuses.INCOMPLETE_JOB_EVIDENCE ?? 0) +
+    (summary.statuses.INCONSISTENT_JOB_EVIDENCE ?? 0);
+  return mode === '--run-id' && uncertain ? 2 : 0;
+}
+
 const safeCell = value => String(value ?? '').replace(/[\r\n|<>]/g, ' ').slice(0, 140);
 export function formatSummary(inspected) {
   const data = summarize(inspected);
@@ -162,9 +179,13 @@ if (invoked && import.meta.url === pathToFileURL(resolve(invoked)).href) {
     if (summary.statuses.NOT_EXECUTED || summary.statuses.MIXED_ADMISSION_AND_TEST_FAILURE) {
       console.log('::warning::Actions NOT_EXECUTED: investigate admission and capacity. Private-source copying requires separate approval.');
     }
-    // Diagnosing genuine failed runs must not create a false CI failure.
-    process.exitCode = summary.statuses.INCOMPLETE_JOB_EVIDENCE ||
-      summary.statuses.INCONSISTENT_JOB_EVIDENCE ? 2 : 0;
+    if (summary.statuses.INCOMPLETE_JOB_EVIDENCE ||
+        summary.statuses.INCONSISTENT_JOB_EVIDENCE) {
+      console.log('::warning::Actions inspection INCONCLUSIVE: metadata missing, stale, or contradictory; recheck exact run. This is NOT a passing test or source export authorization.');
+    }
+    // --recent is an observation-only snapshot and cannot attest any build.
+    // --run-id is an exact-scope audit that fails closed when evidence is bad.
+    process.exitCode = inspectionExitCode(mode, summary);
   } catch (error) {
     console.error('INCONCLUSIVE: ' + error.message);
     process.exitCode = 2;

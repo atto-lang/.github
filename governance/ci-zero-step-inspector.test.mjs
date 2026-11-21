@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  inspectRun, inspectRecent, summarize, formatSummary, createGitHubReader, MONITOR_NAME,
+  inspectRun, inspectRecent, summarize, inspectionExitCode, formatSummary, createGitHubReader, MONITOR_NAME,
 } from './ci-zero-step-inspector.mjs';
 
 const repository = 'atto-lang/.github';
@@ -196,4 +196,28 @@ test('HTTP failures report status only and never reveal token or response conten
   });
   await assert.rejects(reader('/repos/atto-lang/.github/actions/runs/42'), e =>
     /HTTP 403/.test(e.message) && !e.message.includes('top-secret-value'));
+});
+
+test('recent observer preserves incomplete 404 evidence without turning observation into a required check', () => {
+  const summary = summarize([{ repository, run_id: 99,
+    status: 'INCOMPLETE_JOB_EVIDENCE', reason: 'REST metadata unavailable: GitHub REST returned HTTP 404' }]);
+  assert.equal(summary.statuses.INCOMPLETE_JOB_EVIDENCE, 1);
+  assert.equal(inspectionExitCode('--recent', summary), 0);
+  assert.equal(inspectionExitCode('--run-id', summary), 2);
+});
+
+test('recent observer never certifies genuine failures or contradictory job metadata', () => {
+  for (const status of ['TEST_FAILED', 'NOT_EXECUTED', 'MIXED_ADMISSION_AND_TEST_FAILURE',
+                        'INCONSISTENT_JOB_EVIDENCE', 'INCOMPLETE_JOB_EVIDENCE']) {
+    const summary = summarize([{ status, run_id: 42 }]);
+    assert.equal(summary.results[0].status, status);
+    assert.equal(inspectionExitCode('--recent', summary), 0);
+    assert.equal(inspectionExitCode('--run-id', summary),
+      status === 'INCONSISTENT_JOB_EVIDENCE' || status === 'INCOMPLETE_JOB_EVIDENCE' ? 2 : 0);
+  }
+});
+
+test('invalid inspection modes and malformed result data cannot become green', () => {
+  assert.throws(() => inspectionExitCode('--unsafe', summarize([])), /invalid inspection/);
+  assert.throws(() => inspectionExitCode('--run-id', null), /invalid inspection/);
 });
