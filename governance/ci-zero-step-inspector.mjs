@@ -157,7 +157,7 @@ if (invoked && import.meta.url === pathToFileURL(resolve(invoked)).href) {
     const summary = summarize(inspected);
     console.log(JSON.stringify(summary));
     if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, formatSummary(inspected));
-    if (summary.statuses.NOT_EXECUTED) {
+    if (summary.statuses.NOT_EXECUTED || summary.statuses.MIXED_ADMISSION_AND_TEST_FAILURE) {
       console.log('::warning::Actions NOT_EXECUTED: investigate admission and capacity. Private-source copying requires separate approval.');
     }
     // Diagnosing genuine failed runs must not create a false CI failure.
