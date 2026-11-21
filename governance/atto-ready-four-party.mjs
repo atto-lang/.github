@@ -1,4 +1,6 @@
 // Read-only advisory evaluator for AttoLang's ready-cycle four-party policy.
+// A verified keep-as-draft label is a hard Draft-state invariant; this module
+// reports required actions but does not itself operate on GitHub.
 // This validates supplied authenticated evidence, not GitHub live state. NEVER
 // authorize merges or treat untrusted PR text as reviewer attestation.
 const SHA = /^[a-f0-9]{40}$/;
@@ -8,9 +10,41 @@ const AI = new Map([['openai','ai-openai'],['anthropic','ai-anthropic']]);
 const roles = [...HUMAN.values(),...AI.values()];
 const date = x => typeof x === 'string' && Number.isFinite(Date.parse(x)) ? Date.parse(x) : NaN;
 const int = x => Number.isSafeInteger(x) && x > 0;
+
+// Never infer label absence from an unavailable or untrusted label listing.
+// Caller MUST obtain current labels and draft state from authenticated GitHub
+// APIs at the action boundary; PR bodies or workflow inputs are not evidence.
+const DRAFT_HOLDS = new Set(['keep-as-draft', 'keep-draft']);
+const MERGE_HOLDS = new Set([...DRAFT_HOLDS, 'not-ready']);
+export function assessDraftHold(x) {
+  const names = [];
+  let verified = x?.labels_verified === true && Array.isArray(x?.labels);
+  if (verified) for (const label of x.labels) {
+    const name = typeof label === 'string' ? label
+      : label && !Array.isArray(label) && typeof label.name === 'string' ? label.name : null;
+    if (!name || name.trim() !== name) { verified = false; break; }
+    names.push(name.toLowerCase());
+  }
+  const blocking_labels = verified
+    ? [...new Set(names.filter(name => MERGE_HOLDS.has(name)))].sort() : [];
+  const draft_required = verified && blocking_labels.some(name => DRAFT_HOLDS.has(name));
+  const draftKnown = typeof x?.draft === 'boolean';
+  return {
+    advisory_only: true, labels_verified: verified, blocking_labels, draft_required,
+    draft_action: !verified ? 'HOLD_UNVERIFIED_LABELS'
+      : !draftKnown ? 'HOLD_UNVERIFIED_DRAFT_STATE'
+      : draft_required ? (x.draft ? 'REMAIN_DRAFT' : 'CONVERT_TO_DRAFT') : 'NONE',
+    labels_allow_auto_ready: verified && draftKnown && blocking_labels.length === 0,
+  };
+}
 export function assessFourPartyReadyCycle(x) {
   const failures = [];
   const bad = (condition, why) => { if (!condition) failures.push(why); };
+  const draftHold = assessDraftHold(x);
+  bad(draftHold.labels_verified, 'current PR labels not independently verified');
+  bad(typeof x?.draft === 'boolean', 'current PR draft state absent');
+  bad(draftHold.blocking_labels.length === 0,
+      'blocking hold label: ' + draftHold.blocking_labels.join(', '));
   const checked = date(x?.checked_at), started = date(x?.ready_cycle_started_at);
   const pushed = date(x?.last_push_at);
   bad(SHA.test(x?.head_sha ?? ''), 'missing immutable head SHA');
@@ -66,12 +100,17 @@ export function assessFourPartyReadyCycle(x) {
     byRole.set(r.role, r.key);
   }
   if (lane === 'fast-one-independent') {
-    bad(principals.size >= 1, 'qualified independent current-head review missing');
+    const humanCount = qualified.filter(r => r.role.startsWith('human-')).length;
+    const aiCount = qualified.filter(r => r.role.startsWith('ai-')).length;
+    bad(humanCount >= 1 && aiCount >= 1 && principals.size >= 2,
+        'fast lane requires one qualified human AND one verified AI approval');
   } else {
     bad(roles.every(role => byRole.has(role)) && principals.size >= 4 &&
         new Set([...byRole.values()]).size === 4,
         'four distinct OpenAI, Anthropic, ORESoftware and the1mills approvals missing');
   }
   return {status: failures.length ? 'HOLD' : 'REPORTED_SATISFIED_NOT_AUTHORIZED',
-          advisory_only: true, lane, unique_reviewers: principals.size, failures};
+          advisory_only: true, lane, unique_reviewers: principals.size,
+          draft_action: draftHold.draft_action,
+          blocking_labels: draftHold.blocking_labels, failures};
 }
