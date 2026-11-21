@@ -301,8 +301,11 @@ mod tests {
         let mut s = snapshot();
         s.labels_verified = false;
         assert!(parse_snapshot(&tsv(&s), &s.repository, s.number).is_err());
-        let v = tsv(&snapshot()).replace("\tfalse\ttrue\t", "\tmaybe\ttrue\t");
-        assert!(parse_snapshot(&v, "atto-lang/.github", 49).is_err());
+        let value = tsv(&snapshot());
+        let mut fields: Vec<String> = value.split('\t').map(str::to_owned).collect();
+        fields[3] = "maybe".to_owned();
+        let malformed = fields.join("\t");
+        assert!(parse_snapshot(&malformed, "atto-lang/.github", 49).is_err());
     }
 
     #[test]
