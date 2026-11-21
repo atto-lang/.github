@@ -8,7 +8,6 @@ use std::path::PathBuf;
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-const SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 static NEXT: AtomicU64 = AtomicU64::new(0);
 const FAKE_GH: &str = r#"#!/bin/sh
 set -eu
