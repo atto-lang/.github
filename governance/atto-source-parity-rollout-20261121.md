@@ -32,7 +32,7 @@ The 11 staged PRs use one identical Git blob for `.github/tests/atto-pr-policy-c
 
 ## Exact-tree private carrier test evidence
 
-Atto source-repository Actions jobs failed with **zero executed steps**, including newly staged policy jobs. Do not interpret those as executed FAIL or PASS. Authorized private carrier: `ores-data-platform/atto-ci`, using only carrier-local `GITHUB_TOKEN` and a temporary isolated `ci/*` branch.
+Atto source-repository Actions jobs failed with **zero executed steps**, including newly staged policy jobs. Do not interpret those as executed FAIL or PASS. Private test carrier used: `ores-data-platform/atto-ci` (numeric repo ID `1459286271`, private at readback), using only carrier-local `GITHUB_TOKEN` and isolated `ci/*` branches. **Independent destination-specific private-source transfer authorization has NOT been verified; this is test evidence, not approval for source export or continued carrier use. See [security approval/incident queue #548](https://github.com/atto-lang/atto-platform-conformance/issues/548). Further private-source transfers are stopped pending review.**
 
 | Source PR | Verified full source Git tree SHA | Actual carrier Actions |
 | --- | --- | --- |
@@ -78,3 +78,11 @@ Inspected the current `.github/private-ci-approved-repositories.txt` in **nine s
 On [canonical #56](https://github.com/atto-lang/.github/pull/56), the restored 72h/240h evaluator plus AI-dismissal tests passed **22/22** Node regression cases, and the exact revision `c628c7ec1280b47f0a38dcbe6b467afb22ede11b` passed **11/11** GitHub checks. The competing no-age review proposal [#55](https://github.com/atto-lang/.github/pull/55) was closed without merge.
 
 **Reminder:** all eleven source policy PRs are still open pending real independent human approval and effective GitHub ruleset checks. Common text and test Git blobs prove staged source policy consistency, not full deployed governance and not compiler/runtime feature parity.
+
+## Security-review hold — already copied source Git objects
+
+Review of existing [independent source transfer approval queue #548](https://github.com/atto-lang/atto-platform-conformance/issues/548) established a stricter requirement than the user-directed technical workaround: **an independent source-owner/security decision must authorize each immutable source tree and specific private carrier**. That approval was **not separately verified** for the two Realtime/Atto-native mirrors already copied, even though the user directed a token-free private-carrier method and their 5/5 Rust tests executed.
+
+The exact source/carrier commits and trees, run IDs, test scopes and confidentiality caveat have been posted to [issue #548](https://github.com/atto-lang/atto-platform-conformance/issues/548). No further private Git-object source copies are authorized by this document. The two pairs of old/new carrier branches **still exist**; deletion is not supported through this connected GitHub action, and deleting refs would not guarantee object removal. Request a source security/incident-owner decision on visibility, readers/apps, artifacts, retention, quarantine and approved cleanup. Do not mislabel the successful CI as export authorization, and do not assume cleanup has happened.
+
+Technical verification of both historical source trees remains mathematically valid. Their **governance test evidence** is retained for forensic/audit purposes; **carrier reuse/transfer approval and merge authorization remain unverified**.
