@@ -151,6 +151,45 @@ test('all draft hold labels fail closed, including GitHub object labels', () => 
   const x=ready(); x.labels=[{bad:'not-ready'}]; hold(x);
   x.labels=[];x.labels_verified=false;hold(x);
 });
+test('persistent hold labels require returning manually Ready PRs to Draft, without merge authorization', () => {
+  for(const name of ['keep-as-draft','keep-draft']) {
+    const x=ready();
+    x.labels=[{name:name.toUpperCase()}];
+    hold(x);
+    assert.equal(audit(x).draft_hold_action,'CONVERT_TO_DRAFT');
+    assert.equal(audit(x).advisory_only,true);
+    x.draft=true;
+    hold(x);
+    assert.equal(audit(x).draft_hold_action,'REMAIN_DRAFT');
+    x.draft=false;
+    x.labels_verified=false;
+    hold(x);
+    assert.equal(audit(x).draft_hold_action,'NONE');
+    x.labels_verified=true;
+    x.ready_cycle_verified=false;
+    hold(x);
+    assert.equal(audit(x).draft_hold_action,'NONE');
+  }
+});
+test('not-ready blocks merge but does not require persistent Draft conversion', () => {
+  const x=ready();
+  x.labels=['not-ready'];
+  hold(x);
+  assert.equal(audit(x).draft_hold_action,'NONE');
+  x.draft=true;
+  hold(x);
+  assert.equal(audit(x).draft_hold_action,'NONE');
+});
+test('label catalog persists only the two human-controlled Draft invariants', () => {
+  const labels=JSON.parse(readFileSync(new URL('../governance/merge-first-labels.json',import.meta.url),'utf8')).labels;
+  const persistent=labels.filter(x=>x.draft_invariant).map(x=>x.name).sort();
+  assert.deepEqual(persistent,['keep-as-draft','keep-draft']);
+  for(const label of labels.filter(x=>x.draft_invariant))
+    assert.equal(label.draft_invariant,'must_remain_draft_and_revert_any_ready_transition');
+  const docs=readFileSync(new URL('../AGENTS.md',import.meta.url),'utf8');
+  assert.ok(docs.includes('return it to Draft after rechecking'));
+  assert.ok(docs.includes('3–10-day Ready'));
+});
 test('missing lifecycle, provenance, author, or review history is a HOLD', () => {
   const x=ready();x.ready_cycle_verified=false;hold(x);
   x.ready_cycle_verified=true;x.draft=true;hold(x);
