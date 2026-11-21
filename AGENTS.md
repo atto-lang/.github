@@ -41,13 +41,13 @@ A draft is a work queue, **not a way to bypass governance or wait out the clock*
 
 Canonical label names, descriptions, and intended behavior are recorded in [`governance/merge-first-labels.json`](governance/merge-first-labels.json). This file is a provisionable catalog, **not** evidence that labels have been created in every repository or that automation is deployed.
 
-- **`keep-as-draft`** — **canonical persistent human hold**. NEVER automatically convert a Draft to Ready while present, even after 72 hours and successful tests; only an authorized owner/human removes this label.
-- **`keep-draft`** — backwards-compatible alias treated exactly like `keep-as-draft`; do not automatically remove existing labels.
+- **`keep-as-draft`** — **canonical persistent human hold and Draft-state invariant**. NEVER automatically convert a Draft to Ready while present, even after 72 hours and successful tests. If authenticated GitHub state says the PR was manually moved to Ready while this label remains, a trusted authorized controller must return it to Draft after rechecking the current label and head, recording the cause; until successful re-draft, the PR remains HOLD and cannot merge. Only an authorized owner/human removes the label.
+- **`keep-draft`** — backwards-compatible alias with the identical persistent Draft-state invariant and re-draft behavior as `keep-as-draft`; do not automatically remove existing labels.
 - **`not-ready`** — work/readiness blocker. **Never automatically convert a draft to ready** while present. Resolve the stated blocker and remove the label only by an authorized action.
 - **All three labels (`keep-as-draft`, `not-ready`, and `keep-draft`) also prohibit automated merging**, even after a manual transition to Ready.
 - `overlap-review-needed`, `needs-tests`, or `blocked` are useful optional triage labels, but are advisory unless configured by an enforcing workflow. Labels are case-normalized when checked; do not infer approval from the absence of labels.
 
-Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-as-draft`, `keep-draft`, or `not-ready`. Manual transition with a hold label must not be interpreted as permission to merge.
+Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-as-draft`, `keep-draft`, or `not-ready`. A manual Ready transition with `keep-as-draft` or `keep-draft` still present must trigger authorized re-draft after live verification, **not** merge eligibility. With `not-ready` alone, block auto-promotion and merging but do not claim it is a permanent Draft-state label. The controller must be protected by an issuer-bound required status check to close readiness/label races; a documentation-only advisory cannot mutate PR state or install that check.
 
 ## Mandatory competing/overlapping PR audit — especially fast lane
 
