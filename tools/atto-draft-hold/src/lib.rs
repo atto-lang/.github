@@ -5,6 +5,8 @@
 //! complete authorization to merge.
 use std::fmt;
 
+pub mod review_cycle;
+
 pub const STATUS_CONTEXT: &str = "atto-governance/draft-hold";
 
 // The GitHub CLI executes this jq expression against an authenticated live
