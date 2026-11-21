@@ -27,9 +27,14 @@ export permission or permission to merge.
 1. For each requested PR/head, inspect its **exact head SHA**, workflow run
    attempt, conclusion and full job records. Check whether a runner was allocated
    and whether **actual steps** executed. A job with `steps: []`, `steps: null`,
-   `runner_id: 0`, or equivalent empty execution evidence is
-   **`NOT_EXECUTED`**. Do not classify it as a compiler/test failure or
-   a successful test. A failed *stepful* job is a genuine test/infrastructure
+   or equivalent empty execution evidence is **`NOT_EXECUTED`**. With
+   populated executed steps but missing runner metadata, classify
+   **`INCOMPLETE_JOB_EVIDENCE`**; with explicit `runner_id: 0` plus
+   purported executed steps, classify **`INCONSISTENT_JOB_EVIDENCE`**.
+   The REST jobs response must include **all pages** (`total_count`
+   exactly matches the assembled jobs); otherwise **`INCOMPLETE_JOB_EVIDENCE`**.
+   Neither missing nor contradictory evidence proves a compiler failure
+   or a successful test. A failed *stepful* job is a genuine test/infrastructure
    result; collect logs and fix the actual failure instead.
 2. Check source-org Actions budget/admission. If unavailable or repeatedly
    zero-step, **immediately** discover a different org with candidate runner
@@ -97,7 +102,10 @@ export permission or permission to merge.
 
 | Observation | Status | Next action |
 | --- | --- | --- |
-| Zero steps, null steps or no runner admission | `NOT_EXECUTED` | Capacity probe on another authorized org; authorization check |
+| Zero steps or null steps | `NOT_EXECUTED` | Investigate source runner admission; then authorized capacity probe |
+| Missing REST job pages, IDs or runner metadata | `INCOMPLETE_JOB_EVIDENCE` | Fetch full real job records; never claim execution or failure |
+| `runner_id: 0` but populated executed steps, or success with failed step | `INCONSISTENT_JOB_EVIDENCE` | Verify original run metadata, attempt and provenance; do not certify |
+| Stepful checks still running, cancelled or all skipped | `PENDING_OR_INCONCLUSIVE` | Wait or rerun; no pass claim |
 | Private source export forbidden/unapproved | `TRANSFER_DENIED` | Security decision; source-free tests only |
 | Source-free runner capacity test succeeds | `CARRIER_CAPABLE_ONLY` | Authorization, then exact mirror if permitted |
 | Missing/mismatched paths, blob OIDs or root tree | `MIRROR_INVALID` | Stop; reconcile all objects and modes |
