@@ -188,7 +188,7 @@ test('label catalog persists only the two human-controlled Draft invariants', ()
     assert.equal(label.draft_invariant,'must_remain_draft_and_revert_any_ready_transition');
   const docs=readFileSync(new URL('../AGENTS.md',import.meta.url),'utf8');
   assert.ok(docs.includes('return it to Draft after rechecking'));
-  assert.ok(docs.includes('3–10-day Ready'));
+  assert.ok(docs.includes('72h ≤ ready_age < 240h'));
 });
 test('missing lifecycle, provenance, author, or review history is a HOLD', () => {
   const x=ready();x.ready_cycle_verified=false;hold(x);
