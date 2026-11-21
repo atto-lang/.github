@@ -23,7 +23,7 @@ The only allowed result labels are **PASSED**, **FAILED**, **UNSUPPORTED** and *
 - **Backend:** source-to-executable proof on the actual target; release/AOT if claimed; memory/lifetime sanitizer passes on qualifying native builds; browser/worker tests for Wasm; exact platform on .NET/Native Image claims.
 - **Cross-backend:** same versioned fixtures and byte/value/diagnostic oracles; explicitly mark absent capabilities UNSUPPORTED instead of silently dropping tests.
 
-Prefer Rust for **all new** test drivers, property/model harnesses and CI utilities in atto-lang. Shell can launch tools minimally; do not add new Python tests, pilots or generators. Migration of legacy Python requires equivalent fixtures and negative-test coverage before deletion; see [CONTRIBUTING.md](CONTRIBUTING.md).
+Prefer Rust for **all new** test drivers, property/model harnesses and CI utilities in atto-lang. Shell can launch tools minimally; do not add new Python tests, pilots or generators. Legacy Python migration must retain equivalent fixtures and negative-test coverage before deletion; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Reproducible evidence receipt
 
