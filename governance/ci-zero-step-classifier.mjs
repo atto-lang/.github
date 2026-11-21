@@ -12,7 +12,20 @@ const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 
 export function classifyJobEvidence(input) {
   const jobs = Array.isArray(input) ? input : isObject(input) ? input.jobs : undefined;
-  if (!Array.isArray(jobs) || jobs.length === 0) {
+  if (!Array.isArray(jobs)) {
+    return verdict('INCOMPLETE_JOB_EVIDENCE', 'missing or malformed REST job list', {
+      total_steps: 0,
+    });
+  }
+  if (jobs.length === 0) {
+    // A partial/failed page with an advertised positive job count is not a
+    // genuine zero-job run; misclassifying it could trigger needless recovery.
+    if (isObject(input) && 'total_count' in input &&
+        (!Number.isSafeInteger(input.total_count) || input.total_count !== 0)) {
+      return verdict('INCOMPLETE_JOB_EVIDENCE', 'empty page contradicts REST job count', {
+        reported_total: input.total_count, returned_jobs: 0, total_steps: 0,
+      });
+    }
     return verdict('NOT_EXECUTED', 'no job records', { total_steps: 0 });
   }
 
