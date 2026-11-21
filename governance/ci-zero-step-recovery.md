@@ -127,3 +127,44 @@ export permission or permission to merge.
 - Compiler parity means independent compiler checks plus *real generated
   guest binaries*, not just Python snapshots, a synthetic probe, or shared
   host-side tests.
+
+## Automatic inspection (read only)
+
+The canonical tooling includes:
+
+- governance/ci-zero-step-classifier.mjs: classifies *complete* REST job snapshots.
+- governance/ci-zero-step-inspector.mjs: retrieves the immutable run head and attempt,
+  fetches every job page scoped to that attempt, verifies IDs and pagination,
+  and produces bounded per-run diagnostics. It uses only read-only Actions REST.
+- .github/workflows/ci-zero-step-watcher.yml: a scheduled/manual
+  reusable workflow. Call it from a repository-owned workflow with
+  permissions actions: read and contents: read; the caller's own GITHUB_TOKEN
+  can inspect the caller's own run records. Its only checkout is the PUBLIC,
+  reviewed atto-lang/.github diagnostic scripts, not private compiler source.
+- Each repository's draft .github/workflows/ci-zero-step-admission-watch.yml
+  schedules a daily local metadata scan and offers workflow_dispatch for an
+  exact run_id. The reusable workflow dependency at @main must be merged
+  before these callers are activated.
+
+The watch is *diagnostic*, not a CI test replacement, permission to export
+private source, an independent PR review, or a certified test pass. It never
+modifies GitHub checks, posts credentials, requests a source checkout, dispatches
+a compiler build, or transfers any private code. Run-id and repository inputs
+are checked. The scan defaults to the 20 most recent runs, is deliberately
+non-exhaustive, and excludes the watcher itself to avoid recursion.
+
+**Important capacity limit:** a scheduled workflow inside the source organization
+may itself be unable to start when that org is out of GitHub Actions minutes.
+It is not sufficient as the *only* detector. The existing off-host GitHub
+connector-based PR/CI admission automations must continue to inspect zero-step
+runs and probe alternative private runner capacity using **source-free** tasks
+without depending on Actions admission in the blocked org. External approved
+carriers may use the public diagnosis scripts; they must not receive private
+compiler source until independent source/destination transfer approval and an
+enforcing reviewed allowlist are in place.
+
+The inspector distinguishes NOT_EXECUTED from PENDING_OR_INCONCLUSIVE,
+INCOMPLETE_JOB_EVIDENCE, INCONSISTENT_JOB_EVIDENCE, STALE_HEAD, and genuinely
+failed stepful jobs. A diagnosis is successful when the read-only observation
+completed, even when the observed workflow failed. Test certificates still
+require independent exact-head provenance and actual required test evidence.
