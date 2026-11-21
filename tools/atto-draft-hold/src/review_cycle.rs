@@ -122,9 +122,10 @@ fn digits(s: &str) -> Option<i64> {
     s.parse::<i64>().ok()
 }
 pub fn utc_seconds(s: &str) -> Option<i64> {
-    if s.len() != 20 || &s[4..5] != "-" || &s[7..8] != "-" ||
-       &s[10..11] != "T" || &s[13..14] != ":" || &s[16..17] != ":" ||
-       &s[19..20] != "Z"
+    let bytes = s.as_bytes();
+    if bytes.len() != 20 || !bytes.is_ascii() || bytes[4] != b'-' || bytes[7] != b'-' ||
+       bytes[10] != b'T' || bytes[13] != b':' || bytes[16] != b':' ||
+       bytes[19] != b'Z'
     { return None; }
     let y = digits(&s[0..4])?;
     let m = digits(&s[5..7])?;
@@ -341,7 +342,7 @@ mod tests {
         assert_eq!(utc_seconds("2026-11-01T00:00:00Z"),Some(1_793_491_200));
         for x in ["2026-02-29T00:00:00Z","2026-00-01T00:00:00Z",
             "2026-11-01T24:00:00Z","2026-11-01T00:00:60Z","2026-11-01T00:00:00+00:00",
-            "yesterday","2026-11-01T00:00:00Z\n"] { assert_eq!(utc_seconds(x),None,"{x}"); }
+            "yesterday","2026-11-01T00:00:00Z\n", "🍕🍕🍕🍕🍕"] { assert_eq!(utc_seconds(x),None,"{x}"); }
         assert!(utc_seconds("2024-02-29T00:00:00Z").is_some());
     }
     #[test] fn first_72h_requires_both_humans_and_both_ais() {
