@@ -1,0 +1,44 @@
+# DEPLOYMENT TEMPLATE ONLY: do NOT copy into a live workflow without review.
+# Pin the controller to a merged, independently reviewed, protected-main SHA.
+# The pinned source MUST NOT be a pull-request or mutable branch.
+name: AttoLang Draft hold
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Open PR number to reconcile
+        type: number
+        required: true
+permissions: {}
+concurrency:
+  group: atto-draft-hold-${{ github.repository }}-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: false
+jobs:
+  enforce-hold:
+    if: github.repository_owner == 'atto-lang'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    steps:
+      - name: Checkout vetted controller only (NOT the incoming PR)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: atto-lang/.github
+          ref: REPLACE_WITH_PROTECTED_MAIN_APPROVED_FULL_40_HEX_SHA
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Reconcile authenticated PR Draft hold
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPO: ${{ github.repository }}
+          TARGET_PR: ${{ github.event.pull_request.number || inputs.pr_number }}
+          ATTO_DRAFT_HOLD_APPLY: '1'
+        run: |
+          set -euo pipefail
+          cargo run --manifest-path tools/atto-draft-hold/Cargo.toml --locked -- \
+            --repo "$TARGET_REPO" --pr "$TARGET_PR" --apply
