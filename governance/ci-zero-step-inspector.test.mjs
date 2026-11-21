@@ -48,6 +48,13 @@ test('genuine stepful failure is classified as TEST_FAILED', async () => {
   assert.equal(result.status, 'TEST_FAILED');
   assert.equal(result.total_steps, 1);
 });
+test('a mixed real test failure and zero-step job retains both diagnostics', async () => {
+  const f = fakeApi(makeRun(), [{ total_count: 2, jobs: [failed(1), zerostep(2)] }]);
+  const result = await inspectRun({ repository, runId: 42, getJson: f.read });
+  assert.equal(result.status, 'MIXED_ADMISSION_AND_TEST_FAILURE');
+  assert.deepEqual(result.failed_job_ids, [1]);
+  assert.deepEqual(result.job_ids, [2]);
+});
 test('runner absence with no jobs cannot be called a passing build', async () => {
   const f = fakeApi(makeRun(), [{ total_count: 0, jobs: [] }]);
   const result = await inspectRun({ repository, runId: 42, getJson: f.read });
