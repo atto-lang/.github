@@ -101,6 +101,9 @@ export function assessFourPartyReadyCycle(x) { // Retained export for existing c
   if (aiRequired) {
     require(AI.every(provider => aiLatest.has(provider)),
       'fresh independently verified OpenAI AND Anthropic attestations missing');
+    const identities = [...aiLatest.values()].map(v => v.review.agent_identity);
+    require(new Set(identities).size === identities.length,
+      'AI provider attestations must have distinct verified agent identities');
   }
 
   return {
