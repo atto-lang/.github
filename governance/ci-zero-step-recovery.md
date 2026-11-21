@@ -110,6 +110,7 @@ export permission or permission to merge.
 | Source-free runner capacity test succeeds | `CARRIER_CAPABLE_ONLY` | Authorization, then exact mirror if permitted |
 | Missing/mismatched paths, blob OIDs or root tree | `MIRROR_INVALID` | Stop; reconcile all objects and modes |
 | Executed test step fails | `TEST_FAILED` | Inspect logs, patch source, re-pin and rerun |
+| Both zero-step jobs and actual failed test steps | `MIXED_ADMISSION_AND_TEST_FAILURE` | Fix the executed test failure and recover the non-admitted jobs independently; neither is green |
 | Exact source/head, stepful required test suite succeeds | `TESTS_PASSED_SCOPE` | Report exact covered profile; normal review gate |
 | Guest/AOT/backends not executed | `NOT_VERIFIED` for those cells | Keep them blocked; never claim parity |
 
