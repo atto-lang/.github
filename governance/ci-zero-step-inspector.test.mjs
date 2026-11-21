@@ -245,6 +245,26 @@ test('recent observer never certifies genuine failures or contradictory job meta
   }
 });
 
+test('exact-run audit does not exit green for stale head, pending, or invented statuses', () => {
+  for (const status of ['STALE_HEAD', 'PENDING_OR_INCONCLUSIVE',
+                        'INCOMPLETE_JOB_EVIDENCE', 'INCONSISTENT_JOB_EVIDENCE',
+                        'SYNTHETIC_PASS']) {
+    const summary = summarize([{status, run_id: 42}]);
+    assert.equal(inspectionExitCode('--run-id', summary), 2, status);
+  }
+  for (const status of ['NOT_EXECUTED', 'TEST_FAILED',
+                        'MIXED_ADMISSION_AND_TEST_FAILURE',
+                        'STEPFUL_RUN_REPORTED_SUCCESS']) {
+    const summary = summarize([{status, run_id: 42}]);
+    assert.equal(inspectionExitCode('--run-id', summary), 0, status);
+  }
+  assert.equal(inspectionExitCode('--recent',
+    summarize([{status:'PENDING_OR_INCONCLUSIVE'}])), 0);
+  assert.equal(inspectionExitCode('--recent',
+    summarize([{status:'SYNTHETIC_PASS'}])), 2);
+  assert.equal(inspectionExitCode('--run-id', {statuses:{TEST_FAILED:-1}}), 2);
+  assert.equal(inspectionExitCode('--recent', {statuses:{NOT_EXECUTED:'1'}}), 2);
+});
 test('invalid inspection modes and malformed result data cannot become green', () => {
   assert.throws(() => inspectionExitCode('--unsafe', summarize([])), /invalid inspection/);
   assert.throws(() => inspectionExitCode('--run-id', null), /invalid inspection/);
