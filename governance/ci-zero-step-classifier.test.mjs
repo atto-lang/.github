@@ -22,6 +22,21 @@ test('empty successful job is not a passing test', () => {
 test('no job records fail closed', () => {
   assert.equal(classifyJobEvidence({ jobs: [] }).status, 'NOT_EXECUTED');
 });
+test('an empty REST job page contradicting a positive total is incomplete, never zero-step', () => {
+  for (const total_count of [1, 101, -1, NaN]) {
+    const verdict = classifyJobEvidence({total_count, jobs: []});
+    assert.equal(verdict.status, 'INCOMPLETE_JOB_EVIDENCE');
+    assert.equal(verdict.returned_jobs, 0);
+  }
+  assert.equal(classifyJobEvidence({total_count: 0, jobs: []}).status, 'NOT_EXECUTED');
+});
+test('missing or invalid REST job list is incomplete, not evidence of zero runners', () => {
+  for (const input of [{total_count: 1}, {total_count: 0, jobs: null},
+                        {total_count: 0, jobs: 'not-an-array'}]) {
+    assert.equal(classifyJobEvidence(input).status, 'INCOMPLETE_JOB_EVIDENCE');
+  }
+});
+
 test('a missing runner ID with completed steps is INCOMPLETE evidence, not zero-step', () => {
   assert.equal(classifyJobEvidence({ jobs: [job(1, [done('checkout')], 'success', null)] }).status, 'INCOMPLETE_JOB_EVIDENCE');
 });
