@@ -81,7 +81,9 @@ export function assessFourPartyReadyCycle(x) { // Retained export for existing c
           r.attestation_verified !== true || !text(r.agent_identity)) {
         failures.push('unverified provider attestation'); continue;
       }
-      if (r.state !== 'APPROVED') continue;
+      // COMMENTED does not revoke an earlier attestation. Dismissal and
+      // changed-requests must supersede a prior APPROVED on this head.
+      if (r.state === 'COMMENTED') continue;
       if (r.commit_sha !== x?.head_sha || at <= pushed ||
           at < started || at < aiBoundary) continue;
       putLatest(aiLatest, provider, r, at);
@@ -99,8 +101,8 @@ export function assessFourPartyReadyCycle(x) { // Retained export for existing c
   require(acceptedHumans.length >= 1,
     'one independent the1mills OR ORESoftware approval missing');
   if (aiRequired) {
-    require(AI.every(provider => aiLatest.has(provider)),
-      'fresh independently verified OpenAI AND Anthropic attestations missing');
+    require(AI.every(provider => aiLatest.get(provider)?.review.state === 'APPROVED'),
+      'fresh independently verified and unrevoked OpenAI AND Anthropic attestations missing');
     const identities = [...aiLatest.values()].map(v => v.review.agent_identity);
     require(new Set(identities).size === identities.length,
       'AI provider attestations must have distinct verified agent identities');
