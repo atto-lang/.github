@@ -61,9 +61,13 @@ pub fn validate_repo(repo: &str) -> Result<(), &'static str> {
     let Some(name) = repo.strip_prefix("atto-lang/") else {
         return Err("not an atto-lang repository");
     };
-    if name.is_empty() || name.len() > 100 || name == "." || name == ".." ||
-        !name.bytes().all(|c| c.is_ascii_alphanumeric() ||
-            matches!(c, b'.' | b'-' | b'_'))
+    if name.is_empty()
+        || name.len() > 100
+        || name == "."
+        || name == ".."
+        || !name
+            .bytes()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, b'.' | b'-' | b'_'))
     {
         return Err("invalid repository name");
     }
@@ -78,9 +82,11 @@ fn bool_value(s: &str) -> Result<bool, &'static str> {
     }
 }
 
-pub fn parse_snapshot(output: &str, expected_repo: &str, expected_pr: u64)
-    -> Result<Snapshot, &'static str>
-{
+pub fn parse_snapshot(
+    output: &str,
+    expected_repo: &str,
+    expected_pr: u64,
+) -> Result<Snapshot, &'static str> {
     validate_repo(expected_repo)?;
     if expected_pr == 0 {
         return Err("invalid PR number");
@@ -104,8 +110,10 @@ pub fn parse_snapshot(output: &str, expected_repo: &str, expected_pr: u64)
         return Err("invalid PR state");
     }
     let head_sha = parts[5];
-    if head_sha.len() != 40 ||
-        !head_sha.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    if head_sha.len() != 40
+        || !head_sha
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
     {
         return Err("missing or invalid immutable HEAD SHA");
     }
@@ -172,17 +180,33 @@ mod tests {
 
     fn snapshot() -> Snapshot {
         Snapshot {
-            repository: "atto-lang/.github".to_owned(), number: 49,
-            state: "open".to_owned(), draft: false, merged: false,
-            head_sha: SHA.to_owned(), labels_verified: true,
-            keep_as_draft: false, keep_draft: false, not_ready: false,
+            repository: "atto-lang/.github".to_owned(),
+            number: 49,
+            state: "open".to_owned(),
+            draft: false,
+            merged: false,
+            head_sha: SHA.to_owned(),
+            labels_verified: true,
+            keep_as_draft: false,
+            keep_draft: false,
+            not_ready: false,
         }
     }
 
     fn tsv(s: &Snapshot) -> String {
-        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-            s.repository, s.number, s.state, s.draft, s.merged, s.head_sha,
-            s.labels_verified, s.keep_as_draft, s.keep_draft, s.not_ready)
+        format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            s.repository,
+            s.number,
+            s.state,
+            s.draft,
+            s.merged,
+            s.head_sha,
+            s.labels_verified,
+            s.keep_as_draft,
+            s.keep_draft,
+            s.not_ready
+        )
     }
 
     #[test]
@@ -251,9 +275,14 @@ mod tests {
 
     #[test]
     fn rejects_other_organizations_and_invalid_repo_strings() {
-        for value in ["other/.github", "atto-lang/", "atto-lang/../foo",
-            "atto-lang/test repo", "atto-lang/..", "atto-lang/test\nevil"]
-        {
+        for value in [
+            "other/.github",
+            "atto-lang/",
+            "atto-lang/../foo",
+            "atto-lang/test repo",
+            "atto-lang/..",
+            "atto-lang/test\nevil",
+        ] {
             assert!(validate_repo(value).is_err(), "{value}");
         }
         assert!(validate_repo("atto-lang/.github").is_ok());
@@ -269,9 +298,14 @@ mod tests {
     #[test]
     fn strict_snapshot_parser_rejects_missing_extra_or_multiline_fields() {
         let s = snapshot();
-        for value in ["", "42", "x\ty", "x\nx", "x\rx",
-            &format!("{}\textra", tsv(&s).trim_end())]
-        {
+        for value in [
+            "",
+            "42",
+            "x\ty",
+            "x\nx",
+            "x\rx",
+            &format!("{}\textra", tsv(&s).trim_end()),
+        ] {
             assert!(parse_snapshot(value, "atto-lang/.github", 49).is_err());
         }
     }
@@ -331,13 +365,24 @@ mod tests {
         );
         let mut child = Command::new("jq")
             .args(["-r", PR_JQ])
-            .stdin(Stdio::piped()).stdout(Stdio::piped())
-            .spawn().expect("jq must be installed in audited CI environment");
-        child.stdin.take().unwrap().write_all(fixture.as_bytes()).unwrap();
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("jq must be installed in audited CI environment");
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(fixture.as_bytes())
+            .unwrap();
         let out = child.wait_with_output().unwrap();
         assert!(out.status.success(), "jq predicate should be valid");
-        let parsed = parse_snapshot(&String::from_utf8(out.stdout).unwrap(),
-            "atto-lang/.github", 49).unwrap();
+        let parsed = parse_snapshot(
+            &String::from_utf8(out.stdout).unwrap(),
+            "atto-lang/.github",
+            49,
+        )
+        .unwrap();
         assert!(parsed.keep_as_draft);
         assert_eq!(parsed.decision(), Decision::RestoreDraft);
     }
@@ -350,12 +395,23 @@ mod tests {
         );
         let mut child = Command::new("jq")
             .args(["-r", PR_JQ])
-            .stdin(Stdio::piped()).stdout(Stdio::piped())
-            .spawn().unwrap();
-        child.stdin.take().unwrap().write_all(fixture.as_bytes()).unwrap();
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(fixture.as_bytes())
+            .unwrap();
         let out = child.wait_with_output().unwrap();
         assert!(out.status.success());
-        assert!(parse_snapshot(&String::from_utf8(out.stdout).unwrap(),
-            "atto-lang/.github", 49).is_err());
+        assert!(parse_snapshot(
+            &String::from_utf8(out.stdout).unwrap(),
+            "atto-lang/.github",
+            49
+        )
+        .is_err());
     }
 }
