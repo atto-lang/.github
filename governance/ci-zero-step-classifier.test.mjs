@@ -84,9 +84,27 @@ test('fully completed credible metadata means stepful report only, not source pr
   assert.match(result.reason, /source and coverage unverified/);
 });
 test('successful job with optional skips surfaces those skipped steps', () => {
-  const result = classifyJobEvidence({ jobs: [job(1, [done('test'), { status: 'completed', conclusion: 'skipped' }])] });
+  const result = classifyJobEvidence({ total_count: 1, jobs: [job(1, [done('test'), { status: 'completed', conclusion: 'skipped' }])] });
   assert.equal(result.status, 'STEPFUL_RUN_REPORTED_SUCCESS');
   assert.equal(result.skipped_steps, 1);
+});
+
+test('missing REST total_count cannot be green', () => {
+  const result = classifyJobEvidence({ jobs: [job(1, [done('cargo test')])] });
+  assert.equal(result.status, 'INCOMPLETE_JOB_EVIDENCE');
+});
+test('caller-supplied complete jobs array is reported as unverified stepful metadata', () => {
+  assert.equal(classifyJobEvidence([job(1, [done('test')])]).status, 'STEPFUL_RUN_REPORTED_SUCCESS');
+});
+test('missing job ID cannot be green', () => {
+  const j = job(1, [done('test')]);
+  delete j.id;
+  assert.equal(classifyJobEvidence({ total_count: 1, jobs: [j] }).status, 'INCOMPLETE_JOB_EVIDENCE');
+});
+test('invalid job ID cannot be green', () => {
+  const j = job(1, [done('test')]);
+  j.id = -1;
+  assert.equal(classifyJobEvidence({ total_count: 1, jobs: [j] }).status, 'INCOMPLETE_JOB_EVIDENCE');
 });
 
 const script = fileURLToPath(new URL('./ci-zero-step-classifier.mjs', import.meta.url));
@@ -105,7 +123,7 @@ function executeWith(input, raw = false) {
   }
 }
 test('actual CLI invoked by relative path produces a verdict, not silent success', () => {
-  const output = executeWith({ jobs: [job(1, [done('cargo test')])] });
+  const output = executeWith({ total_count: 1, jobs: [job(1, [done('cargo test')])] });
   assert.equal(output.status, 0, output.stderr);
   assert.equal(JSON.parse(output.stdout).status, 'STEPFUL_RUN_REPORTED_SUCCESS');
 });
