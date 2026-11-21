@@ -31,6 +31,7 @@ export function classifyJobEvidence(input) {
   let skippedSteps = 0;
   const failed = [];
   const zeroStep = [];
+  const missingRunner = [];
   const inconsistent = [];
   let incomplete = false;
   const seenIds = new Set();
@@ -48,10 +49,20 @@ export function classifyJobEvidence(input) {
     }
     seenIds.add(job.id);
 
-    // GitHub job records with 0/null runner ID never prove admission.
-    if (!Array.isArray(job.steps) || job.steps.length === 0 ||
-        !Number.isSafeInteger(job.runner_id) || job.runner_id <= 0) {
+    // No step records means no verified execution. Missing runner metadata
+    // alongside completed steps is INCOMPLETE evidence, not proof of
+    // an actual zero-step admission failure. An explicit runner_id=0 with
+    // populated steps is contradictory evidence.
+    if (!Array.isArray(job.steps) || job.steps.length === 0) {
       zeroStep.push(identifier);
+      continue;
+    }
+    if (!Number.isSafeInteger(job.runner_id)) {
+      missingRunner.push(identifier);
+      continue;
+    }
+    if (job.runner_id <= 0) {
+      inconsistent.push(identifier);
       continue;
     }
 
@@ -94,6 +105,11 @@ export function classifyJobEvidence(input) {
   if (zeroStep.length) {
     return verdict('NOT_EXECUTED', 'one or more jobs have no admitted runner or executed steps', {
       job_ids: zeroStep, total_steps: totalSteps, skipped_steps: skippedSteps,
+    });
+  }
+  if (missingRunner.length) {
+    return verdict('INCOMPLETE_JOB_EVIDENCE', 'job steps exist but runner metadata is missing', {
+      job_ids: missingRunner, total_steps: totalSteps, skipped_steps: skippedSteps,
     });
   }
   if (inconsistent.length) {
