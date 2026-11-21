@@ -708,6 +708,16 @@ mod tests {
         assert!(!satisfied(&e));
     }
     #[test]
+    fn pilot_template_is_read_only_and_requires_reviewed_immutable_source() {
+        let sample = include_str!("../../../governance/examples/ready-cycle-pilot.yml");
+        assert!(sample.contains("REPLACE_WITH_SECURITY_APPROVED_PROTECTED_MAIN_40_HEX_SHA"));
+        assert!(sample.contains("pull-requests: read"));
+        assert!(sample.contains("checks: read"));
+        assert!(!sample.contains("pull-requests: write"));
+        assert!(!sample.contains("statuses: write"));
+        assert!(!sample.contains("--apply"));
+    }
+    #[test]
     fn never_yields_merge_authorized_even_when_all_approvals_present() {
         let e = base("2026-11-02T00:00:00Z");
         let r = assess(&e);
