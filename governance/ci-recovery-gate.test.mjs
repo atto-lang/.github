@@ -146,3 +146,14 @@ test('CI recovery instructions cannot erase canonical persistent-human Ready-cyc
   assert.ok(!agents.includes('Single trusted-owner approval, any Ready age'));
   assert.ok(!agents.includes('or reapproval after 72h, 240h, 10 days, or another age boundary'));
 });
+
+test('private callers never fetch mutable public diagnostic scripts using their read token', () => {
+  const watcher = readFileSync(new URL('../.github/workflows/ci-zero-step-watcher.yml', import.meta.url), 'utf8');
+  const pin = '82f050ee5d4043d98c0150458bca743970b390ed';
+  assert.match(watcher, new RegExp('^\\s+ref: ' + pin + '$', 'm'));
+  assert.ok(watcher.includes('persist-credentials: false'));
+  assert.ok(watcher.includes('actions: read'));
+  assert.ok(watcher.includes('contents: read'));
+  assert.ok(!watcher.includes("github.ref_name"));
+  assert.ok(!watcher.includes('ref: main'));
+});
