@@ -114,8 +114,12 @@ export function formatSummary(inspected) {
 
 export function createGitHubReader({ token, apiUrl = 'https://api.github.com', fetchFn = fetch }) {
   const base = new URL(apiUrl);
-  if (base.protocol !== 'https:' || base.username || base.password || base.search ||
-      base.hash || base.pathname !== '/') throw new Error('GitHub API base must be an HTTPS origin');
+  // Never allow an attacker-controlled HTTPS origin to receive GITHUB_TOKEN.
+  // GitHub.com only: enterprise support requires a separate reviewed trust
+  // policy and explicit hostname pinning rather than arbitrary env override.
+  if (base.protocol !== 'https:' || base.hostname !== 'api.github.com' ||
+      base.port || base.username || base.password || base.search ||
+      base.hash || base.pathname !== '/') throw new Error('GitHub API origin must be https://api.github.com/');
   return async route => {
     if (!route.startsWith('/repos/') || route.includes('..') ||
         route.includes('#') || route.includes('@') || route.includes('\\')) {
