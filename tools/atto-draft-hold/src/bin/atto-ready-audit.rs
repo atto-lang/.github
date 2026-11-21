@@ -42,7 +42,9 @@ fn rows(s: &str, columns: usize) -> Result<Vec<Vec<&str>>, String> {
     Ok(output)
 }
 fn is_sha(s: &str) -> bool {
-    s.len() == 40 && s.bytes().all(|x| x.is_ascii_digit() || (b'a'..=b'f').contains(&x))
+    s.len() == 40
+        && s.bytes()
+            .all(|x| x.is_ascii_digit() || (b'a'..=b'f').contains(&x))
 }
 fn positive(s: &str) -> Result<u64, String> {
     let number = s
@@ -173,13 +175,11 @@ fn collect(repo: &str, pr: u64) -> Result<Evidence, String> {
     // Read the same live PR again after all paginated evidence API calls. A
     // stable SHA alone is NOT sufficient: label changes, Draft transitions,
     // base retargets and review modifications can occur on the same commit.
-    let final_state = parse_snapshot(&gh(&["api", &address, "--jq", PR_JQ])?, repo, pr)
-        .map_err(str::to_owned)?;
+    let final_state =
+        parse_snapshot(&gh(&["api", &address, "--jq", PR_JQ])?, repo, pr).map_err(str::to_owned)?;
     let final_meta_text = gh(&["api", &address, "--jq", META_JQ])?;
     let final_meta = rows(&final_meta_text, 8)?;
-    if final_state != state || final_meta.len() != 1
-        || final_meta[0] != meta[0]
-    {
+    if final_state != state || final_meta.len() != 1 || final_meta[0] != meta[0] {
         return Err("live PR changed while collecting evidence; fail closed".into());
     }
 
