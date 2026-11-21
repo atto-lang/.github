@@ -1,0 +1,41 @@
+name: Atto draft-hold controller contracts (read-only)
+on:
+  pull_request:
+    paths:
+      - 'tools/atto-draft-hold/**'
+      - 'governance/draft-hold-deployment.md'
+      - 'governance/examples/draft-hold-caller.yml'
+      - '.github/workflows/atto-draft-hold-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-head-rust-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout immutable source under least privilege
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify exact head and clean tracked tree
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Run Rust guard policy, jq projection, and CLI contract tests
+        run: |
+          set -euo pipefail
+          rustc --version
+          cargo --version
+          jq --version
+          cargo test --manifest-path tools/atto-draft-hold/Cargo.toml --locked --all-targets
+          cargo run --manifest-path tools/atto-draft-hold/Cargo.toml --locked -- --help
+      - name: Enforce Rust source formatting
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path tools/atto-draft-hold/Cargo.toml -- --check
