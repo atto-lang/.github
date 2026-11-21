@@ -49,7 +49,9 @@ esac
 exit 71
 "#;
 
-struct Fixture { root: PathBuf }
+struct Fixture {
+    root: PathBuf,
+}
 impl Fixture {
     fn new() -> Self {
         let id = NEXT.fetch_add(1, Ordering::SeqCst);
@@ -73,72 +75,82 @@ impl Fixture {
             .env("MOCK_ERROR_ON", fail_on)
             .env("MOCK_COUNT", self.root.join("count"))
             .env("MOCK_LOG", self.root.join("log"))
-            .output().unwrap()
+            .output()
+            .unwrap()
     }
     fn count(&self) -> usize {
-        fs::read_to_string(self.root.join("count")).unwrap().trim().parse().unwrap()
+        fs::read_to_string(self.root.join("count"))
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap()
     }
     fn log(&self) -> String {
         fs::read_to_string(self.root.join("log")).unwrap_or_default()
     }
 }
 impl Drop for Fixture {
-    fn drop(&mut self) { let _ = fs::remove_dir_all(&self.root); }
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.root);
+    }
 }
 fn both(out: &Output) -> String {
-    format!("{}{}", String::from_utf8_lossy(&out.stdout),
-        String::from_utf8_lossy(&out.stderr))
+    format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    )
 }
 
 #[test]
 fn stable_authenticated_fixture_is_still_hold_without_push_and_ai_issuers() {
-    let f=Fixture::new();
-    let out=f.call("", "0");
-    assert_eq!(out.status.code(),Some(1), "{}",both(&out));
+    let f = Fixture::new();
+    let out = f.call("", "0");
+    assert_eq!(out.status.code(), Some(1), "{}", both(&out));
     assert!(both(&out).contains("READ_ONLY_REVIEW_AUDIT state=HOLD"));
     assert!(both(&out).contains("authorized=false"));
-    assert_eq!(f.count(),7);
+    assert_eq!(f.count(), 7);
     assert!(!f.log().contains("--method POST"));
     assert!(!f.log().contains("ready --undo"));
 }
 #[test]
 fn concurrent_same_sha_label_hold_blocks_mixed_snapshot() {
-    let f=Fixture::new();
-    let out=f.call("labels", "0");
-    assert_eq!(out.status.code(),Some(1), "{}",both(&out));
+    let f = Fixture::new();
+    let out = f.call("labels", "0");
+    assert_eq!(out.status.code(), Some(1), "{}", both(&out));
     assert!(both(&out).contains("live PR changed while collecting evidence"));
     assert!(!both(&out).contains("READ_ONLY_REVIEW_AUDIT"));
-    assert_eq!(f.count(),7);
+    assert_eq!(f.count(), 7);
 }
 #[test]
 fn changed_update_watermark_blocks_same_sha_and_same_labels() {
-    let f=Fixture::new();
-    let out=f.call("metadata", "0");
-    assert_eq!(out.status.code(),Some(1), "{}",both(&out));
+    let f = Fixture::new();
+    let out = f.call("metadata", "0");
+    assert_eq!(out.status.code(), Some(1), "{}", both(&out));
     assert!(both(&out).contains("live PR changed while collecting evidence"));
-    assert_eq!(f.count(),7);
+    assert_eq!(f.count(), 7);
 }
 #[test]
 fn initial_live_metadata_head_mismatch_is_rejected_before_pagination() {
-    let f=Fixture::new();
-    let out=f.call("first_head", "0");
-    assert_eq!(out.status.code(),Some(1), "{}",both(&out));
+    let f = Fixture::new();
+    let out = f.call("first_head", "0");
+    assert_eq!(out.status.code(), Some(1), "{}", both(&out));
     assert!(both(&out).contains("immutable starting snapshot"));
-    assert_eq!(f.count(),2);
+    assert_eq!(f.count(), 2);
 }
 #[test]
 fn malformed_api_projection_fails_closed() {
-    let f=Fixture::new();
-    let out=f.call("malformed", "0");
-    assert_eq!(out.status.code(),Some(1), "{}",both(&out));
+    let f = Fixture::new();
+    let out = f.call("malformed", "0");
+    assert_eq!(out.status.code(), Some(1), "{}", both(&out));
     assert!(both(&out).contains("malformed API projection"));
-    assert_eq!(f.count(),2);
+    assert_eq!(f.count(), 2);
 }
 #[test]
 fn failed_paginated_github_read_fails_closed() {
-    let f=Fixture::new();
-    let out=f.call("", "3");
-    assert_eq!(out.status.code(),Some(1), "{}",both(&out));
+    let f = Fixture::new();
+    let out = f.call("", "3");
+    assert_eq!(out.status.code(), Some(1), "{}", both(&out));
     assert!(both(&out).contains("authenticated GitHub read failed"));
-    assert_eq!(f.count(),3);
+    assert_eq!(f.count(), 3);
 }
