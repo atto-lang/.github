@@ -37,6 +37,23 @@ test('explicit DENIED export claim is not treated as permission', () => {
   assert.equal(check({ carrier: { ...carrier, export_decision: 'DENIED' } }).status,
     'PRIVATE_EXPORT_AUTHORIZATION_REQUIRED');
 });
+test('mixed stepful failure and zero-step admission preserve both blockers without export', () => {
+  const p = check({ observed: { status: 'MIXED_ADMISSION_AND_TEST_FAILURE',
+    failed_job_ids: [31], job_ids: [32] } });
+  assert.equal(p.status, 'DIAGNOSE_MIXED_ADMISSION_AND_TEST_FAILURE');
+  assert.match(p.action, /executed test failure/);
+  assert.match(p.action, /runner admission/);
+  assert.equal(p.authorized_private_copy, false);
+  assert.equal(p.mirror_performed, false);
+  assert.equal(p.material_tests_verified, false);
+  assert.equal(p.carrier_repository, undefined);
+});
+test('mixed failed job without carrier cannot be quietly treated as a capacity-only probe', () => {
+  const p = check({ carrier: undefined, observed: { status: 'MIXED_ADMISSION_AND_TEST_FAILURE' } });
+  assert.equal(p.status, 'DIAGNOSE_MIXED_ADMISSION_AND_TEST_FAILURE');
+  assert.equal(p.authorized_private_copy, false);
+});
+
 test('real stepful compiler failure is not classified as missing capacity', () => {
   const p = check({ observed: { status: 'TEST_FAILED' } });
   assert.equal(p.status, 'DIAGNOSE_ACTUAL_TEST_FAILURE');
