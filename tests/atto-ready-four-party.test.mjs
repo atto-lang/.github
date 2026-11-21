@@ -197,5 +197,5 @@ test('central policy regression workflow pins immutable head and cannot be path-
     'test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"',
     'node --test tests/atto-ready-four-party.test.mjs'
   ]) assert.ok(workflow.includes(required), 'missing head-pinned test requirement: '+required);
-  assert.doesNotMatch(workflow,/^\\s+paths:/m);
+  assert.doesNotMatch(workflow,/^\s+paths:/m);
 });
