@@ -4,6 +4,9 @@
 > **Mode:** Stealth development, merge-first integration with auditable checks.
 > **Priority:** Finish and integrate existing, ready PRs rather than create redundant PRs. Do not weaken required tests, security controls, CODEOWNERS, or branch protection.
 
+> **Mandatory zero-step CI recovery:** For each failing GitHub Actions run, inspect runner admission and actual job steps. `steps=null`, `steps=[]`, or no runner means `NOT_EXECUTED`, **never** a compiler failure or a green test. If the current source organization cannot allocate Actions minutes, proactively find an **approved private carrier in another GitHub organization** and prove its runner capacity with **source-free** executed tests. After checking and obtaining **independent exact-source/destination private-export authorization**, mirror the pinned Git tree through the GitHub connector to a temporary carrier-local branch, with **every blob SHA/mode and root Git-tree SHA identical**. The carrier uses its **own** checkout/token/minutes; never pass a PAT, source secret or cross-org checkout token. Existing export denials and repository guards override this fallback. No authorization means **no private mirroring**, only escalation. See [mandatory CI recovery runbook](governance/ci-zero-step-recovery.md).
+
+
 ## Authoritative review clock: READY, not PR creation
 
 The **current ready-for-review cycle starts at the most recent authoritative transition to Ready for review**. For a PR opened directly as ready, it starts at `pull_request.created_at`. A draft's time in draft **never accrues review age**.
