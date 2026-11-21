@@ -4,6 +4,8 @@ on:
     paths:
       - AGENTS.md
       - governance/atto-ready-four-party.mjs
+      - governance/2026-11-21-review-policy-drift.md
+      - docs/ORG_TRUSTED_MERGE_APPROVALS.md
       - tests/atto-ready-four-party.test.mjs
       - .github/workflows/atto-ready-policy-tests.yml
   workflow_dispatch:
