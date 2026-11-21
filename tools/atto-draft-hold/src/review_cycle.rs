@@ -367,6 +367,7 @@ mod tests {
         let at="2026-11-11T00:05:00Z";
         for r in &mut e.human_reviews {r.submitted_at=at.into();}
         for c in &mut e.ai_checks {c.completed_at=at.into();}
+        e.checked_at="2026-11-11T00:10:00Z".into();
         assert!(satisfied(&e));
     }
     #[test] fn draft_ready_draft_ready_resets_clock_and_evidence() {
