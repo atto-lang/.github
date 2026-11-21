@@ -41,7 +41,8 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: atto-lang/.github
-          ref: ${{ (github.repository == 'atto-lang/.github' && github.ref_name) || 'main' }}
+          # Immutable, stepfully tested diagnostic source. Re-pin only after a reviewed update.
+          ref: 82f050ee5d4043d98c0150458bca743970b390ed
           path: policy
           persist-credentials: false
       - name: Run classifier and REST inspector adversarial tests
