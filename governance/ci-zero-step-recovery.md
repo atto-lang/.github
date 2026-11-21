@@ -133,6 +133,7 @@ export permission or permission to merge.
 The canonical tooling includes:
 
 - governance/ci-zero-step-classifier.mjs: classifies *complete* REST job snapshots.
+- governance/ci-tree-manifest-verify.mjs: compares full recursive source and carrier Git tree metadata (root OID, every path, object type, mode and OID). Fails closed on truncated GitHub responses, invalid paths, symlinks, gitlinks, missing/duplicate entries and unsupported modes. It outputs `TREE_IDENTICAL_ONLY`, **not** export authorization or executed-test proof; Git LFS payloads still require separate validation.
 - governance/ci-zero-step-inspector.mjs: retrieves the immutable run head and attempt,
   fetches every job page scoped to that attempt, verifies IDs and pagination,
   and produces bounded per-run diagnostics. It uses only read-only Actions REST.
