@@ -140,6 +140,8 @@ test('CI recovery instructions cannot erase canonical persistent-human Ready-cyc
     'not-ready',
     'Mandatory zero-step CI recovery:',
     'governance/ci-zero-step-recovery.md',
+    'return it to Draft after rechecking',
+    'identical persistent Draft-state invariant',
   ]) {
     assert.ok(agents.includes(required), 'canonical policy requirement missing: ' + required);
   }
