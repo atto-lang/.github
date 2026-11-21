@@ -29,6 +29,7 @@ test('real PR #385 failure class: four approvals by one immutable ORESoftware ID
 test('human account cannot self-review; only the nonauthor named human can approve',()=>{
   const x=valid();x.author_github_id=11139560;x.reviews=x.reviews.filter(r=>r.login!=='the1mills');
   assert.equal(gate(x).status,'HOLD');
+  x.reviews=x.reviews.filter(r=>r.login!=='ORESoftware');
   x.reviews.push(r('mills'));assert.equal(gate(x).status,'REPORTED_SATISFIED_NOT_AUTHORIZED');
 });
 test('review on stale head is not an approval',()=>{
