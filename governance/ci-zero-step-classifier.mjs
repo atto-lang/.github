@@ -56,6 +56,7 @@ export function classifyJobEvidence(input) {
 
     let jobFailedStep = false;
     let jobIncompleteStep = false;
+    let jobExecutedSteps = 0;
     for (const step of job.steps) {
       if (!isObject(step)) {
         jobIncompleteStep = true;
@@ -67,9 +68,11 @@ export function classifyJobEvidence(input) {
       }
       if (step.status === 'completed' && step.conclusion === 'success') {
         totalSteps++;
+        jobExecutedSteps++;
       } else if (step.status === 'completed' &&
                  (step.conclusion === 'failure' || step.conclusion === 'timed_out')) {
         totalSteps++;
+        jobExecutedSteps++;
         jobFailedStep = true;
       } else {
         jobIncompleteStep = true;
@@ -81,7 +84,8 @@ export function classifyJobEvidence(input) {
     } else if (job.conclusion === 'failure' || job.conclusion === 'timed_out') {
       failed.push(identifier);
     } else if (job.conclusion !== 'success' || jobIncompleteStep ||
-               totalSteps === 0) {
+               jobExecutedSteps === 0 ||
+               ('status' in job && job.status !== 'completed')) {
       incomplete = true;
     }
   }
