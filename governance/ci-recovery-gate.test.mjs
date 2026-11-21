@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { decideRecovery, formatRecoveryHandoff } from './ci-recovery-gate.mjs';
 
 const HEAD = 'a'.repeat(40), TREE = 'b'.repeat(40), CARRIER_HEAD = 'c'.repeat(40);
@@ -123,4 +124,25 @@ test('plain-text handoff never alleges export or testing took place', () => {
   assert.match(handoff, /source_mirror_done=NO/);
   assert.match(handoff, /material_tests_verified=NO/);
   assert.match(handoff, /source_tree=b{40}/);
+});
+
+test('CI recovery instructions cannot erase canonical persistent-human Ready-cycle gates', () => {
+  const agents = readFileSync(new URL('../AGENTS.md', import.meta.url), 'utf8');
+  for (const required of [
+    '0 ≤ ready_age < 72h',
+    '72h ≤ ready_age < 240h',
+    'ready_age ≥ 240h',
+    'OpenAI',
+    'Anthropic',
+    'Human approval is required once per PR',
+    'keep-as-draft',
+    'keep-draft',
+    'not-ready',
+    'Mandatory zero-step CI recovery:',
+    'governance/ci-zero-step-recovery.md',
+  ]) {
+    assert.ok(agents.includes(required), 'canonical policy requirement missing: ' + required);
+  }
+  assert.ok(!agents.includes('Single trusted-owner approval, any Ready age'));
+  assert.ok(!agents.includes('or reapproval after 72h, 240h, 10 days, or another age boundary'));
 });
