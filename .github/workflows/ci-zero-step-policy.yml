@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   recovery-policy-selftests:
@@ -23,7 +24,11 @@ jobs:
         with:
           persist-credentials: false
       - name: Execute source-free zero-step classifier adversarial tests
-        run: node --test governance/ci-zero-step-classifier.test.mjs
+        run: node --test governance/ci-zero-step-classifier.test.mjs governance/ci-zero-step-inspector.test.mjs
+      - name: Smoke-test live same-repository GitHub Actions REST reader
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node governance/ci-zero-step-inspector.mjs --recent 8
       - name: Prove policy remains non-authorizing
         run: |
           set -euo pipefail
