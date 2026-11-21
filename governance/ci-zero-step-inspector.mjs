@@ -72,15 +72,25 @@ export async function inspectRecent({ repository, limit = 20, getJson }) {
   }
   const response = await getJson('/repos/' + repository + '/actions/runs?per_page=' + limit);
   if (!Array.isArray(response?.workflow_runs)) throw new Error('missing runs listing');
-  const runs = response.workflow_runs.slice(0, limit)
-    .filter(run => run?.name !== MONITOR_NAME &&
-      Number.isSafeInteger(run?.id) && run.id > 0);
   const results = [];
-  for (const run of runs) {
+  const seenIds = new Set();
+  for (const run of response.workflow_runs.slice(0, limit)) {
+    // An incomplete/malformed Actions list item must not vanish from the
+    // count: dropping it could make an incomplete scan appear fully healthy.
+    if (run?.name === MONITOR_NAME) continue;
+    const runId = run?.id;
+    if (!Number.isSafeInteger(runId) || runId <= 0 || seenIds.has(runId)) {
+      results.push({ repository,
+        run_id: Number.isSafeInteger(runId) && runId > 0 ? runId : null,
+        status: 'INCOMPLETE_JOB_EVIDENCE',
+        reason: 'malformed or duplicate Actions run-listing entry' });
+      continue;
+    }
+    seenIds.add(runId);
     try {
-      results.push(await inspectRun({ repository, runId: run.id, getJson }));
+      results.push(await inspectRun({ repository, runId, getJson }));
     } catch (error) {
-      results.push({ repository, run_id: run.id, status: 'INCOMPLETE_JOB_EVIDENCE',
+      results.push({ repository, run_id: runId, status: 'INCOMPLETE_JOB_EVIDENCE',
         reason: 'REST metadata unavailable: ' + error.message });
     }
   }
