@@ -264,6 +264,12 @@ test('exact-run audit does not exit green for stale head, pending, or invented s
     summarize([{status:'SYNTHETIC_PASS'}])), 2);
   assert.equal(inspectionExitCode('--run-id', {statuses:{TEST_FAILED:-1}}), 2);
   assert.equal(inspectionExitCode('--recent', {statuses:{NOT_EXECUTED:'1'}}), 2);
+  assert.equal(inspectionExitCode('--run-id', {statuses:{}}), 2);
+  assert.equal(inspectionExitCode('--run-id', {statuses:{TEST_FAILED:0}}), 2);
+  assert.equal(inspectionExitCode('--run-id', {statuses:{TEST_FAILED:2}}), 2);
+  assert.equal(inspectionExitCode('--run-id', {statuses:{
+    TEST_FAILED:1, NOT_EXECUTED:1,
+  }}), 2);
 });
 test('invalid inspection modes and malformed result data cannot become green', () => {
   assert.throws(() => inspectionExitCode('--unsafe', summarize([])), /invalid inspection/);
