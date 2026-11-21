@@ -56,7 +56,9 @@ export async function inspectRun({ repository, runId, expectedSha, getJson }) {
   if (status === 'STEPFUL_RUN_REPORTED_SUCCESS' && run.conclusion !== 'success') {
     status = 'INCONSISTENT_JOB_EVIDENCE';
     reason = 'successful jobs contradict overall run conclusion';
-  } else if (status === 'TEST_FAILED' && run.conclusion === 'success') {
+  } else if ((status === 'TEST_FAILED' ||
+              status === 'MIXED_ADMISSION_AND_TEST_FAILURE') &&
+             run.conclusion === 'success') {
     status = 'INCONSISTENT_JOB_EVIDENCE';
     reason = 'failed jobs contradict overall run conclusion';
   }
