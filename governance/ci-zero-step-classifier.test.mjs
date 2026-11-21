@@ -22,13 +22,16 @@ test('empty successful job is not a passing test', () => {
 test('no job records fail closed', () => {
   assert.equal(classifyJobEvidence({ jobs: [] }).status, 'NOT_EXECUTED');
 });
-test('a missing runner ID fails closed even if a checkout step claims success', () => {
-  assert.equal(classifyJobEvidence({ jobs: [job(1, [done('checkout')], 'success', null)] }).status, 'NOT_EXECUTED');
+test('a missing runner ID with completed steps is INCOMPLETE evidence, not zero-step', () => {
+  assert.equal(classifyJobEvidence({ jobs: [job(1, [done('checkout')], 'success', null)] }).status, 'INCOMPLETE_JOB_EVIDENCE');
 });
 test('missing runner metadata never authorizes a pass', () => {
   const j = job(1, [done('checkout')]);
   delete j.runner_id;
-  assert.equal(classifyJobEvidence({ jobs: [j] }).status, 'NOT_EXECUTED');
+  assert.equal(classifyJobEvidence({ jobs: [j] }).status, 'INCOMPLETE_JOB_EVIDENCE');
+});
+test('runner_id zero with purported executed steps is inconsistent', () => {
+  assert.equal(classifyJobEvidence({ jobs: [job(1, [done('cargo test')], 'success', 0)] }).status, 'INCONSISTENT_JOB_EVIDENCE');
 });
 test('one zero-step job blocks an otherwise green matrix', () => {
   const result = classifyJobEvidence({ jobs: [job(1, [done('test')]), job(2, null, 'failure')] });
