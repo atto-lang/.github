@@ -176,3 +176,11 @@ test('required recovery CI is unfiltered and verifies exact PR head before tests
   assert.doesNotMatch(workflow, /pull_request_target:/);
   assert.doesNotMatch(workflow, /ref: \$\{\{ github\.ref \}\}/);
 });
+
+test('pull-request-controlled CI scripts never receive the Actions REST token', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ci-zero-step-policy.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /- name: Smoke-test live same-repository GitHub Actions REST reader\n\s+if: github\.event_name != 'pull_request'\n\s+env:\n\s+GITHUB_TOKEN: /);
+  assert.match(workflow, /permissions:\n\s+contents: read\n\s+actions: read/);
+  assert.ok(workflow.includes('persist-credentials: false'));
+  assert.doesNotMatch(workflow, /pull_request_target:/);
+});
