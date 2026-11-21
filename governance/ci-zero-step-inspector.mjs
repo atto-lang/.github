@@ -129,14 +129,18 @@ export function inspectionExitCode(mode, summary) {
     'INCONSISTENT_JOB_EVIDENCE', 'STALE_HEAD',
     'PENDING_OR_INCONCLUSIVE',
   ]);
+  let observed = 0;
   for (const [status, count] of Object.entries(summary.statuses)) {
     if (!recognized.has(status) || !Number.isSafeInteger(count) || count < 0) {
       return 2;
     }
+    observed += count;
     if (mode === '--run-id' && count > 0 && !definitive.has(status)) {
       return 2;
     }
   }
+  // An empty result is not a valid answer to an exact run-ID inspection.
+  if (mode === '--run-id' && observed !== 1) return 2;
   return 0;
 }
 
