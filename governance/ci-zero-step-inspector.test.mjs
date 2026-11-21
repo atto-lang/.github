@@ -55,6 +55,15 @@ test('a mixed real test failure and zero-step job retains both diagnostics', asy
   assert.deepEqual(result.failed_job_ids, [1]);
   assert.deepEqual(result.job_ids, [2]);
 });
+test('mixed real failure and admission cannot contradict overall success', async () => {
+  const f = fakeApi(makeRun({ conclusion: 'success' }),
+    [{ total_count: 2, jobs: [failed(1), zerostep(2)] }]);
+  const result = await inspectRun({ repository, runId: 42, getJson: f.read });
+  assert.equal(result.status, 'INCONSISTENT_JOB_EVIDENCE');
+  assert.deepEqual(result.failed_job_ids, [1]);
+  assert.deepEqual(result.job_ids, [2]);
+});
+
 test('runner absence with no jobs cannot be called a passing build', async () => {
   const f = fakeApi(makeRun(), [{ total_count: 0, jobs: [] }]);
   const result = await inspectRun({ repository, runId: 42, getJson: f.read });
