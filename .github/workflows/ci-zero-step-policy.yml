@@ -1,0 +1,31 @@
+name: Zero-step CI recovery policy selftests
+
+on:
+  push:
+    branches:
+      - policy/zero-step-token-free-carrier-recovery-20261121
+  pull_request:
+    paths:
+      - 'governance/ci-zero-step-*'
+      - 'AGENTS.md'
+      - '.github/workflows/ci-zero-step-policy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-policy-selftests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Execute source-free zero-step classifier adversarial tests
+        run: node --test governance/ci-zero-step-classifier.test.mjs
+      - name: Prove policy remains non-authorizing
+        run: |
+          set -euo pipefail
+          grep -q 'NO MIRROR' governance/ci-zero-step-recovery.md
+          grep -q 'never pass a PAT' governance/ci-zero-step-recovery.md || grep -q 'Never' governance/ci-zero-step-recovery.md
+          echo 'EXTERNAL_SOURCE_EXPORT_AUTHORIZATION=NOT_GRANTED'
