@@ -8,7 +8,8 @@ const sha = s => typeof s === 'string' && SHA40.test(s);
 const repo = s => typeof s === 'string' && REPO.test(s) && !s.includes('..');
 const issue = (status, action, details = {}) => ({ status, action, ...details });
 const SAFE_DIAGNOSTICS = new Set([
-  'NOT_EXECUTED', 'TEST_FAILED', 'INCOMPLETE_JOB_EVIDENCE',
+  'NOT_EXECUTED', 'TEST_FAILED', 'MIXED_ADMISSION_AND_TEST_FAILURE',
+  'INCOMPLETE_JOB_EVIDENCE',
   'INCONSISTENT_JOB_EVIDENCE', 'PENDING_OR_INCONCLUSIVE',
   'STEPFUL_RUN_REPORTED_SUCCESS', 'STALE_HEAD',
 ]);
@@ -39,6 +40,11 @@ export function decideRecovery(input) {
 
   if (observed.status === 'TEST_FAILED') {
     return issue('DIAGNOSE_ACTUAL_TEST_FAILURE', 'investigate executed step logs; fix and retest exact head', base);
+  }
+  if (observed.status === 'MIXED_ADMISSION_AND_TEST_FAILURE') {
+    return issue('DIAGNOSE_MIXED_ADMISSION_AND_TEST_FAILURE',
+      'investigate genuine executed test failure AND restore zero-step runner admission; source-free carrier probe cannot replace fixing failed tests',
+      base);
   }
   if (observed.status === 'STEPFUL_RUN_REPORTED_SUCCESS') {
     return issue('TEST_COVERAGE_UNVERIFIED', 'verify required suites and exact-head provenance before any pass claim', base);
