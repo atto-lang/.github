@@ -38,6 +38,16 @@ test('one zero-step job blocks an otherwise green matrix', () => {
   assert.equal(result.status, 'NOT_EXECUTED');
   assert.deepEqual(result.job_ids, [2]);
 });
+test('a zero-step job cannot hide a genuine concurrent test failure', () => {
+  const result = classifyJobEvidence({ total_count: 2, jobs: [
+    job(1, [done('checkout'), failed('compiler test')], 'failure'),
+    job(2, [], 'failure', 0),
+  ] });
+  assert.equal(result.status, 'MIXED_ADMISSION_AND_TEST_FAILURE');
+  assert.deepEqual(result.failed_job_ids, [1]);
+  assert.deepEqual(result.job_ids, [2]);
+  assert.equal(result.total_steps, 2);
+});
 test('a real stepful test failure is a failure', () => {
   const result = classifyJobEvidence({ jobs: [job(1, [done('checkout'), failed('cargo test')], 'failure')] });
   assert.equal(result.status, 'TEST_FAILED');
@@ -139,6 +149,16 @@ test('actual CLI exits 1 on a real stepful failure', () => {
   const output = executeWith({ jobs: [job(1, [failed('cargo test')], 'failure')] });
   assert.equal(output.status, 1);
   assert.equal(JSON.parse(output.stdout).status, 'TEST_FAILED');
+});
+test('actual CLI exits 1 for mixed executed failure and admission failure', () => {
+  const output = executeWith({ total_count: 2, jobs: [
+    job(1, [failed('cargo test')], 'failure'), job(2, null, 'failure', 0),
+  ] });
+  assert.equal(output.status, 1);
+  const verdict = JSON.parse(output.stdout);
+  assert.equal(verdict.status, 'MIXED_ADMISSION_AND_TEST_FAILURE');
+  assert.deepEqual(verdict.failed_job_ids, [1]);
+  assert.deepEqual(verdict.job_ids, [2]);
 });
 test('actual CLI exits 2 on truncated data', () => {
   const output = executeWith({ total_count: 2, jobs: [job(1, [done('cargo test')])] });
