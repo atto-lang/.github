@@ -20,6 +20,8 @@ Source the timeline from authenticated GitHub PR lifecycle events (`ready_for_re
 
 At **exactly** 72 hours the fast lane opens. At **exactly** 240 hours it closes. Recalculate immediately before merging and at every relevant transition.
 
+**Org-wide precedence:** The one-of-two-human rule and nonrenewal after main sync in this canonical section override any older four-party or current-SHA human-review wording copied into repository-local `AGENTS.md` boilerplate; they do not waive GitHub's independently enforced protections or material security checks. The local boilerplate must be reconciled in follow-up PRs. 
+
 **Human approval is required once per PR, from EITHER `the1mills` OR `ORESoftware`, not both.** A valid submitted `APPROVED` human review survives ordinary sync merges and rebases from `main`, changes to the PR head SHA, the 72h and 240h boundaries, and a subsequent legitimate Draft→Ready cycle. Its GitHub account ID and independent/non-author status must be verified. Explicit dismissal, revocation, a newer blocking `CHANGES_REQUESTED` review or GitHub's own protection ruling can invalidate it; a stale/dismissed GitHub approval is not resurrected by policy text. **AI attestations**, where required by the table, must be current-head, current-cycle and (at ≥240h) post-boundary, independently provider-verified, and distinct. No author self-approval or fabricated AI evidence. If `the1mills` authors the PR, `ORESoftware` is the eligible human, and vice versa; do not silently substitute any other account.
 
 ## Draft lifecycle: recover, integrate, then make ready
