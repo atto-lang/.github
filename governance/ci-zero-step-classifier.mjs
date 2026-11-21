@@ -40,12 +40,13 @@ export function classifyJobEvidence(input) {
       return verdict('INCOMPLETE_JOB_EVIDENCE', 'invalid job record', { total_steps: totalSteps });
     }
     const identifier = job.id ?? job.name ?? 'unknown';
-    if (job.id !== undefined) {
-      if (seenIds.has(job.id)) {
-        return verdict('INCOMPLETE_JOB_EVIDENCE', 'duplicate job id', { job_ids: [job.id], total_steps: totalSteps });
-      }
-      seenIds.add(job.id);
+    if (!Number.isSafeInteger(job.id) || job.id <= 0) {
+      return verdict('INCOMPLETE_JOB_EVIDENCE', 'missing or invalid job ID', { total_steps: totalSteps });
     }
+    if (seenIds.has(job.id)) {
+      return verdict('INCOMPLETE_JOB_EVIDENCE', 'duplicate job id', { job_ids: [job.id], total_steps: totalSteps });
+    }
+    seenIds.add(job.id);
 
     // GitHub job records with 0/null runner ID never prove admission.
     if (!Array.isArray(job.steps) || job.steps.length === 0 ||
@@ -84,8 +85,7 @@ export function classifyJobEvidence(input) {
     } else if (job.conclusion === 'failure' || job.conclusion === 'timed_out') {
       failed.push(identifier);
     } else if (job.conclusion !== 'success' || jobIncompleteStep ||
-               jobExecutedSteps === 0 ||
-               ('status' in job && job.status !== 'completed')) {
+               jobExecutedSteps === 0 || job.status !== 'completed') {
       incomplete = true;
     }
   }
@@ -108,6 +108,15 @@ export function classifyJobEvidence(input) {
   }
   if (incomplete || totalSteps === 0) {
     return verdict('PENDING_OR_INCONCLUSIVE', 'not every job/step has sufficient completed evidence', {
+      total_steps: totalSteps, skipped_steps: skippedSteps,
+    });
+  }
+
+  // The GitHub REST jobs response supplies total_count. Without it, an
+  // object may be only the first page; a standalone array is explicitly a
+  // caller-supplied complete snapshot and still not a source attestation.
+  if (!Array.isArray(input) && !('total_count' in input)) {
+    return verdict('INCOMPLETE_JOB_EVIDENCE', 'missing REST pagination total_count', {
       total_steps: totalSteps, skipped_steps: skippedSteps,
     });
   }
