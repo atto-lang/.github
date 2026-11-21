@@ -8,6 +8,8 @@ on:
   pull_request:
     paths:
       - 'governance/ci-zero-step-*'
+      - 'governance/ci-recovery-gate*'
+      - 'governance/ci-tree-manifest-verify*'
       - 'AGENTS.md'
       - '.github/workflows/ci-zero-step-policy.yml'
 
@@ -24,7 +26,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Execute source-free zero-step classifier adversarial tests
-        run: node --test governance/ci-zero-step-classifier.test.mjs governance/ci-zero-step-inspector.test.mjs governance/ci-recovery-gate.test.mjs
+        run: node --test governance/ci-zero-step-classifier.test.mjs governance/ci-zero-step-inspector.test.mjs governance/ci-recovery-gate.test.mjs governance/ci-tree-manifest-verify.test.mjs
       - name: Smoke-test live same-repository GitHub Actions REST reader
         env:
           GITHUB_TOKEN: ${{ github.token }}
