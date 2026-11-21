@@ -186,3 +186,16 @@ test('canonical policy documentation still contains both boundaries and draft ho
   assert.match(humans,/72 hours/);
   assert.match(humans,/240 hours/);
 });
+
+test('central policy regression workflow pins immutable head and cannot be path-skipped', () => {
+  const workflow=readFileSync(new URL('../.github/workflows/atto-ready-policy-tests.yml', import.meta.url),'utf8');
+  for(const required of [
+    'pull_request:', 'push:', 'workflow_dispatch:',
+    'EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}',
+    'ref: ${{ github.event.pull_request.head.sha || github.sha }}',
+    'persist-credentials: false',
+    'test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"',
+    'node --test tests/atto-ready-four-party.test.mjs'
+  ]) assert.ok(workflow.includes(required), 'missing head-pinned test requirement: '+required);
+  assert.doesNotMatch(workflow,/^\\s+paths:/m);
+});
