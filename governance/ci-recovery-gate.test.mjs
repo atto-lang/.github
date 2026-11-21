@@ -157,3 +157,22 @@ test('private callers never fetch mutable public diagnostic scripts using their 
   assert.ok(!watcher.includes("github.ref_name"));
   assert.ok(!watcher.includes('ref: main'));
 });
+
+test('required recovery CI is unfiltered and verifies exact PR head before tests', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ci-zero-step-policy.yml', import.meta.url), 'utf8');
+  for (const contract of [
+    'pull_request:',
+    'workflow_dispatch:',
+    'EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}',
+    'ref: ${{ github.event.pull_request.head.sha || github.sha }}',
+    'persist-credentials: false',
+    'test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"',
+    'git diff --quiet --exit-code',
+    'node --test governance/ci-zero-step-classifier.test.mjs',
+  ]) {
+    assert.ok(workflow.includes(contract), 'required head-pinned CI contract missing: ' + contract);
+  }
+  assert.doesNotMatch(workflow, /^\s+paths:/m);
+  assert.doesNotMatch(workflow, /pull_request_target:/);
+  assert.doesNotMatch(workflow, /ref: \$\{\{ github\.ref \}\}/);
+});
