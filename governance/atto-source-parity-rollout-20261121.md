@@ -45,8 +45,36 @@ Those receipts establish **only the Rust policy-contract test**, not compiler ex
 
 ## Remaining blockers (do not misreport as complete)
 
-1. Merge canonical #56 only after the actual qualifying human review and applicable AI/time-window gates, and reconcile overlapping #55.
+1. Merge canonical #56 only after the actual qualifying human review and applicable AI/time-window gates. Conflicting #55 was **closed without merging** after its human identity/revocation improvements were retained and tested in #56.
 2. Re-read current PR heads and all required GitHub protections before merging any of the eleven staged PRs. Hold labels, unresolved changes requested, unexecuted jobs, and conflicts remain blockers.
 3. Obtain admin-capable GitHub integration permissions to inspect/update effective branch rulesets. Current connected GitHub App gets `403 Resource not accessible by integration` on branch-protection reads. Target one required approval, `dismiss_stale_reviews=false`, `require_last_push_approval=false`, correct identity enforcement, and preservation of sensitive CODEOWNERS.
 4. Most compiler source repositories currently have `@ORESoftware`-only CODEOWNERS entries on sensitive private-source export/workflow paths. These can block an otherwise valid `the1mills` approval if CODEOWNER review is enforced. Audit the exact effective rules against the exporter/security policy before changing any of them. Do not overwrite the sole-owner private export safety contract by adding a broad last-match rule.
 5. Audit the remaining non-source Atto local copies and deploy a trusted GitHub identity/time-window/hold-label merge check; static policy-contract CI is not a substitute.
+
+## Exact-head workflow hardening (subsequent 2026-11-21 readback)
+
+The 11 compiler rollout PRs now share these identical policy CI Git blobs:
+
+- `.github/tests/atto-pr-policy-contract.rs`: `952faee4b905cfabeee7a5d3a471d3747c836cfe` (five Rust tests, including the workflow exact-head contract).
+- `.github/workflows/atto-pr-policy-parity.yml`: `9cae06c00527f7aeb699c3166bca5d40ff8eb4e4` (always runs on `pull_request`, no path skip; `checkout` pins `github.event.pull_request.head.sha || github.sha`, verifies `git rev-parse HEAD`, and disables persisted checkout credentials).
+
+**Updated full-source-tree carrier receipts** supersede the initial four-test runs:
+
+| Source PR | Current tested source tree SHA | Latest carrier proof |
+| --- | --- | --- |
+| [Realtime #10](https://github.com/atto-lang/atto-source.realtime/pull/10) | `e84404634878506b09457f8900c7b4bf40ceeafd` | [Run 44947479714](https://github.com/ores-data-platform/atto-ci/actions/runs/44947479714): exact root-tree match, 5/5 Rust tests PASS |
+| [Atto-native #16](https://github.com/atto-lang/atto-source.atto/pull/16) | `c26b68effc08ee52211dc0573a5c2095dc1e07a5` | [Run 44947674665](https://github.com/ores-data-platform/atto-ci/actions/runs/44947674665): exact root-tree match, 5/5 Rust tests PASS |
+
+The carrier-control workflow was staged **outside** the unmodified source subtree and checked `git rev-parse HEAD:source` against the exact source Git-tree SHA. Both runs executed five non-skipped tests, not just a runner-admission canary. These receipts qualify the **governance fixture** on those exact trees only. They are not execution receipts for the other nine backends or runtime semantics.
+
+### Source-org runner admission and confidentiality
+
+Rechecked source CI on the new exact-head workflow: source jobs are reporting `failure` with **zero steps and zero runner runtime**. Example: [HDL policy job 44945850841](https://github.com/atto-lang/atto-source.hdl/actions/runs/44945850841) shows `runner_name=""`, `steps=0`, and `billable.UBUNTU.total_ms=0`. This is **NOT_EXECUTED** for the test, not a compiler/test failure.
+
+Inspected the current `.github/private-ci-approved-repositories.txt` in **nine source backends** (Cranelift, LLVM, JS, HDL, Forge, Rust, Java, WASM, .NET). **None authorizes `ores-data-platform/atto-ci`**, despite that carrier having working Actions minutes. Their private-source export contracts must remain deny-by-default. Do not reconstruct or transfer their full source Git trees to an alternate organization without the required destination-specific authorization and independent security review. Where authorized mirroring is unavailable, retain `NOT_EXECUTED`, require genuine source-local runner admission or a separately approved private destination, and do not mark compiler parity green.
+
+### Central source-free test receipt
+
+On [canonical #56](https://github.com/atto-lang/.github/pull/56), the restored 72h/240h evaluator plus AI-dismissal tests passed **22/22** Node regression cases, and the exact revision `c628c7ec1280b47f0a38dcbe6b467afb22ede11b` passed **11/11** GitHub checks. The competing no-age review proposal [#55](https://github.com/atto-lang/.github/pull/55) was closed without merge.
+
+**Reminder:** all eleven source policy PRs are still open pending real independent human approval and effective GitHub ruleset checks. Common text and test Git blobs prove staged source policy consistency, not full deployed governance and not compiler/runtime feature parity.
