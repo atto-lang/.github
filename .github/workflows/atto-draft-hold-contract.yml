@@ -39,3 +39,14 @@ jobs:
         run: |
           set -euo pipefail
           cargo fmt --manifest-path tools/atto-draft-hold/Cargo.toml -- --check
+
+      - name: Read-only audit of live PR metadata (no repository mutations)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPO: ${{ github.repository }}
+          TARGET_PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          cargo run --manifest-path tools/atto-draft-hold/Cargo.toml --locked -- \
+            --repo "$TARGET_REPO" --pr "$TARGET_PR"
