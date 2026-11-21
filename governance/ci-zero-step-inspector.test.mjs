@@ -163,6 +163,17 @@ test('GitHub fetch reader only performs no-redirect GET with no token leakage', 
   assert.equal(seen.options.headers.Authorization, 'Bearer test-do-not-output');
   await assert.rejects(reader('/repos/../bad'), /invalid REST route/);
 });
+test('token cannot be exfiltrated to arbitrary HTTPS GitHub-looking hosts', () => {
+  for (const apiUrl of [
+    'https://attacker.example/', 'https://api.github.com.attacker.example/',
+    'https://api.github.com:8443/', 'http://api.github.com/',
+    'https://user:pass@api.github.com/', 'https://api.github.com/redirect/',
+  ]) {
+    assert.throws(() => createGitHubReader({ token: 'secret', apiUrl }),
+      /GitHub API origin must/);
+  }
+});
+
 test('HTTP failures report status only and never reveal token or response content', async () => {
   const reader = createGitHubReader({
     token: 'top-secret-value', fetchFn: async () => ({ ok: false, status: 403 }),
