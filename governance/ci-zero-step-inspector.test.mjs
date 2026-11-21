@@ -146,7 +146,7 @@ test('recent watcher skips itself, bounds scan, and reports uncertain API failur
   const reader = async route => {
     calls.push(route);
     if (route.endsWith('/actions/runs?per_page=3')) return {
-      workflow_runs: [{ id: 43, name: MONITOR_NAME }, { id: 42, name: 'compiler' }],
+      workflow_runs: [{ id: 43, name: MONITOR_NAME, path: '.github/workflows/ci-zero-step-watcher.yml' }, { id: 42, name: 'compiler' }],
     };
     if (route.endsWith('/runs/42')) return makeRun();
     throw new Error('permission unavailable');
@@ -163,7 +163,7 @@ test('recent scan never discards malformed or duplicated run-listing records', a
     calls.push(route);
     if (route.endsWith('/actions/runs?per_page=5')) return {
       workflow_runs: [
-        {id: 43, name: MONITOR_NAME},
+        {id: 43, name: MONITOR_NAME, path: '.github/workflows/ci-zero-step-watcher.yml'},
         {name: 'missing ID'},
         {id: 42, name: 'compiler'},
         {id: 42, name: 'duplicate'},
@@ -184,6 +184,24 @@ test('recent scan never discards malformed or duplicated run-listing records', a
   assert.equal(inspectionExitCode('--run-id', summarize(result)), 2);
   assert.deepEqual(calls.filter(x => x.endsWith('/runs/42')).length, 1);
   assert.ok(!calls.some(x => x.endsWith('/runs/43')));
+});
+test('a different workflow with the monitor display name is not silently hidden', async () => {
+  const calls = [];
+  const reader = async route => {
+    calls.push(route);
+    if (route.endsWith('/actions/runs?per_page=1')) return {
+      workflow_runs: [{id: 42, name: MONITOR_NAME,
+        path: '.github/workflows/suspicious-but-not-monitor.yml'}],
+    };
+    if (route.endsWith('/runs/42')) return makeRun({
+      status: 'in_progress', conclusion: null,
+    });
+    throw new Error('unexpected endpoint: ' + route);
+  };
+  const result = await inspectRecent({repository, limit: 1, getJson: reader});
+  assert.equal(result.results.length, 1);
+  assert.equal(result.results[0].status, 'PENDING_OR_INCONCLUSIVE');
+  assert.ok(calls.some(route => route.endsWith('/runs/42')));
 });
 test('Markdown summary escapes workflow-controlled characters to block injection', () => {
   const formatted = formatSummary([{ run_id: 42, workflow_name: 'a|b\n# header', status: 'NOT_EXECUTED', head_sha: sha }]);
