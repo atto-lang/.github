@@ -77,7 +77,10 @@ export async function inspectRecent({ repository, limit = 20, getJson }) {
   for (const run of response.workflow_runs.slice(0, limit)) {
     // An incomplete/malformed Actions list item must not vanish from the
     // count: dropping it could make an incomplete scan appear fully healthy.
-    if (run?.name === MONITOR_NAME) continue;
+    // Exclude only this specific monitoring workflow, not arbitrary runs
+    // that happen to reuse its display name. GitHub supplies workflow path.
+    if (run?.name === MONITOR_NAME &&
+        run?.path === '.github/workflows/ci-zero-step-watcher.yml') continue;
     const runId = run?.id;
     if (!Number.isSafeInteger(runId) || runId <= 0 || seenIds.has(runId)) {
       results.push({ repository,
