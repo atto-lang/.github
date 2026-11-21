@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - policy/zero-step-token-free-carrier-recovery-20261121
+      - main
   pull_request:
     paths:
       - 'governance/ci-zero-step-*'
@@ -26,6 +27,8 @@ jobs:
       - name: Prove policy remains non-authorizing
         run: |
           set -euo pipefail
-          grep -q 'NO MIRROR' governance/ci-zero-step-recovery.md
-          grep -q 'never pass a PAT' governance/ci-zero-step-recovery.md || grep -q 'Never' governance/ci-zero-step-recovery.md
+          grep -Fq 'DENIED or' governance/ci-zero-step-recovery.md
+          grep -Fq 'NO MIRROR' governance/ci-zero-step-recovery.md
+          grep -Fq 'Never' governance/ci-zero-step-recovery.md
+          grep -Fq 'root tree OID to equal the source tree OID' governance/ci-zero-step-recovery.md
           echo 'EXTERNAL_SOURCE_EXPORT_AUTHORIZATION=NOT_GRANTED'
