@@ -75,7 +75,7 @@ Inspected the current `.github/private-ci-approved-repositories.txt` in **nine s
 
 ### Central source-free test receipt
 
-On [canonical #56](https://github.com/atto-lang/.github/pull/56), the restored 72h/240h evaluator plus AI-dismissal tests passed **22/22** Node regression cases, and the exact revision `c628c7ec1280b47f0a38dcbe6b467afb22ede11b` passed **11/11** GitHub checks. The competing no-age review proposal [#55](https://github.com/atto-lang/.github/pull/55) was closed without merge.
+On [canonical #56](https://github.com/atto-lang/.github/pull/56), the restored 72h/240h evaluator plus AI-dismissal tests passed **23/23** Node regression cases, including the non-skippable exact-head workflow invariant, and the exact revision `c628c7ec1280b47f0a38dcbe6b467afb22ede11b` passed **11/11** GitHub checks. The competing no-age review proposal [#55](https://github.com/atto-lang/.github/pull/55) was closed without merge.
 
 **Reminder:** all eleven source policy PRs are still open pending real independent human approval and effective GitHub ruleset checks. Common text and test Git blobs prove staged source policy consistency, not full deployed governance and not compiler/runtime feature parity.
 
