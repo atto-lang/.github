@@ -1,13 +1,8 @@
 name: Atto ready-cycle policy tests
 on:
   pull_request:
-    paths:
-      - AGENTS.md
-      - governance/atto-ready-four-party.mjs
-      - governance/2026-11-21-review-policy-drift.md
-      - docs/ORG_TRUSTED_MERGE_APPROVALS.md
-      - tests/atto-ready-four-party.test.mjs
-      - .github/workflows/atto-ready-policy-tests.yml
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,10 +10,24 @@ jobs:
   policy-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    env:
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+          fetch-depth: 1
+      - name: Verify exact immutable PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --quiet --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
       - name: Execute policy regression tests
         shell: bash
-        run: node --test tests/atto-ready-four-party.test.mjs
+        run: |
+          set -euo pipefail
+          node --test tests/atto-ready-four-party.test.mjs
