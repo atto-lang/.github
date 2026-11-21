@@ -5,17 +5,19 @@
     {
       "name": "keep-as-draft",
       "color": "B60205",
-      "description": "Canonical persistent hold: never automatically promote Draft or merge even after 72h with green tests; owner must remove",
+      "description": "Canonical persistent hold: PR must remain Draft; re-draft if made Ready, and never merge until authorized owner removal",
       "behavior": "block_auto_ready_and_auto_merge",
-      "removal": "authorized_human_only"
+      "removal": "authorized_human_only",
+      "draft_invariant": "must_remain_draft_and_revert_any_ready_transition"
     },
     {
       "name": "keep-draft",
       "color": "B60205",
-      "description": "Legacy alias of keep-as-draft; still blocks automatic Draft-to-Ready transitions and merges",
+      "description": "Legacy alias of keep-as-draft: same persistent Draft-state invariant and merge hold",
       "behavior": "block_auto_ready_and_auto_merge",
       "removal": "authorized_human_only",
-      "alias_of": "keep-as-draft"
+      "alias_of": "keep-as-draft",
+      "draft_invariant": "must_remain_draft_and_revert_any_ready_transition"
     },
     {
       "name": "not-ready",
@@ -45,5 +47,5 @@
   ],
   "source_policy": "AGENTS.md",
   "note": "Fail closed for inaccessible labels, incomplete draft lifecycle, or missing/failed checks. A repository label must be provisioned separately; this catalog is not an installed ruleset. Existing keep-draft remains a blocking alias.",
-  "automation": "At first authorized check at or after 72h of the current Draft cycle, if all material tests pass on exact current HEAD and no keep-as-draft, not-ready, or keep-draft label is present, automatically mark Ready. Recheck labels and SHA immediately before the transition; Ready review age starts from the authenticated Ready event."
+  "automation": "At first authorized check at or after 72h of the current Draft cycle, if all material tests pass on exact current HEAD and no keep-as-draft, not-ready, or keep-draft label is present, automatically mark Ready. Recheck labels and SHA immediately before transition. Whenever keep-as-draft or keep-draft is present, fail merge eligibility and convert a non-Draft PR back to Draft; protect races with a required trusted governance check. Ready review age starts from the authenticated Ready event."
 }

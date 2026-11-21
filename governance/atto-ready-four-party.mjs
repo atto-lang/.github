@@ -1,16 +1,57 @@
 // Read-only advisory evaluator for AttoLang's ready-cycle four-party policy.
+// A verified keep-as-draft label is a hard Draft-state invariant; this module
+// reports required actions but does not itself operate on GitHub.
 // This validates supplied authenticated evidence, not GitHub live state. NEVER
 // authorize merges or treat untrusted PR text as reviewer attestation.
 const SHA = /^[a-f0-9]{40}$/;
 const HOUR = 60 * 60 * 1000;
-const HUMAN = new Map([['oresoftware','human-oresoftware'],['the1mills','human-the1mills']]);
+// Bind reviewer names to verified immutable GitHub IDs; names alone are not credentials.
+const HUMAN = new Map([
+  ['oresoftware', {role: 'human-oresoftware', github_id: 11139560}],
+  ['the1mills', {role: 'human-the1mills', github_id: 2148448}],
+]);
 const AI = new Map([['openai','ai-openai'],['anthropic','ai-anthropic']]);
-const roles = [...HUMAN.values(),...AI.values()];
-const date = x => typeof x === 'string' && Number.isFinite(Date.parse(x)) ? Date.parse(x) : NaN;
+const roles = [...HUMAN.values()].map(x => x.role).concat([...AI.values()]);
+// GitHub timestamps are unambiguous UTC RFC3339, never locale-dependent strings.
+const date = x => typeof x === 'string' &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(x) &&
+  Number.isFinite(Date.parse(x)) ? Date.parse(x) : NaN;
 const int = x => Number.isSafeInteger(x) && x > 0;
+
+// Never infer label absence from an unavailable or untrusted label listing.
+// Caller MUST obtain current labels and draft state from authenticated GitHub
+// APIs at the action boundary; PR bodies or workflow inputs are not evidence.
+const DRAFT_HOLDS = new Set(['keep-as-draft', 'keep-draft']);
+const MERGE_HOLDS = new Set([...DRAFT_HOLDS, 'not-ready']);
+export function assessDraftHold(x) {
+  const names = [];
+  let verified = x?.labels_verified === true && Array.isArray(x?.labels);
+  if (verified) for (const label of x.labels) {
+    const name = typeof label === 'string' ? label
+      : label && !Array.isArray(label) && typeof label.name === 'string' ? label.name : null;
+    if (!name || name.trim() !== name) { verified = false; break; }
+    names.push(name.toLowerCase());
+  }
+  const blocking_labels = verified
+    ? [...new Set(names.filter(name => MERGE_HOLDS.has(name)))].sort() : [];
+  const draft_required = verified && blocking_labels.some(name => DRAFT_HOLDS.has(name));
+  const draftKnown = typeof x?.draft === 'boolean';
+  return {
+    advisory_only: true, labels_verified: verified, blocking_labels, draft_required,
+    draft_action: !verified ? 'HOLD_UNVERIFIED_LABELS'
+      : !draftKnown ? 'HOLD_UNVERIFIED_DRAFT_STATE'
+      : draft_required ? (x.draft ? 'REMAIN_DRAFT' : 'CONVERT_TO_DRAFT') : 'NONE',
+    labels_allow_auto_ready: verified && x?.draft === true && blocking_labels.length === 0,
+  };
+}
 export function assessFourPartyReadyCycle(x) {
   const failures = [];
   const bad = (condition, why) => { if (!condition) failures.push(why); };
+  const draftHold = assessDraftHold(x);
+  bad(draftHold.labels_verified, 'current PR labels not independently verified');
+  bad(typeof x?.draft === 'boolean', 'current PR draft state absent');
+  bad(draftHold.blocking_labels.length === 0,
+      'blocking hold label: ' + draftHold.blocking_labels.join(', '));
   const checked = date(x?.checked_at), started = date(x?.ready_cycle_started_at);
   const pushed = date(x?.last_push_at);
   bad(SHA.test(x?.head_sha ?? ''), 'missing immutable head SHA');
@@ -34,17 +75,21 @@ export function assessFourPartyReadyCycle(x) {
     // A GitHub account cannot become two independent reviewers by using two
     // role strings, and a human GitHub APPROVED event is never an AI attestation.
     let key, role;
+    const human = HUMAN.get(String(r.login).toLowerCase());
+    const provider = String(r.provider).toLowerCase();
     if (r.source === 'github-human' && int(r.github_id) &&
-        HUMAN.has(String(r.login).toLowerCase())) {
+        human && r.github_id === human.github_id) {
       key = 'gh:' + r.github_id;
-      role = HUMAN.get(String(r.login).toLowerCase());
+      role = human.role;
       bad(r.github_id !== x.author_github_id, 'self-review not independent');
     } else if (r.source === 'independent-provider-attestation' &&
-               AI.has(String(r.provider).toLowerCase()) &&
+               AI.has(provider) &&
                r.provider_verified === true && r.attestation_verified === true &&
-               typeof r.agent_identity === 'string' && r.agent_identity.length > 0) {
-      key = 'ai:' + r.provider + ':' + r.agent_identity;
-      role = AI.get(String(r.provider).toLowerCase());
+               typeof r.agent_identity === 'string' &&
+               r.agent_identity.length > 0 &&
+               r.agent_identity.trim() === r.agent_identity) {
+      key = 'ai:' + provider + ':' + r.agent_identity;
+      role = AI.get(provider);
     } else {
       failures.push('unverified or unqualified reviewer identity'); continue;
     }
@@ -66,12 +111,17 @@ export function assessFourPartyReadyCycle(x) {
     byRole.set(r.role, r.key);
   }
   if (lane === 'fast-one-independent') {
-    bad(principals.size >= 1, 'qualified independent current-head review missing');
+    const humanCount = qualified.filter(r => r.role.startsWith('human-')).length;
+    const aiCount = qualified.filter(r => r.role.startsWith('ai-')).length;
+    bad(humanCount >= 1 && aiCount >= 1 && principals.size >= 2,
+        'fast lane requires one qualified human AND one verified AI approval');
   } else {
     bad(roles.every(role => byRole.has(role)) && principals.size >= 4 &&
         new Set([...byRole.values()]).size === 4,
         'four distinct OpenAI, Anthropic, ORESoftware and the1mills approvals missing');
   }
   return {status: failures.length ? 'HOLD' : 'REPORTED_SATISFIED_NOT_AUTHORIZED',
-          advisory_only: true, lane, unique_reviewers: principals.size, failures};
+          advisory_only: true, lane, unique_reviewers: principals.size,
+          draft_action: draftHold.draft_action,
+          blocking_labels: draftHold.blocking_labels, failures};
 }

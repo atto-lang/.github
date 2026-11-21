@@ -245,10 +245,21 @@ fn scan_markdown_commands(content: &str) -> Option<String> {
             }
         } else {
             let lower = line.to_ascii_lowercase();
-            if (lower.contains("requires")
-                || lower.contains("requirement")
-                || lower.contains("dependency"))
-                && lower.contains("python")
+            // Detect affirmative dependency declarations, not policy sentences
+            // like "remove the legacy Python dependency" or "Python requires
+            // migration tests". The actual executable/artifact ban is unchanged.
+            if [
+                "requires python",
+                "depends on python",
+                "dependency: python",
+                "python is required",
+                "python required",
+                "requires pip",
+                "needs python",
+                "python must be installed",
+            ]
+            .iter()
+            .any(|pattern| lower.contains(pattern))
             {
                 return Some(format!(
                     "line {}: documentation declares a Python dependency",
@@ -419,6 +430,12 @@ mod tests {
         assert!(scan_markdown_commands("~~~sh\npython3 x.py\n~~~\n").is_some());
         assert!(scan_markdown_commands("Requires Python3 and LLVM.\n").is_some());
         assert!(scan_markdown_commands("Python is prohibited; replacements use Rust.\n").is_none());
+        assert!(scan_markdown_commands("Use Rust, not Python; prefer a dependency-free Rust harness.\n").is_none());
+        assert!(scan_markdown_commands("Remove the legacy Python dependency in a separately reviewed change.\n").is_none());
+        assert!(scan_markdown_commands("Migration of legacy Python requires equivalent fixtures.\n").is_none());
+        assert!(scan_markdown_commands("A build that depends on Python3 is prohibited.\n").is_some());
+        assert!(scan_markdown_commands("Dependency: Python 3.12\n").is_some());
+        assert!(scan_markdown_commands("Python is required for build.\n").is_some());
     }
 
     #[test]
