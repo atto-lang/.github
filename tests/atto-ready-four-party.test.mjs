@@ -84,6 +84,10 @@ test('sync with main preserves a single human approval but refreshes both AIs', 
   x.reviews[2].commit_sha = HEAD; hold(x);
   x.reviews[2].commit_sha = NEW_HEAD; x.reviews[2].submitted_at = '2026-11-19T15:48:00Z'; hold(x);
 });
+test('two provider slots cannot be filled by the same claimed agent identity', () => {
+  const x = ready();
+  x.reviews[2].agent_identity = x.reviews[1].agent_identity; hold(x);
+});
 test('a new Ready cycle keeps human review but invalidates old-cycle AI evidence', () => {
   const x = ready(); x.ready_cycle_started_at = '2026-11-19T15:50:00Z';
   x.reviews = [person('ore','2026-11-18T12:00:00Z'), ai('OpenAI'), ai('Anthropic')]; hold(x);
