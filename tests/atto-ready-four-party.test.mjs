@@ -89,6 +89,23 @@ test('two provider slots cannot be filled by the same claimed agent identity', (
   const x = ready();
   x.reviews[2].agent_identity = x.reviews[1].agent_identity; hold(x);
 });
+test('latest authenticated AI dismissal or changes request revokes prior attestation', () => {
+  const x = ready();
+  pass(x);
+  x.reviews.push({...ai('OpenAI','2026-11-19T15:55:00Z'), state:'DISMISSED'});
+  hold(x);
+  x.reviews.push(ai('OpenAI','2026-11-19T15:56:00Z'));
+  pass(x);
+  x.reviews.push({...ai('Anthropic','2026-11-19T15:57:00Z'), state:'CHANGES_REQUESTED'});
+  hold(x);
+  x.reviews.push(ai('Anthropic','2026-11-19T15:58:00Z'));
+  pass(x);
+});
+test('a late AI COMMENTED event does not revoke a valid attestation', () => {
+  const x=ready();
+  x.reviews.push({...ai('OpenAI','2026-11-19T15:59:00Z'),state:'COMMENTED'});
+  pass(x);
+});
 test('a new Ready cycle keeps human review but invalidates old-cycle AI evidence', () => {
   const x = ready(); x.ready_cycle_started_at = '2026-11-19T15:50:00Z';
   x.reviews = [person('ore','2026-11-18T12:00:00Z'), ai('OpenAI'), ai('Anthropic')]; hold(x);
