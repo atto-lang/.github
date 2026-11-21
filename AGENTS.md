@@ -15,12 +15,12 @@ Source the timeline from authenticated GitHub PR lifecycle events (`ready_for_re
 | Time since start of **current ready cycle** | Required independent reviews | Action |
 | --- | --- | --- |
 | `0 ≤ ready_age < 72h` | OpenAI Codex/ChatGPT + Anthropic Claude/Opus + authenticated `ORESoftware` + authenticated `the1mills` | Merge immediately as soon as all four and the common gates pass; never wait for day 3. |
-| `72h ≤ ready_age < 240h` | **One** independently authenticated, qualified human or verified AI/agent approval | **Fast lane:** perform the competing/overlapping-PR integration audit described below; update the current PR or a competing PR where needed; then merge immediately once all gates pass. |
+| `72h ≤ ready_age < 240h` | **One** independently authenticated approval from `ORESoftware` **or** `the1mills` **AND one** independently authenticated OpenAI **or** Anthropic AI approval | **Fast lane:** perform the competing/overlapping-PR integration audit described below; update the current PR or a competing PR where needed; then merge immediately once all gates pass. |
 | `ready_age ≥ 240h` | **Fresh, post-boundary approvals from all four** named parties | Re-review on the current SHA and merge as soon as all gates pass. |
 
 At **exactly** 72 hours the fast lane opens. At **exactly** 240 hours it closes. Recalculate immediately before merging and at every relevant transition.
 
-All counted reviews must cover the current head SHA, must be submitted in the **current ready cycle**, and must be newer than the applicable 240-hour re-review boundary. Human identities must be verified by immutable GitHub account ID; AI evidence needs independently authenticated provider provenance and separate family identities. No author self-approval, unverified AI comment, repeated reviewer, revoked review, dismissed review, or stale SHA may count. If a designated human authored a PR, require explicit independent authorized substitute approval rather than silently waive the requirement.
+All counted reviews must cover the current head SHA, must be submitted in the **current ready cycle**, and must be newer than the applicable 240-hour re-review boundary. Human identities must be verified by immutable GitHub account ID; AI evidence needs independently authenticated provider provenance and separate family identities. No author self-approval, unverified AI comment, repeated reviewer, revoked review, dismissed review, or stale SHA may count. If a designated human authored a PR, do not silently waive the named requirement or count self-review; hold unless a separately authorized and documented exception policy resolves the identity conflict.
 
 ## Draft lifecycle: recover, integrate, then make ready
 
@@ -37,13 +37,13 @@ A draft is a work queue, **not a way to bypass governance or wait out the clock*
 
 Canonical label names, descriptions, and intended behavior are recorded in [`governance/merge-first-labels.json`](governance/merge-first-labels.json). This file is a provisionable catalog, **not** evidence that labels have been created in every repository or that automation is deployed.
 
-- **`keep-as-draft`** — **canonical persistent human hold**. NEVER automatically convert a Draft to Ready while present, even after 72 hours and successful tests; only an authorized owner/human removes this label.
-- **`keep-draft`** — backwards-compatible alias treated exactly like `keep-as-draft`; do not automatically remove existing labels.
+- **`keep-as-draft`** — **canonical persistent human hold and Draft-state invariant**. While present, the PR MUST be Draft. Never mark Ready or merge, even with green tests or all approvals. If a manual or automated transition makes it Ready, an authorized trusted controller MUST immediately convert it back to Draft; only an authorized owner/human removes this label.
+- **`keep-draft`** — backwards-compatible alias with the same Draft-state invariant and merge hold as `keep-as-draft`; do not automatically remove existing labels.
 - **`not-ready`** — work/readiness blocker. **Never automatically convert a draft to ready** while present. Resolve the stated blocker and remove the label only by an authorized action.
 - **All three labels (`keep-as-draft`, `not-ready`, and `keep-draft`) also prohibit automated merging**, even after a manual transition to Ready.
 - `overlap-review-needed`, `needs-tests`, or `blocked` are useful optional triage labels, but are advisory unless configured by an enforcing workflow. Labels are case-normalized when checked; do not infer approval from the absence of labels.
 
-Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-as-draft`, `keep-draft`, or `not-ready`. Manual transition with a hold label must not be interpreted as permission to merge.
+Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-as-draft`, `keep-draft`, or `not-ready`. Manual transition with a hold label must not be interpreted as permission to merge. For `keep-as-draft`/`keep-draft`, immediately re-draft if current state is Ready. Trusted automation must re-fetch state and labels immediately before conversion, auto-ready, or merge; an issuer-bound required governance check must block merge during event-to-remediation races. Until that controller and required check are deployed per repository, this is policy only, not a GitHub-enforced invariant.
 
 ## Mandatory competing/overlapping PR audit — especially fast lane
 
