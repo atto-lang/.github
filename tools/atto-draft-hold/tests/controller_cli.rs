@@ -53,7 +53,8 @@ struct Fixture {
 impl Fixture {
     fn new(keep: bool, draft: bool, not_ready: bool) -> Self {
         let id = NEXT.fetch_add(1, Ordering::SeqCst);
-        let root = env::temp_dir().join(format!("atto-draft-hold-cli-{}-{}", std::process::id(), id));
+        let root =
+            env::temp_dir().join(format!("atto-draft-hold-cli-{}-{}", std::process::id(), id));
         fs::create_dir_all(&root).unwrap();
         let gh_path = root.join("gh");
         fs::write(&gh_path, FAKE_GH).unwrap();
@@ -61,16 +62,24 @@ impl Fixture {
         perms.set_mode(0o700);
         fs::set_permissions(&gh_path, perms).unwrap();
 
-        fs::write(root.join("state"), format!(
-            "atto-lang/.github\t49\topen\t{}\tfalse\t{}\ttrue\t{}\tfalse\t{}\n",
-            draft, SHA, keep, not_ready
-        )).unwrap();
+        fs::write(
+            root.join("state"),
+            format!(
+                "atto-lang/.github\t49\topen\t{}\tfalse\t{}\ttrue\t{}\tfalse\t{}\n",
+                draft, SHA, keep, not_ready
+            ),
+        )
+        .unwrap();
         Self { root }
     }
 
-    fn invoke(&self, apply: bool, authorized: bool, mutate_on: Option<&str>,
-        status_error: bool) -> Output
-    {
+    fn invoke(
+        &self,
+        apply: bool,
+        authorized: bool,
+        mutate_on: Option<&str>,
+        status_error: bool,
+    ) -> Output {
         let exe = env!("CARGO_BIN_EXE_atto-draft-hold");
         let mut args = vec!["--repo", "atto-lang/.github", "--pr", "49"];
         if apply {
@@ -138,8 +147,11 @@ fn missing_write_activation_fails_before_any_gh_request() {
 fn held_ready_pr_is_failed_first_then_restored_to_draft() {
     let fixture = Fixture::new(true, false, false);
     let output = fixture.invoke(true, true, None, false);
-    assert!(output.status.success(),
-        "{}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let log = fixture.log();
     assert!(log.contains("state=failure"));
     assert!(!log.contains("state=success"));
@@ -152,8 +164,11 @@ fn held_ready_pr_is_failed_first_then_restored_to_draft() {
 fn unlabelled_ready_pr_gets_only_the_narrow_status() {
     let fixture = Fixture::new(false, false, false);
     let output = fixture.invoke(true, true, None, false);
-    assert!(output.status.success(),
-        "{}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let log = fixture.log();
     assert!(log.find("state=pending").unwrap() < log.find("state=success").unwrap());
     assert!(log.contains("context=atto-governance/draft-hold"));
