@@ -45,7 +45,8 @@ fn collect(repo: &str, pr: u64) -> Result<Evidence,String> {
     let address = format!("repos/{repo}/pulls/{pr}");
     let state = parse_snapshot(&gh(&["api",&address,"--jq",PR_JQ])?,repo,pr)
         .map_err(str::to_owned)?;
-    let meta = rows(&gh(&["api",&address,"--jq",META_JQ])?,4)?;
+    let meta_text = gh(&["api",&address,"--jq",META_JQ])?;
+    let meta = rows(&meta_text,4)?;
     if meta.len()!=1 || meta[0][0]!=repo || positive(meta[0][1])?!=pr {
         return Err("PR metadata identity changed".into());
     }
@@ -53,7 +54,8 @@ fn collect(repo: &str, pr: u64) -> Result<Evidence,String> {
     let creation = meta[0][3].to_string();
 
     let timeline_address = format!("repos/{repo}/issues/{pr}/timeline?per_page=100");
-    let timeline = rows(&gh(&["api","--paginate",&timeline_address,"--jq",TIMELINE_JQ])?,3)?;
+    let timeline_text = gh(&["api","--paginate",&timeline_address,"--jq",TIMELINE_JQ])?;
+    let timeline = rows(&timeline_text,3)?;
     let mut transitions = Vec::new();
     for row in &timeline {
         let kind = match row[2] {
@@ -68,7 +70,8 @@ fn collect(repo: &str, pr: u64) -> Result<Evidence,String> {
     let created_as_draft = transitions.first().map_or(state.draft,|first|
         first.kind == TransitionKind::Ready);
     let reviews_address = format!("repos/{repo}/pulls/{pr}/reviews?per_page=100");
-    let reviews = rows(&gh(&["api","--paginate",&reviews_address,"--jq",REVIEWS_JQ])?,6)?;
+    let review_text = gh(&["api","--paginate",&reviews_address,"--jq",REVIEWS_JQ])?;
+    let reviews = rows(&review_text,6)?;
     let mut human_reviews = Vec::new();
     for row in &reviews {
         // GitHub COMMENTED events are retained, but never approvals.
@@ -88,7 +91,8 @@ fn collect(repo: &str, pr: u64) -> Result<Evidence,String> {
 
     let checks_address = format!("repos/{repo}/commits/{}/check-runs?per_page=100",
         state.head_sha);
-    let checks = rows(&gh(&["api","--paginate",&checks_address,"--jq",CHECKS_JQ])?,6)?;
+    let check_text = gh(&["api","--paginate",&checks_address,"--jq",CHECKS_JQ])?;
+    let checks = rows(&check_text,6)?;
     let mut ai_checks = Vec::new();
     for row in &checks {
         let provider = match row[2] {
