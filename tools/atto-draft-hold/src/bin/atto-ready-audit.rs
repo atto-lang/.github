@@ -9,7 +9,8 @@ use atto_draft_hold::{parse_snapshot, validate_repo, PR_JQ};
 use std::env;
 use std::process::Command;
 
-const META_JQ: &str = r#"[.base.repo.full_name,.number,.user.id,.created_at] | @tsv"#;
+// Head, label state and updated_at must be stable across every paginated read.
+const META_JQ: &str = r#"[.base.repo.full_name,.number,.user.id,.created_at,.head.sha,.draft,.updated_at,.base.sha] | @tsv"#;
 const TIMELINE_JQ: &str = r#".[] | select(.event == "ready_for_review" or .event == "converted_to_draft") | [.id,.created_at,.event] | @tsv"#;
 const REVIEWS_JQ: &str =
     r#".[] | [.id,.user.login,.user.id,.state,.submitted_at,.commit_id] | @tsv"#;
@@ -40,6 +41,9 @@ fn rows(s: &str, columns: usize) -> Result<Vec<Vec<&str>>, String> {
     }
     Ok(output)
 }
+fn is_sha(s: &str) -> bool {
+    s.len() == 40 && s.bytes().all(|x| x.is_ascii_digit() || (b'a'..=b'f').contains(&x))
+}
 fn positive(s: &str) -> Result<u64, String> {
     let number = s
         .parse::<u64>()
@@ -59,9 +63,20 @@ fn collect(repo: &str, pr: u64) -> Result<Evidence, String> {
     let state =
         parse_snapshot(&gh(&["api", &address, "--jq", PR_JQ])?, repo, pr).map_err(str::to_owned)?;
     let meta_text = gh(&["api", &address, "--jq", META_JQ])?;
-    let meta = rows(&meta_text, 4)?;
+    let meta = rows(&meta_text, 8)?;
     if meta.len() != 1 || meta[0][0] != repo || positive(meta[0][1])? != pr {
         return Err("PR metadata identity changed".into());
+    }
+    // Reject unrelated/moving PR head, Draft change and invalid metadata before
+    // walking any pages. Also reject missing update watermark or base identity.
+    let head = &meta[0][4];
+    let draft = if state.draft { "true" } else { "false" };
+    if *head != state.head_sha
+        || meta[0][5] != draft
+        || atto_draft_hold::review_cycle::utc_seconds(meta[0][6]).is_none()
+        || !is_sha(meta[0][7])
+    {
+        return Err("live PR metadata differs from immutable starting snapshot".into());
     }
     let author = positive(meta[0][2])?;
     let creation = meta[0][3].to_string();
@@ -153,6 +168,19 @@ fn collect(repo: &str, pr: u64) -> Result<Evidence, String> {
     }
     if state.not_ready {
         labels.push("not-ready".into());
+    }
+
+    // Read the same live PR again after all paginated evidence API calls. A
+    // stable SHA alone is NOT sufficient: label changes, Draft transitions,
+    // base retargets and review modifications can occur on the same commit.
+    let final_state = parse_snapshot(&gh(&["api", &address, "--jq", PR_JQ])?, repo, pr)
+        .map_err(str::to_owned)?;
+    let final_meta_text = gh(&["api", &address, "--jq", META_JQ])?;
+    let final_meta = rows(&final_meta_text, 8)?;
+    if final_state != state || final_meta.len() != 1
+        || final_meta[0] != meta[0]
+    {
+        return Err("live PR changed while collecting evidence; fail closed".into());
     }
 
     // SAFETY: GitHub timeline commit records have no authenticated last-push
