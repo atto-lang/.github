@@ -1,119 +1,81 @@
-// Read-only advisory evaluation of AttoLang's persistent one-human + ready-cycle policy.
-// The caller MUST independently authenticate GitHub lifecycle, labels, reviews and
-// provider attestations. This function is NOT a GitHub branch protection or merge gate.
-// Never use its output alone to authorize a merge or to bypass required current-head CI.
-const SHA = /^[0-9a-f]{40}$/;
-const HOUR = 60 * 60 * 1000;
-const HUMAN = new Map([['oresoftware', 11139560], ['the1mills', 2148448]]);
-const TRUSTED_IDS = new Set(HUMAN.values());
-const AI = ['openai', 'anthropic'];
-const HOLD_LABELS = new Set(['keep-as-draft', 'keep-draft', 'not-ready']);
-const millis = s => typeof s === 'string' && Number.isFinite(Date.parse(s)) ? Date.parse(s) : NaN;
-const validId = n => Number.isSafeInteger(n) && n > 0;
-const text = s => typeof s === 'string' && s.trim().length > 0;
+// Read-only advisory evaluator for a single independent trusted-owner review.
+// Review evidence, labels and timeline MUST be externally authenticated.
+// This cannot authorize a merge: current source CI, overlap and GitHub protection
+// remain separate, mandatory checks.
+const SHA=/^[0-9a-f]{40}$/;
+const HUMAN=new Map([['oresoftware',11139560],['the1mills',2148448]]);
+const TRUSTED_IDS=new Set(HUMAN.values());
+const HOLD_LABELS=new Set(['keep-as-draft','keep-draft','not-ready']);
+const millis=x=>typeof x==='string'&&Number.isFinite(Date.parse(x))?Date.parse(x):NaN;
+const positive=n=>Number.isSafeInteger(n)&&n>0;
+const named=s=>typeof s==='string'&&s.trim().length>0;
 
-export function assessFourPartyReadyCycle(x) { // Retained export for existing callers.
-  const failures = [];
-  const require = (ok, why) => { if (!ok) failures.push(why); };
-  const checked = millis(x?.checked_at), started = millis(x?.ready_cycle_started_at);
-  const pushed = millis(x?.last_push_at);
-  const age = checked - started;
-  const lane = !Number.isFinite(age) || age < 0 ? 'unknown' :
-    age < 72 * HOUR ? 'initial-two-ai' :
-    age < 240 * HOUR ? 'fast-one-human' : 'renewed-two-ai';
-  const aiRequired = lane !== 'fast-one-human';
-  const aiBoundary = lane === 'renewed-two-ai' ? started + 240 * HOUR : started;
-  require(SHA.test(x?.head_sha ?? ''), 'missing immutable current head SHA');
-  require(x?.ready_cycle_verified === true && x?.draft === false,
-    'ready lifecycle not independently verified');
-  require(Number.isFinite(age) && age >= 0, 'ready-cycle timestamps missing or invalid');
-  require(Number.isFinite(pushed) && pushed <= checked, 'last-push timestamp invalid');
-  require(validId(x?.author_github_id), 'PR author numeric GitHub ID absent');
-  require(x?.reviews_verified === true && Array.isArray(x?.reviews) &&
-    x.reviews.length <= 5000, 'authenticated bounded review history absent');
-  require(x?.labels_verified === true && Array.isArray(x?.labels),
+export function assessFourPartyReadyCycle(x) {
+  // Historical export name retained for existing callers; four-party voting
+  // is NOT a policy requirement.
+  const failures=[];
+  const require=(ok,why)=>{if(!ok)failures.push(why);};
+  const checked=millis(x?.checked_at), started=millis(x?.ready_cycle_started_at);
+  const pushed=millis(x?.last_push_at);
+  require(SHA.test(x?.head_sha??''),'missing immutable current head SHA');
+  require(x?.ready_cycle_verified===true&&x?.draft===false,
+    'Ready lifecycle not independently verified or still Draft');
+  require(Number.isFinite(started)&&Number.isFinite(checked)&&checked>=started,
+    'Ready lifecycle timestamps missing or invalid');
+  require(Number.isFinite(pushed)&&pushed<=checked,'last-push timestamp invalid');
+  require(positive(x?.author_github_id),'PR author numeric GitHub identity absent');
+  require(x?.reviews_verified===true&&Array.isArray(x?.reviews)&&x.reviews.length<=5000,
+    'authenticated bounded GitHub review history absent');
+  require(x?.labels_verified===true&&Array.isArray(x?.labels),
     'current PR labels not independently verified');
-
-  for (const raw of Array.isArray(x?.labels) ? x.labels : []) {
-    const name = typeof raw === 'string' ? raw :
-      raw && typeof raw === 'object' && !Array.isArray(raw) ? raw.name : null;
-    if (!text(name)) { failures.push('malformed current PR label'); continue; }
-    if (HOLD_LABELS.has(name.trim().toLowerCase()))
+  for(const raw of Array.isArray(x?.labels)?x.labels:[]) {
+    const label=typeof raw==='string'?raw:
+      raw&&typeof raw==='object'&&!Array.isArray(raw)?raw.name:null;
+    if(!named(label)){failures.push('malformed current PR label');continue;}
+    if(HOLD_LABELS.has(label.trim().toLowerCase()))
       failures.push('explicit draft/readiness hold label present');
   }
-
-  const humanLatest = new Map();
-  const aiLatest = new Map();
-  const putLatest = (map, key, r, at) => {
-    const old = map.get(key);
-    if (old?.at === at) failures.push('ambiguous equal-time review events');
-    else if (!old || old.at < at) map.set(key, {review: r, at});
-  };
-
-  for (const r of Array.isArray(x?.reviews) ? x.reviews.slice(0, 5000) : []) {
-    if (!r || typeof r !== 'object' || !['APPROVED', 'DISMISSED',
-      'CHANGES_REQUESTED', 'COMMENTED'].includes(r.state)) {
-      failures.push('invalid review record'); continue;
+  const latest=new Map();
+  for(const r of Array.isArray(x?.reviews)?x.reviews.slice(0,5000):[]) {
+    if(!r||typeof r!=='object'||!['APPROVED','DISMISSED',
+      'CHANGES_REQUESTED','COMMENTED'].includes(r.state)){
+      failures.push('invalid review record');continue;
     }
-    const at = millis(r.submitted_at);
-    if (!Number.isFinite(at) || at > checked) {
-      failures.push('review timestamp missing or future'); continue;
+    const at=millis(r.submitted_at);
+    if(!Number.isFinite(at)||at>checked){
+      failures.push('review timestamp missing or future');continue;
     }
-    if (r.source === 'github-human') {
-      if (!validId(r.github_id) || !text(r.login)) {
-        failures.push('unauthenticated GitHub reviewer identity'); continue;
-      }
-      const login = r.login.trim().toLowerCase();
-      const expected = HUMAN.get(login);
-      if ((expected && r.github_id !== expected) ||
-          (!expected && TRUSTED_IDS.has(r.github_id))) {
-        failures.push('trusted reviewer login / immutable ID mismatch'); continue;
-      }
-      // COMMENTED reviews do not withdraw an earlier APPROVED review.
-      if (r.state !== 'COMMENTED') putLatest(humanLatest, r.github_id, r, at);
-      continue;
+    // Provider claims neither help nor hurt the one independent human slot;
+    // these are not GitHub human review events or quorum requirements.
+    if(r.source==='independent-provider-attestation')continue;
+    if(r.source!=='github-human'){
+      failures.push('unrecognized or unauthenticated review source');continue;
     }
-    if (r.source === 'independent-provider-attestation') {
-      // Non-current attestations are historical evidence, not an approval on HEAD.
-      // Only provenance-verified current-cycle attestations can fill an AI slot.
-      const provider = String(r.provider ?? '').toLowerCase();
-      if (!AI.includes(provider) || r.provider_verified !== true ||
-          r.attestation_verified !== true || !text(r.agent_identity)) {
-        failures.push('unverified provider attestation'); continue;
-      }
-      if (r.state !== 'APPROVED') continue;
-      if (r.commit_sha !== x?.head_sha || at <= pushed ||
-          at < started || at < aiBoundary) continue;
-      putLatest(aiLatest, provider, r, at);
-      continue;
+    if(!positive(r.github_id)||!named(r.login)){
+      failures.push('unauthenticated GitHub reviewer identity');continue;
     }
-    failures.push('unrecognized or unauthenticated review source');
+    const login=r.login.trim().toLowerCase(), expected=HUMAN.get(login);
+    if((expected&&r.github_id!==expected)||
+      (!expected&&TRUSTED_IDS.has(r.github_id))){
+      failures.push('trusted reviewer login / immutable ID mismatch');continue;
+    }
+    // A COMMENTED review does not dismiss an earlier actual approval or
+    // clear an earlier CHANGES_REQUESTED event.
+    if(r.state==='COMMENTED')continue;
+    const prior=latest.get(r.github_id);
+    if(prior?.at===at)failures.push('ambiguous equal-time review events');
+    else if(!prior||prior.at<at)latest.set(r.github_id,{review:r,at});
   }
-
-  const active = [...humanLatest.values()].map(v => v.review);
-  require(!active.some(r => r.state === 'CHANGES_REQUESTED'),
+  const current=[...latest.values()].map(v=>v.review);
+  require(!current.some(r=>r.state==='CHANGES_REQUESTED'),
     'outstanding blocking GitHub CHANGES_REQUESTED review');
-  const acceptedHumans = active.filter(r => r.state === 'APPROVED' &&
-    HUMAN.get(r.login.trim().toLowerCase()) === r.github_id &&
-    r.github_id !== x?.author_github_id);
-  require(acceptedHumans.length >= 1,
+  const eligible=current.filter(r=>r.state==='APPROVED'&&
+    HUMAN.get(r.login.trim().toLowerCase())===r.github_id&&
+    r.github_id!==x?.author_github_id);
+  require(eligible.length>=1,
     'one independent the1mills OR ORESoftware approval missing');
-  if (aiRequired) {
-    require(AI.every(provider => aiLatest.has(provider)),
-      'fresh independently verified OpenAI AND Anthropic attestations missing');
-    const identities = [...aiLatest.values()].map(v => v.review.agent_identity);
-    require(new Set(identities).size === identities.length,
-      'AI provider attestations must have distinct verified agent identities');
-  }
-
-  return {
-    status: failures.length ? 'HOLD' : 'REPORTED_SATISFIED_NOT_AUTHORIZED',
-    advisory_only: true,
-    lane,
-    ready_age_hours: Number.isFinite(age) ? age / HOUR : null,
-    unique_reviewers: acceptedHumans.length + (aiRequired ? aiLatest.size : 0),
-    human_approvals: acceptedHumans.length,
-    required_ai: aiRequired ? [...AI] : [],
-    failures
-  };
+  return {status:failures.length?'HOLD':'REPORTED_SATISFIED_NOT_AUTHORIZED',
+    advisory_only:true,lane:'single-trusted-human',
+    unique_reviewers:eligible.length,human_approvals:eligible.length,
+    required_ai:[],failures};
 }
