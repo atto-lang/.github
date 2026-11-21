@@ -117,9 +117,27 @@ export function inspectionExitCode(mode, summary) {
       !summary.statuses || typeof summary.statuses !== 'object') {
     throw new Error('invalid inspection mode or summary');
   }
-  const uncertain = (summary.statuses.INCOMPLETE_JOB_EVIDENCE ?? 0) +
-    (summary.statuses.INCONSISTENT_JOB_EVIDENCE ?? 0);
-  return mode === '--run-id' && uncertain ? 2 : 0;
+  // Exact --run-id can be diagnostic-success for a *definitive* failed,
+  // zero-step, mixed, or successful job observation, but never for a stale
+  // head, pending run, missing metadata, or invented/invalid status.
+  const definitive = new Set([
+    'STEPFUL_RUN_REPORTED_SUCCESS', 'TEST_FAILED',
+    'NOT_EXECUTED', 'MIXED_ADMISSION_AND_TEST_FAILURE',
+  ]);
+  const recognized = new Set([
+    ...definitive, 'INCOMPLETE_JOB_EVIDENCE',
+    'INCONSISTENT_JOB_EVIDENCE', 'STALE_HEAD',
+    'PENDING_OR_INCONCLUSIVE',
+  ]);
+  for (const [status, count] of Object.entries(summary.statuses)) {
+    if (!recognized.has(status) || !Number.isSafeInteger(count) || count < 0) {
+      return 2;
+    }
+    if (mode === '--run-id' && count > 0 && !definitive.has(status)) {
+      return 2;
+    }
+  }
+  return 0;
 }
 
 const safeCell = value => String(value ?? '').replace(/[\r\n|<>]/g, ' ').slice(0, 140);
