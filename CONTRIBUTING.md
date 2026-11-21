@@ -2,7 +2,7 @@
 
 ## Rust-first scripts and tests (effective 2026-11-15)
 
-**Use Rust, not Python, for all new test harnesses, CI utilities, conformance tools, code-generation support utilities, source verification, and regression scripts in the `atto-lang` repositories.** Prefer `cargo test --locked` for a Rust crate and `rustc --edition=2021 --test path/to/test.rs -o "$RUNNER_TEMP/test-name"` for a small dependency-free test. Shell is allowed as a minimal CI launcher; substantive checks must be written in Rust.
+**Use Rust, not Python, for all new test harnesses, CI utilities, conformance tools, code-generation support utilities, source verification, and regression scripts in the `atto-lang` repositories.** Prefer `cargo test --locked` for a Rust crate and `rustc --edition=2021 --test path/to/test.rs -o "$RUNNER_TEMP/test-name"` for a small test without external crates. Shell is allowed as a minimal CI launcher; substantive checks must be written in Rust.
 
 Do **not** add `.py` test scripts, `python -m unittest`, or Python-based new test utilities. When modifying a legacy Python-based compiler pilot or test, prioritize a separate migration to Rust, retain parity fixtures, and remove Python only after the replacement is demonstrably equivalent. Existing legacy Python tests are transitional technical debt, **not evidence of Rust migration**. Do not silently delete tests or claim an unported Python compiler is Rust.
 
