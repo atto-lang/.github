@@ -20,7 +20,7 @@ Use `snake_case` for AttoLang callable names and Rust helpers. Document unsuppor
 
 ## Legacy Python retirement checklist
 
-Identify every Python test/tool in a touched repository; create a Rust equivalent with the **same source fixtures, negative mutation coverage, exit codes and deterministic byte output**, exercise both on an immutable baseline until equivalent, then switch CI to the Rust version and remove the legacy Python dependency in a separately reviewed change. If a pilot compiler still uses Python, label it as such and do not represent its tests as Rust-native.
+Identify every Python test/tool in a touched repository; create a Rust equivalent with the **same source fixtures, negative mutation coverage, exit codes and deterministic byte output**, exercise both on an immutable baseline until equivalent, then switch CI to the Rust version and retire the old test tooling in a separately reviewed change. If a pilot compiler still uses Python, label it as such and do not represent its tests as Rust-native.
 
 
 ## Issue, branch, pull request and review workflow
