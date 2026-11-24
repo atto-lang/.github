@@ -4,6 +4,8 @@
 > **Mode:** Stealth development, merge-first integration with auditable checks.
 > **Priority:** Finish and integrate existing, ready PRs rather than create redundant PRs. Do not weaken required tests, security controls, CODEOWNERS, or branch protection.
 
+When GitHub Actions reports a job with no executed steps, follow the [zero-step CI recovery runbook](governance/ci-zero-step-recovery.md). Verify the cause and carrier capacity, and preserve the source repository’s required checks and private-source authorization requirements.
+
 ## Single trusted-owner approval, any Ready age
 
 **Exactly one** independently authenticated GitHub `APPROVED` review from **either** `the1mills` (GitHub ID `2148448`) **or** `ORESoftware` (GitHub ID `11139560`) satisfies this organization's human and AI review policy for a Ready pull request. Do **not** require both humans, a second CODEOWNER, ChatGPT/Codex or Claude/Anthropic approval, or reapproval after 72h, 240h, 10 days, or another age boundary. One eligible approval suffices for the PR.

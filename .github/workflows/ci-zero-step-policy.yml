@@ -1,0 +1,58 @@
+name: Zero-step CI recovery policy selftests
+
+on:
+  push:
+    branches:
+      - policy/zero-step-token-free-carrier-recovery-20261121
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recovery-policy-selftests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify exact immutable PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --quiet --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+      - name: Execute source-free zero-step classifier adversarial tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test governance/ci-zero-step-classifier.test.mjs governance/ci-zero-step-inspector.test.mjs governance/ci-recovery-gate.test.mjs governance/ci-tree-manifest-verify.test.mjs
+      # Never give a pull_request-controlled script a token, even read-only.
+      # Exact-head PR regression tests above deliberately run without secrets.
+      - name: Smoke-test live same-repository GitHub Actions REST reader
+        if: github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node governance/ci-zero-step-inspector.mjs --recent 8
+      - name: Prove policy remains non-authorizing
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'DENIED or' governance/ci-zero-step-recovery.md
+          grep -Fq 'NO MIRROR' governance/ci-zero-step-recovery.md
+          grep -Fq 'Never' governance/ci-zero-step-recovery.md
+          grep -Fq 'root tree OID to equal the source tree OID' governance/ci-zero-step-recovery.md
+          echo 'EXTERNAL_SOURCE_EXPORT_AUTHORIZATION=NOT_GRANTED'
