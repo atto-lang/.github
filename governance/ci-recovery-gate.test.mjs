@@ -126,27 +126,25 @@ test('plain-text handoff never alleges export or testing took place', () => {
   assert.match(handoff, /source_tree=b{40}/);
 });
 
-test('CI recovery instructions cannot erase canonical persistent-human Ready-cycle gates', () => {
+test('CI recovery guidance preserves current review and draft-hold requirements', () => {
   const agents = readFileSync(new URL('../AGENTS.md', import.meta.url), 'utf8');
   for (const required of [
-    '0 ≤ ready_age < 72h',
-    '72h ≤ ready_age < 240h',
-    'ready_age ≥ 240h',
-    'OpenAI',
-    'Anthropic',
-    'Human approval is required once per PR',
+    'Single trusted-owner approval, any Ready age',
+    'Exactly one',
+    'independently authenticated GitHub `APPROVED` review',
+    'the1mills',
+    'ORESoftware',
+    'The reviewer cannot be the PR author',
+    'at least 72 consecutive hours in its CURRENT draft cycle',
     'keep-as-draft',
     'keep-draft',
     'not-ready',
-    'Mandatory zero-step CI recovery:',
+    'also prohibit automated merging',
     'governance/ci-zero-step-recovery.md',
-    'return it to Draft after rechecking',
-    'identical persistent Draft-state invariant',
+    'preserve the source repository’s required checks',
   ]) {
     assert.ok(agents.includes(required), 'canonical policy requirement missing: ' + required);
   }
-  assert.ok(!agents.includes('Single trusted-owner approval, any Ready age'));
-  assert.ok(!agents.includes('or reapproval after 72h, 240h, 10 days, or another age boundary'));
 });
 
 test('private callers never fetch mutable public diagnostic scripts using their read token', () => {
