@@ -34,3 +34,7 @@ Identify every Python test/tool in a touched repository; create a Rust equivalen
 - A completed task requires merged code, documented supported profiles, actual test execution, regression and negative cases, and updated fixtures/docs when applicable. Pending/skipped tests remain visible as NOT_EXECUTED.
 
 See [RFC_PROCESS.md](RFC_PROCESS.md), [TESTING.md](TESTING.md), [ROADMAP.md](ROADMAP.md), [SECURITY.md](SECURITY.md) and [CODEOWNERS](CODEOWNERS). These are organization defaults; the assigned repository's more specific controls take precedence where they are stricter. The CODEOWNERS file here is **not** automatically inherited by other repositories.
+
+## Sealed AOT and controlled dynamism
+
+Use the [AOT/zero-guest-GC review policy](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md) when changing compiler profiles, dynamic code paths, actor heaps, instrumented AOT/JIT, runtime capabilities or examples. State exact target and distinguish tested host behavior from guest execution. Preserve the Rust-first, exact-head tests and review policies above.

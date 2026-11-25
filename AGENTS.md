@@ -4,6 +4,8 @@
 > **Mode:** Stealth development, merge-first integration with auditable checks.
 > **Priority:** Finish and integrate existing, ready PRs rather than create redundant PRs. Do not weaken required tests, security controls, CODEOWNERS, or branch protection.
 
+When GitHub Actions reports a job with no executed steps, follow the [zero-step CI recovery runbook](governance/ci-zero-step-recovery.md). Verify the cause and carrier capacity, and preserve the source repository’s required checks and private-source authorization requirements.
+
 ## Authoritative review clock: READY, not PR creation
 
 The **current ready-for-review cycle starts at the most recent authoritative transition to Ready for review**. For a PR opened directly as ready, it starts at `pull_request.created_at`. A draft's time in draft **never accrues review age**.
@@ -47,17 +49,17 @@ Canonical label names, descriptions, and intended behavior are recorded in [`gov
 
 Label names alone do **not** create enforcement in GitHub: the authorized automation must read current labels **again immediately before** `markPullRequestReadyForReview` and before merge, and fail closed if labels cannot be read. Do not auto-clear `keep-as-draft`, `keep-draft`, or `not-ready`. A manual Ready transition with `keep-as-draft` or `keep-draft` still present must trigger authorized re-draft after live verification, **not** merge eligibility. With `not-ready` alone, block auto-promotion and merging but do not claim it is a permanent Draft-state label. The controller must be protected by an issuer-bound required status check to close readiness/label races; a documentation-only advisory cannot mutate PR state or install that check.
 
-## Mandatory competing/overlapping PR audit — especially fast lane
+## Mandatory competing/overlapping PR audit — before every merge
 
-**Before authorizing any merge in the 72h–240h fast lane**, the reviewing+merging agent MUST:
+**Before authorizing any merge (especially in the 72h–240h fast lane)**, the reviewing+merging agent MUST:
 
 1. Search **all currently open ready and draft PRs** that compete with or depend on the target, including other relevant repos, matching changed files, symbols, feature goals, linked issues, APIs, tests, and branch history.
 2. Read the relevant diffs and determine whether they duplicate, conflict conceptually, introduce incompatible designs, or contain complementary functionality. A clean Git merge is **not** evidence of semantic independence.
 3. **Update the current PR or the competing PR(s) before merging** where overlap exists. Prefer one canonical solution with all needed tests/specs. Rebase/retest impacted code and handle dependencies in the correct order. Record a concrete disposition for each candidate (`incorporated`, `updated`, `superseded`, or `independent with rationale`); leave **no unresolved competing PR**.
 4. Re-run required CI on the resulting exact SHA and refresh any AI/current-head code-review attestations required by the active window; **do not require renewed `the1mills`/`ORESoftware` human approval merely because the PR rebased or merged changes from `main`**. Re-run overlap discovery if the head or relevant open-PR landscape changes.
-5. Record scan time, current SHA, scope of repo/org searches, competing PR URLs and dispositions in the PR or authenticated policy-check evidence. If a relevant diff or overlap search is unavailable, block the **automated fast-lane merge** pending inspection; never assert `no overlaps` without evidence.
+5. Record scan time, current SHA, scope of repo/org searches, competing PR URLs and dispositions in the PR or authenticated policy-check evidence. If a relevant diff or overlap search is unavailable, block the **automated merge** pending inspection; never assert `no overlaps` without evidence.
 
-Apply the same overlap integration habit **when recovering drafts and during initial/re-renewed reviews**; the explicitly mandatory *pre-merge audit gate* is the fast lane.
+Apply the same overlap integration habit **when recovering drafts and during initial/re-renewed reviews**; the pre-merge audit is mandatory in all Ready windows; the fast lane additionally uses it instead of AI attestation slots.
 
 ## Common merge gates — all windows
 
@@ -89,3 +91,7 @@ Report merged PR URLs/SHAs, readiness-cycle age, draft-to-ready promotions, hold
 
 `atto-lang` is the primary organization for new language and implementation work. Before creating/merging a substantial PR, inspect relevant open and draft work in the corresponding legacy `ores-truffle-oreslang` repo, using the [legacy-to-AttoLang repository crosswalk](https://github.com/ores-truffle-oreslang/.github/blob/main/governance/atto-migration-map.json). This applies to readiness triage and especially to the mandatory competing/overlapping PR audit in the 72–240-hour fast lane. Consolidate independent fixes and tests into the canonical AttoLang PR rather than leaving parallel features to diverge. Similar names are not evidence of parity or completed migration; verify exact commits, contracts and executed tests. Continue to respect labels, current ready-cycle timestamps, and GitHub protections. Do not auto-close, force-update, or discard unique legacy work without verified disposition.
 <!-- incoming-oreslang-migration:end -->
+
+## Sealed AOT and zero-guest-GC review policy
+
+Follow the [controlled-dynamism review checklist](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md) together with the [compiler capability matrix](https://github.com/atto-lang/.github/blob/main/docs/compiler-feature-matrix.md). These are architectural targets, **not** a modification to the draft/ready review clock, independent approvals, private-source controls, required checks or merge-first governance above.
