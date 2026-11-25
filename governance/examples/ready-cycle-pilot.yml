@@ -1,0 +1,57 @@
+# READ-ONLY PILOT TEMPLATE. Not installed as a repository workflow.
+# Security review must replace the placeholder with an immutable protected-main
+# controller commit SHA from atto-lang/.github, never a PR head or moving tag.
+name: Atto ready-cycle audit pilot (read only)
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted, dismissed, edited]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        type: number
+        description: Existing PR number to audit without writes
+        required: true
+permissions: {}
+concurrency:
+  group: ready-cycle-audit-${{ github.repository }}-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: false
+jobs:
+  read-only-audit:
+    if: github.repository_owner == 'atto-lang'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      checks: read
+    steps:
+      - name: Checkout approved fixed governance source (never PR head)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: atto-lang/.github
+          ref: REPLACE_WITH_SECURITY_APPROVED_PROTECTED_MAIN_40_HEX_SHA
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify audited source policy commit
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "REPLACE_WITH_SECURITY_APPROVED_PROTECTED_MAIN_40_HEX_SHA"
+      - name: Verify live API evidence is held until trusted services are installed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPO: ${{ github.repository }}
+          TARGET_PR: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          set +e
+          output=$(cargo run --locked --manifest-path tools/atto-draft-hold/Cargo.toml \
+            --bin atto-ready-audit -- --repo "$TARGET_REPO" --pr "$TARGET_PR" 2>&1)
+          result=$?
+          set -e
+          printf '%s\n' "$output"
+          test "$result" -eq 1
+          printf '%s' "$output" | grep -F 'READ_ONLY_REVIEW_AUDIT state=HOLD'
+          printf '%s' "$output" | grep -F 'authorized=false'
