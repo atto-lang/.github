@@ -78,3 +78,7 @@ Report merged PR URLs/SHAs, readiness-cycle age, draft-to-ready promotions, hold
 
 `atto-lang` is the primary organization for new language and implementation work. Before creating/merging a substantial PR, inspect relevant open and draft work in the corresponding legacy `ores-truffle-oreslang` repo, using the [legacy-to-AttoLang repository crosswalk](https://github.com/ores-truffle-oreslang/.github/blob/main/governance/atto-migration-map.json). This applies to readiness triage and especially to the mandatory competing/overlapping PR audit before any merge. Consolidate independent fixes and tests into the canonical AttoLang PR rather than leaving parallel features to diverge. Similar names are not evidence of parity or completed migration; verify exact commits, contracts and executed tests. Continue to respect labels, current ready-cycle timestamps, and GitHub protections. Do not auto-close, force-update, or discard unique legacy work without verified disposition.
 <!-- incoming-oreslang-migration:end -->
+
+## Sealed AOT and zero-guest-GC review policy
+
+Follow the [controlled-dynamism review checklist](docs/AOT_ZERO_GC_DYNAMISM_POLICY.md) together with the [compiler capability matrix](https://github.com/atto-lang/.github/blob/main/docs/compiler-feature-matrix.md). These are architectural targets, **not** a modification to the draft/ready review clock, independent approvals, private-source controls, required checks or merge-first governance above.
