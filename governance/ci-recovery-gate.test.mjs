@@ -129,12 +129,19 @@ test('plain-text handoff never alleges export or testing took place', () => {
 test('CI recovery guidance preserves current review and draft-hold requirements', () => {
   const agents = readFileSync(new URL('../AGENTS.md', import.meta.url), 'utf8');
   for (const required of [
-    'Single trusted-owner approval, any Ready age',
-    'Exactly one',
-    'independently authenticated GitHub `APPROVED` review',
+    'Human approval is required once per PR',
+    'A valid submitted `APPROVED` human review survives',
+    'GitHub account ID and independent/non-author status must be verified',
+    '0 ≤ ready_age < 72h',
+    '72h ≤ ready_age < 240h',
+    'ready_age ≥ 240h',
+    'current-cycle/current-head attestations',
+    'no extra AI slot required in this window',
+    'fresh post-240h OpenAI **and** Anthropic attestations',
+    'pre-merge audit is mandatory in all Ready windows',
     'the1mills',
     'ORESoftware',
-    'The reviewer cannot be the PR author',
+    'No author self-approval or fabricated AI evidence',
     'at least 72 consecutive hours in its CURRENT draft cycle',
     'keep-as-draft',
     'keep-draft',
