@@ -1,0 +1,4 @@
+# Governance repository review ownership proposal.
+# GitHub enforces this only when branch protection / rulesets require code-owner reviews.
+# Changes to this file must be reviewed by an independent listed owner.
+* @oresoftware @the1mills
