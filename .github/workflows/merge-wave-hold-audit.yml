@@ -1,0 +1,59 @@
+# Source-free runner admission + historical audit integrity; NOT release certification.
+name: AttoLang historical merge-wave hold and runner admission
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  source-free-runner-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Prove actual runner admission without checkout, actions or secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RUNNER_NAME:-}"
+          test -n "${GITHUB_RUN_ID:-}"
+          echo 'ATTO_SOURCE_FREE_RUNNER_ADMITTED_STEP_1'
+      - name: Prove second meaningful runner step
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTIONS:-}" = true
+          echo 'ATTO_SOURCE_FREE_RUNNER_ADMITTED_STEP_2'
+  historical-audit-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact checked-out commit
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(/usr/bin/git rev-parse HEAD)" = "$EXPECTED_HEAD"
+      - name: Run source-free historical negative controls
+        shell: bash
+        run: node --test tests/check-merge-wave-hold.test.mjs
+      - name: Verify blocked audit and reject release authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/check-merge-wave-hold.mjs
+          set +e
+          output="$(node tools/check-merge-wave-hold.mjs --release)"
+          code="$?"
+          set -e
+          test "$code" -eq 1
+          case "$output" in
+            *HOLD_ACTIVE*RELEASE_BLOCKED*) echo 'RELEASE_GATE_CORRECTLY_BLOCKED' ;;
+            *) echo 'Expected release-block evidence missing' >&2; exit 1 ;;
+          esac
