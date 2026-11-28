@@ -4,13 +4,13 @@ Applies to all active repositories in `github.com/atto-lang`. Legacy Oreslang re
 
 ## Human-review criterion
 
-An approving GitHub pull-request review from **either** `@oresoftware` **or** `@the1mills` is sufficient to meet the complete PR review requirement regardless of Ready age. Do not impose an additional independent reviewer, second approval, or separate CODEOWNER approval after one of these accounts has supplied a valid approval.
+An approving GitHub pull-request review from **either** `@oresoftware` **or** `@the1mills` satisfies the **single human-approval slot** at every Ready age. Do not require both humans or another CODEOWNER approval. The independent OpenAI and Anthropic AI attestations required during the first 72 hours and from 240 hours onward remain mandatory; from 72 hours up to 240 hours the fast-lane overlap audit applies instead. See [`AGENTS.md`](../AGENTS.md) for the authoritative lifecycle and gates.
 
 - The reviewer must be different from the PR author. GitHub does not allow a PR author to approve their own PR. A PR authored by `@the1mills` can be approved by `@oresoftware`, and vice versa.
 - Only an actual `APPROVED` pull-request review counts. A comment, requested review, team membership, admin role, or presumed consent is not an approval.
 - An explicitly dismissed or revoked review, or an outstanding changes-requested state, does not satisfy the requirement. Configure GitHub so an ordinary new commit does not automatically dismiss the previously accepted one-time review; re-read its *actual* state before merging.
 - If neither account has a valid approval, the human-review requirement remains unmet. An approval by some other account does not substitute for one of the two trusted accounts.
-- No procedural or agent-authored **"Merge Without Review"** block should be asserted when a valid review by either trusted account is present.
+- Do not assert a procedural **"Merge Without Human Review"** block once either eligible account has approved; separately enforce applicable AI attestations, fast-lane overlap audits, CI, and draft holds.
 
 ## Keep technical gates separate
 
