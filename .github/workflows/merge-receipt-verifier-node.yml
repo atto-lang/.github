@@ -1,0 +1,45 @@
+name: Offline merge receipt verifier — exact-head Node tests
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify-untrusted-snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout immutable original pull-request head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify Git identity and clean physical checkout
+        shell: bash
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SOURCE_HEAD" ]]
+          [[ -z "$(git status --porcelain --untracked-files=all)" ]]
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+      - name: Install reviewed Node 22 toolchain without npm dependencies
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          check-latest: false
+      - name: Execute complete 62-case offline-verifier adversarial suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          node --test tests/verify-merge-receipt.test.mjs tests/strict-receipt-json-v1.test.mjs
+      - name: Ensure offline verifier never grants release via CLI exit zero
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          node tools/verify-merge-receipt.mjs >/dev/null
+          code=$?
+          set -e
+          [[ "$code" -eq 2 ]]
