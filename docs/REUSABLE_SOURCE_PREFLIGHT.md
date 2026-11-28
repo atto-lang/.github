@@ -14,7 +14,13 @@ installation and no private-source cross-org export.
 ## What it proves
 
 If and only if a runner executes the job, the emitted values prove the
-local checked-out Git commit and tree matched the supplied identifiers.
+local checked-out Git commit and tree matched the supplied identifiers **and**
+that the worktree's physical tracked file bytes/modes matched the checkout Git
+index at the instant of inspection. The new physical preflight also rejects
+index drift, missing files, untracked/ignored files, symlinks and gitlinks.
+It deliberately fails on LFS/smudge-transformed files unless a separately
+reviewed project-specific policy is supplied; do not silently exempt them.
+The file integrity check is bounded in time and does not attest future steps.
 An Actions run with zero job steps cannot produce this evidence.
 
 This gate **does not** authenticate who built the compiler, verify
